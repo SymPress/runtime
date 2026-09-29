@@ -1,5 +1,7 @@
 # Migrating WP Starter configuration
 
+During setup, `muloader` recognizes the exact stock WP Starter loader template and moves the generated file to `wpstarter-mu-loader.php.sympress-backup` only after writing its replacement. The backup preserves the original bytes and is not loaded by WordPress. This also retires a stale generated loader when no MU packages remain. Customized loaders, symlinks and an existing backup require manual review; they are never silently replaced. The recognition template retains the upstream MIT notice in `NOTICE`.
+
 Install the runtime with Composer scripts/plugins disabled while preparing the switch. Keep the existing lockfile and generated files until the migration has been reviewed.
 
 ```sh
