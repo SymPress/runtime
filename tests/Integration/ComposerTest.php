@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Tests\Integration;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use SymPress\Runtime\Step\Registry;
 use SymPress\Runtime\Tests\Support\TemporaryProject;
@@ -81,6 +82,9 @@ final class RuntimeFixtureStep implements StepInterface
         $data = [
             'mode' => $this->services->runContext()->mode,
             'dev' => $this->services->runContext()->dev,
+            'interactive' => $this->services->runContext()->interactive,
+            'decorated' => $this->services->runContext()->decorated,
+            'verbosity' => $this->services->runContext()->verbosity,
             'install' => $config['is-composer-install']->unwrap(),
             'update' => $config['is-composer-update']->unwrap(),
             'selected' => $config['is-runtime-selected-command']->unwrap(),
@@ -156,6 +160,80 @@ PHP);
         $plugin = $this->composer(['install']);
         self::assertSame(0, $plugin->getExitCode(), $plugin->getErrorOutput());
         self::assertSame($standaloneFile, file_get_contents($this->root . '/managed.txt'));
+    }
+
+    public function testConsoleFlagsReachServicesInComposerAndStandalone(): void
+    {
+        $this->fixture();
+        $install = $this->composer(['install', '--no-plugins']);
+        self::assertSame(0, $install->getExitCode(), $install->getErrorOutput());
+        $quiet = $this->composer(['sympress-runtime', 'fixture', '--quiet']);
+        self::assertSame(0, $quiet->getExitCode(), $quiet->getErrorOutput());
+        self::assertSame('', $quiet->getOutput());
+        self::assertFalse($this->context()['interactive']);
+        self::assertSame(16, $this->context()['verbosity']);
+        $standalone = new Process([PHP_BINARY, $this->root . '/vendor/bin/sympress-runtime', 'fixture', '-n', '-vvv', '--ansi'], $this->root);
+        $standalone->run();
+        self::assertSame(0, $standalone->getExitCode(), $standalone->getErrorOutput());
+        self::assertSame(256, $this->context()['verbosity']);
+        self::assertFalse($this->context()['interactive']);
+        self::assertTrue($this->context()['decorated']);
+    }
+
+    public function testInstalledPackageContributesAutowiredStepAndMetadataIsValidated(): void
+    {
+        $this->fixture();
+        $manifest = json_decode((string) file_get_contents($this->root . '/composer.json'), true, flags: JSON_THROW_ON_ERROR);
+        $manifest['require']['fixture/extension'] = '1.0.0';
+        array_unshift($manifest['repositories'], ['type' => 'path', 'url' => './extension']);
+        $this->write('composer.json', json_encode($manifest, JSON_THROW_ON_ERROR));
+        $extension = ['name' => 'fixture/extension', 'version' => '1.0.0', 'type' => 'sympress-runtime-extension', 'autoload' => ['classmap' => ['step.php']], 'extra' => ['sympress-runtime' => ['steps' => ['contributed' => 'ContributedStep']]]];
+        $this->write('extension/composer.json', json_encode($extension, JSON_THROW_ON_ERROR));
+        $source = (string) file_get_contents($this->root . '/sympress-runtime-autoload.php');
+        $this->write('extension/step.php', str_replace(['RuntimeFixtureStep', "return 'fixture';"], ['ContributedStep', "return 'contributed';"], $source));
+        $install = $this->composer(['install', '--no-plugins']);
+        self::assertSame(0, $install->getExitCode(), $install->getErrorOutput());
+        $run = $this->composer(['sympress-runtime', 'contributed']);
+        self::assertSame(0, $run->getExitCode(), $run->getErrorOutput());
+        self::assertSame('deterministic generated output', file_get_contents($this->root . '/managed.txt'));
+        $installed = json_decode((string) file_get_contents($this->root . '/vendor/composer/installed.json'), true, flags: JSON_THROW_ON_ERROR);
+        foreach ($installed['packages'] as &$package) {
+            if ($package['name'] !== 'fixture/extension') {
+                continue;
+            }
+
+            $package['extra']['sympress-runtime']['steps'] = 'synthetic-secret';
+        }
+        unset($package);
+        $this->write('vendor/composer/installed.json', json_encode($installed, JSON_THROW_ON_ERROR));
+        $invalid = $this->composer(['sympress-runtime:validate']);
+        self::assertNotSame(0, $invalid->getExitCode());
+        self::assertStringContainsString('fixture/extension', $invalid->getErrorOutput());
+        self::assertStringNotContainsString('synthetic-secret', $invalid->getErrorOutput());
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function extensionTypes(): iterable
+    {
+        yield 'native' => ['sympress-runtime-extension'];
+        yield 'legacy' => ['wpstarter-extension'];
+    }
+
+    #[DataProvider('extensionTypes')]
+    public function testExtensionRootDoesNotAutorunSetup(string $type): void
+    {
+        $this->fixture();
+        $manifest = json_decode((string) file_get_contents($this->root . '/composer.json'), true, flags: JSON_THROW_ON_ERROR);
+        $manifest['type'] = $type;
+        $this->write('composer.json', json_encode($manifest, JSON_THROW_ON_ERROR));
+        $install = $this->composer(['install']);
+        self::assertSame(0, $install->getExitCode(), $install->getErrorOutput());
+        self::assertFileDoesNotExist($this->root . '/managed.txt');
+        self::assertSame("root-script\n", file_get_contents($this->root . '/order.log'));
+        $run = $this->composer(['sympress-runtime', 'fixture']);
+        self::assertNotSame(0, $run->getExitCode());
+        self::assertStringContainsString('extension roots', $run->getErrorOutput());
+        self::assertFileDoesNotExist($this->root . '/managed.txt');
     }
 
     #[Group('PAR-CLI-008')]

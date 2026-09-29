@@ -11,6 +11,7 @@ use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Config\ConfigLoader;
 use SymPress\Runtime\Config\Validator;
 use SymPress\Runtime\Filesystem\Paths;
+use SymPress\Runtime\Package\ExtensionMetadata;
 use SymPress\Runtime\Package\PackageFinder;
 use SymPress\Runtime\Step\Registry;
 use SymPress\Runtime\Step\Runner;
@@ -45,6 +46,7 @@ final class RuntimeCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new Io($input, $output);
+        $context = $this->context->withConsole($input->isInteractive(), $output->isDecorated(), $output->getVerbosity());
         if (!in_array($this->operation, ['run', 'validate'], true)) {
             $io->error('Command ' . $this->operation . ' is scheduled for a later implementation phase.');
 
@@ -77,6 +79,9 @@ final class RuntimeCommand extends Command
         if ($errors !== []) {
             return self::INVALID;
         }
+        foreach ((new PackageFinder($context))->all() as $package) {
+            (new ExtensionMetadata($paths))->steps($package);
+        }
         if ($this->operation === 'validate') {
             $io->success('Runtime configuration is valid.');
 
@@ -98,7 +103,7 @@ final class RuntimeCommand extends Command
             $configure = is_callable($result) ? $result : null;
         }
         $registry = new Registry();
-        $container = (new ContainerFactory())->create($config, $paths, $io, $this->context, $registry, $configure);
+        $container = (new ContainerFactory())->create($config, $paths, $io, $context, $registry, $configure);
         $skips = $config['skip-steps']->unwrapOrFallback([]);
         $skips = is_array($skips) ? array_values(array_filter($skips, is_string(...))) : [];
         $resolved = $selection->resolve($registry, $skips, $loaded->profile);

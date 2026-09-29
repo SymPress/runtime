@@ -92,4 +92,9 @@ final readonly class RunContext
             'composer-updated-packages' => $this->updatedPackages,
         ];
     }
+
+    public function withConsole(bool $interactive, bool $decorated, int $verbosity): self
+    {
+        return new self($this->root, $this->vendor, $this->bin, $this->mode, $this->dev, $interactive, $decorated, $verbosity, $this->updatedPackages);
+    }
 }
