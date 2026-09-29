@@ -75,8 +75,14 @@ final class MuLoaderStep implements FileCreationStepInterface, ConditionalStepIn
             throw new RuntimeException('The legacy MU loader must be reviewed manually: it is not a regular file.');
         }
         $content = file_get_contents($legacy);
-        $template = file_get_contents(dirname(__DIR__, 3) . '/resources/legacy-mu-loader.php.txt');
-        if ($content === false || $template === false || preg_match('/ \* Description: MU plugins loaded: (.*?)\.\n/s', $content, $matches) !== 1 || $content !== str_replace('{{{MU_PLUGINS_LIST}}}', $matches[1], $template)) {
+        $recognized = false;
+        if ($content !== false && preg_match('/ \* Description: MU plugins loaded: (.*?)\.\n/s', $content, $matches) === 1) {
+            foreach (['legacy-mu-loader.php.txt', 'legacy-mu-loader-dev.php.txt'] as $file) {
+                $template = file_get_contents(dirname(__DIR__, 3) . '/resources/' . $file);
+                $recognized = $recognized || ($template !== false && $content === str_replace('{{{MU_PLUGINS_LIST}}}', $matches[1], $template));
+            }
+        }
+        if (!$recognized) {
             throw new RuntimeException('The legacy MU loader contains custom changes. Migrate it manually before running muloader.');
         }
         $backup = $legacy . '.sympress-backup';

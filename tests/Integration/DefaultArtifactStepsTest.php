@@ -64,10 +64,10 @@ final class DefaultArtifactStepsTest extends TemporaryProject
     #[DataProvider('legacyLoaderVariants')]
     #[Group('PAR-SYM-010')]
     #[Group('PAR-TPL-003')]
-    public function testMigrationRetiresOnlyTheExactGeneratedLegacyMuLoader(bool $custom, bool $plugins): void
+    public function testMigrationRetiresOnlyTheExactGeneratedLegacyMuLoader(bool $custom, bool $plugins, string $template): void
     {
         $this->fixture(['compatibility' => false]);
-        $content = str_replace('{{{MU_PLUGINS_LIST}}}', 'first/main.php', (string) file_get_contents(dirname(__DIR__, 2) . '/resources/legacy-mu-loader.php.txt'));
+        $content = str_replace('{{{MU_PLUGINS_LIST}}}', 'first/main.php', (string) file_get_contents(dirname(__DIR__, 2) . '/resources/' . $template));
         if ($custom) {
             $content .= "\n// User customization must survive.\n";
         }
@@ -97,13 +97,15 @@ final class DefaultArtifactStepsTest extends TemporaryProject
         self::assertSame($plugins ? '1' : '0', $runtime->getOutput());
     }
 
-    /** @return iterable<string, array{bool, bool}> */
+    /** @return iterable<string, array{bool, bool, string}> */
     public static function legacyLoaderVariants(): iterable
     {
-        yield 'generated loader with plugin' => [false, true];
-        yield 'generated loader without remaining plugins' => [false, false];
-        yield 'custom loader with plugin' => [true, true];
-        yield 'custom loader without discovered plugins' => [true, false];
+        foreach (['legacy-mu-loader.php.txt', 'legacy-mu-loader-dev.php.txt'] as $template) {
+            yield $template . ': generated loader with plugin' => [false, true, $template];
+            yield $template . ': generated loader without remaining plugins' => [false, false, $template];
+            yield $template . ': custom loader with plugin' => [true, true, $template];
+            yield $template . ': custom loader without discovered plugins' => [true, false, $template];
+        }
     }
 
     #[Group('PAR-STEP-006')]
@@ -150,6 +152,7 @@ final class DefaultArtifactStepsTest extends TemporaryProject
     }
 
     #[Group('PAR-STEP-011')]
+    #[Group('PAR-TPL-004')]
     public function testWpCliYamlEscapesPathsAndExecSetsTheActualConfigTarget(): void
     {
         rename($this->root, $this->root . "-'quoted");
