@@ -40,6 +40,8 @@ try {
     if (!is_file($autoload)) {
         throw new RuntimeException('Project autoloader is missing. Run composer install first.');
     }
+    require_once dirname(__DIR__) . '/src/Composer/LayoutBootstrap.php';
+    SymPress\Runtime\Composer\LayoutBootstrap::prepare($root, $vendor, $manifestPath, array_values($arguments));
     require $autoload;
     exit(SymPress\Runtime\Console\Application::main(array_values($arguments), $root, $vendor, $context));
 } catch (Throwable $error) {
