@@ -9,6 +9,7 @@ use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Config\Validator;
 use SymPress\Runtime\Filesystem\Filesystem;
 use SymPress\Runtime\Filesystem\Paths;
+use SymPress\Runtime\Generation\SaltStore;
 use SymPress\Runtime\Generation\Salter;
 use SymPress\Runtime\Generation\WpConfigSectionEditor;
 use SymPress\Runtime\Tests\Support\TemporaryProject;
@@ -69,5 +70,33 @@ final class GenerationServicesTest extends TemporaryProject
         $native = new WpConfigSectionEditor($paths, new Config([], new Validator($paths)), new Filesystem());
         $this->expectExceptionMessage('missing or unreadable');
         $native->sectionContent('FIRST');
+    }
+
+    #[Group('PAR-WP-013')]
+    #[Group('PAR-WP-014')]
+    public function testSaltFallbacksAreRecoveredWithoutExecutingConfiguration(): void
+    {
+        $original = (new Salter())->keys();
+        $original['AUTH_KEY'] = "existing'\\secret\0with-nul";
+        $source = '<?php throw new RuntimeException("must not execute");' . "\n";
+        foreach ($original as $name => $value) {
+            $source .= 'defined(' . var_export($name, true) . ') || define(' . var_export($name, true) . ', ' . var_export($value, true) . ');' . "\n";
+        }
+        $source .= '// define(\'AUTH_KEY\', \'comment-is-not-a-secret\');';
+        self::assertSame($original, (new SaltStore(new Salter()))->keys($source));
+        $partial = '<?php define("AUTH_KEY", "keep-existing");';
+        $filled = (new SaltStore(new Salter()))->keys($partial);
+        self::assertSame('keep-existing', $filled['AUTH_KEY']);
+        self::assertCount(8, $filled);
+        self::assertSame(64, strlen($filled['NONCE_KEY']));
+        $escaped = (new SaltStore(new Salter()))->keys('<?php define("AUTH_KEY", "line\\n\\x41\\101\\u{1F642}\\q");');
+        self::assertSame("line\nAA🙂\\q", $escaped['AUTH_KEY']);
+    }
+
+    #[Group('PAR-WP-014')]
+    public function testDynamicExistingSaltCannotBeSilentlyReplaced(): void
+    {
+        $this->expectExceptionMessage('nonliteral salt definition: AUTH_KEY');
+        (new SaltStore(new Salter()))->keys('<?php define("AUTH_KEY", secret_provider());');
     }
 }
