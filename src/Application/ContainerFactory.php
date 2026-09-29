@@ -8,14 +8,16 @@ use InvalidArgumentException;
 use ReflectionClass;
 use SymPress\Runtime\Compatibility\ComposerConfiguration;
 use SymPress\Runtime\Config\Config;
-use SymPress\Runtime\Config\Validator;
 use SymPress\Runtime\Console\Io;
+use SymPress\Runtime\Download\UrlDownloader;
 use SymPress\Runtime\Filesystem\FileContentBuilder;
 use SymPress\Runtime\Filesystem\Filesystem;
 use SymPress\Runtime\Filesystem\OverwritePolicy;
 use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Generation\Salter;
 use SymPress\Runtime\Generation\WpConfigSectionEditor;
+use SymPress\Runtime\Package\ExtensionMetadata;
+use SymPress\Runtime\Package\MuPluginList;
 use SymPress\Runtime\Package\PackageFinder;
 use SymPress\Runtime\Process\PhpProcess;
 use SymPress\Runtime\Process\SystemProcess;
@@ -27,13 +29,16 @@ use SymPress\Runtime\Step\StepInterface;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition as ServiceDefinition;
+use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\Process\ExecutableFinder;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class ContainerFactory
 {
     public function create(Config $config, Paths $paths, Io $io, RunContext $context, Registry $registry, ?callable $configure = null): ContainerBuilder
     {
         $container = new ContainerBuilder();
+        $container->register(HttpClientInterface::class)->setFactory([HttpClient::class, 'create']);
         $container->registerAttributeForAutoconfiguration(AsRuntimeStep::class, static function (ChildDefinition $definition, AsRuntimeStep $attribute): void {
             $definition->addTag('sympress.runtime.step', ['name' => $attribute->name, 'priority' => $attribute->priority]);
         });
@@ -42,7 +47,7 @@ final class ContainerFactory
         foreach ($instances as $id => $service) {
             $container->setDefinition($id, (new ServiceDefinition($id))->setSynthetic(true)->setPublic(true));
         }
-        foreach ([Filesystem::class, FileContentBuilder::class, OverwritePolicy::class, PackageFinder::class, SystemProcess::class, PhpProcess::class, ExecutableFinder::class, Salter::class, WpConfigSectionEditor::class, ComposerConfiguration::class, Services::class] as $class) {
+        foreach ([Filesystem::class, FileContentBuilder::class, OverwritePolicy::class, PackageFinder::class, MuPluginList::class, UrlDownloader::class, SystemProcess::class, PhpProcess::class, ExecutableFinder::class, Salter::class, WpConfigSectionEditor::class, ComposerConfiguration::class, Services::class] as $class) {
             $container->register($class, $class)->setAutowired(true)->setPublic(true);
         }
         foreach (['custom-steps' => false, 'command-steps' => true, 'steps' => false] as $option => $commandOnly) {
@@ -64,14 +69,7 @@ final class ContainerFactory
             }
         }
         foreach ((new PackageFinder($context))->all() as $package) {
-            $metadata = $package->getExtra()['sympress-runtime'] ?? null;
-            if (!is_array($metadata) || !isset($metadata['steps'])) {
-                continue;
-            }
-            $steps = (new Validator($paths))->validate('steps', $metadata['steps'])->unwrapOrFallback([]);
-            if (!is_array($steps)) {
-                throw new InvalidArgumentException('Invalid contributed steps in ' . $package->getName());
-            }
+            $steps = (new ExtensionMetadata($paths))->steps($package);
             foreach ($steps as $name => $class) {
                 if (!is_string($class) || !is_subclass_of($class, StepInterface::class)) {
                     throw new InvalidArgumentException('Contributed step must implement StepInterface: ' . $package->getName());

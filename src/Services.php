@@ -8,12 +8,14 @@ use SymPress\Runtime\Application\RunContext;
 use SymPress\Runtime\Compatibility\ComposerConfiguration;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Console\Io;
+use SymPress\Runtime\Download\UrlDownloader;
 use SymPress\Runtime\Filesystem\FileContentBuilder;
 use SymPress\Runtime\Filesystem\Filesystem;
 use SymPress\Runtime\Filesystem\OverwritePolicy;
 use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Generation\Salter;
 use SymPress\Runtime\Generation\WpConfigSectionEditor;
+use SymPress\Runtime\Package\MuPluginList;
 use SymPress\Runtime\Package\PackageFinder;
 use SymPress\Runtime\Process\PhpProcess;
 use SymPress\Runtime\Process\SystemProcess;
@@ -36,6 +38,8 @@ final readonly class Services
         private Salter $salts,
         private WpConfigSectionEditor $sections,
         private ComposerConfiguration $composerSettings,
+        private MuPluginList $muPlugins,
+        private UrlDownloader $downloads,
     ) {
     }
 
@@ -72,6 +76,16 @@ final readonly class Services
     public function packageFinder(): PackageFinder
     {
         return $this->packages;
+    }
+
+    public function muPluginsList(): MuPluginList
+    {
+        return $this->muPlugins;
+    }
+
+    public function urlDownloader(): UrlDownloader
+    {
+        return $this->downloads;
     }
 
     public function systemProcess(): SystemProcess

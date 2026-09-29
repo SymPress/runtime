@@ -12,6 +12,7 @@
         "symfony/dotenv": "^8.1",
         "symfony/event-dispatcher": "^8.1",
         "symfony/filesystem": "^8.1",
+        "symfony/http-client": "^8.1",
         "symfony/process": "^8.1"
     },
     "require-dev": {
