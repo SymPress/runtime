@@ -9,6 +9,7 @@ use ReflectionClass;
 use SymPress\Runtime\Compatibility\ComposerConfiguration;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Console\Io;
+use SymPress\Runtime\Console\Selection;
 use SymPress\Runtime\Database\DatabaseProbe;
 use SymPress\Runtime\Database\DbChecker;
 use SymPress\Runtime\Database\MysqliProbe;
@@ -21,7 +22,12 @@ use SymPress\Runtime\Filesystem\Filesystem;
 use SymPress\Runtime\Filesystem\OverwritePolicy;
 use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Filesystem\ProjectBoundary;
+use SymPress\Runtime\Generation\ArtifactWriter;
+use SymPress\Runtime\Generation\RuntimeBundleBuilder;
+use SymPress\Runtime\Generation\SaltStore;
 use SymPress\Runtime\Generation\Salter;
+use SymPress\Runtime\Generation\SectionMerger;
+use SymPress\Runtime\Generation\WpConfigGenerator;
 use SymPress\Runtime\Generation\WpConfigSectionEditor;
 use SymPress\Runtime\Package\ExtensionMetadata;
 use SymPress\Runtime\Package\MuPluginList;
@@ -45,7 +51,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class ContainerFactory
 {
-    public function create(Config $config, Paths $paths, Io $io, RunContext $context, Registry $registry, ?callable $configure = null): ContainerBuilder
+    public function create(Config $config, Paths $paths, Io $io, RunContext $context, Registry $registry, ?callable $configure = null, Selection $selection = new Selection()): ContainerBuilder
     {
         $container = new ContainerBuilder();
         $container->register(HttpClientInterface::class)->setFactory([HttpClient::class, 'create']);
@@ -63,12 +69,15 @@ final class ContainerFactory
             $definition->addTag('sympress.runtime.step', ['name' => $attribute->name, 'priority' => $attribute->priority]);
         });
         $container->addCompilerPass(new StepRegistrationPass($registry));
-        $instances = [Config::class => $config, Paths::class => $paths, Io::class => $io, RunContext::class => $context];
+        $instances = [Config::class => $config, Paths::class => $paths, Io::class => $io, RunContext::class => $context, Selection::class => $selection];
         foreach ($instances as $id => $service) {
             $container->setDefinition($id, (new ServiceDefinition($id))->setSynthetic(true)->setPublic(true));
         }
         foreach ([Filesystem::class, FileContentBuilder::class, OverwritePolicy::class, PackageFinder::class, MuPluginList::class, UrlDownloader::class, PharInstaller::class, PhpToolProcessFactory::class, WpCliTool::class, SystemProcess::class, PhpProcess::class, ExecutableFinder::class, Salter::class, WpConfigSectionEditor::class, ComposerConfiguration::class, Services::class] as $class) {
             $container->register($class, $class)->setAutowired(true)->setPublic(true);
+        }
+        foreach ([SaltStore::class, ArtifactWriter::class, RuntimeBundleBuilder::class, SectionMerger::class, WpConfigGenerator::class] as $class) {
+            $container->register($class)->setAutowired(true)->setPublic(true);
         }
         foreach (['custom-steps' => false, 'command-steps' => true, 'steps' => false] as $option => $commandOnly) {
             $steps = $config[$option]->unwrapOrFallback([]);

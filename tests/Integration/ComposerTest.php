@@ -416,6 +416,9 @@ PHP
         $flush = $this->composer(['sympress-runtime:flush-env-cache']);
         self::assertSame(0, $flush->getExitCode(), $flush->getErrorOutput());
         self::assertFileDoesNotExist($this->root . '/.env.cached.php');
+        $dump = $this->composer(['sympress-runtime:dump-env', 'production']);
+        self::assertSame(0, $dump->getExitCode(), $dump->getErrorOutput());
+        self::assertFileExists($this->root . '/.env.dump.php');
     }
 
     #[Group('PAR-DB-001')]

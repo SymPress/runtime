@@ -16,6 +16,11 @@ final readonly class EnvFactory
 
     public function create(): EnvReader
     {
+        return $this->createForEnvironment();
+    }
+
+    public function createForEnvironment(?string $environment = null): EnvReader
+    {
         $profile = $this->config['compatibility-profile']->unwrap();
         $file = $this->config['env-file']->unwrap();
         $directory = $this->config['env-dir']->unwrapOrFallback($this->paths->root());
@@ -23,7 +28,7 @@ final readonly class EnvFactory
             throw new RuntimeException('Invalid environment loader configuration.');
         }
         $reader = new EnvReader(profile: $profile);
-        $reader->loadChain($file, $directory, $this->config['env-local-overrides']->is(true));
+        $reader->loadChain($file, $directory, $this->config['env-local-overrides']->is(true), $environment);
 
         return $reader;
     }

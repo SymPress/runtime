@@ -16,6 +16,7 @@ use Throwable;
 final class EnvReader
 {
     public const string CACHE_DUMP_FILE = '/.env.cached.php';
+    public const string BUILD_DUMP_FILE = '/.env.dump.php';
     public const string CUSTOM_ENV_TO_CONST_VAR_NAME = 'WP_STARTER_ENV_TO_CONST';
     public const string DB_TABLE_PREFIX_VAR_NAME = 'DB_TABLE_PREFIX';
     public const string WP_ADMIN_COLOR_VAR_NAME = 'WP_ADMIN_COLOR';
@@ -125,8 +126,11 @@ final class EnvReader
         $this->parseFile(rtrim($path ?? (getcwd() ?: '.'), '/\\') . '/' . $file);
     }
 
-    public function loadChain(string $file = '.env', ?string $path = null, bool $localOverrides = true): void
+    public function loadChain(string $file = '.env', ?string $path = null, bool $localOverrides = true, ?string $environment = null): void
     {
+        if ($environment !== null) {
+            $this->selectRequestedEnvironment($environment);
+        }
         if ($this->sentinel() || $this->loaded) {
             return;
         }
@@ -147,6 +151,30 @@ final class EnvReader
         }
 
         $this->loadAppended($file . '.' . $environment . '.local', $path);
+    }
+
+    private function selectRequestedEnvironment(string $environment): void
+    {
+        $environment = strtolower($environment);
+        if (!preg_match('/^[a-z0-9][a-z0-9_.-]*$/D', $environment) || str_contains($environment, '..')) {
+            throw new InvalidArgumentException('Requested environment must be a simple name without traversal.');
+        }
+        $names = $this->profile === 'native' ? ['WP_ENVIRONMENT_TYPE', 'WP_ENV', 'WORDPRESS_ENV'] : self::WP_STARTER_ENV_VARS;
+        foreach ($names as $name) {
+            $actual = $this->externalValue($name);
+            if ($actual === null || $actual === '') {
+                continue;
+            }
+            if (strtolower($actual) !== $environment) {
+                throw new InvalidArgumentException('Requested environment conflicts with the actual process environment.');
+            }
+            break;
+        }
+        $this->environment = $environment;
+        $this->external[$names[0]] = $environment;
+        $_ENV[$names[0]] = $environment;
+        $_SERVER[$names[0]] = $environment;
+        $this->read($names[0]);
     }
 
     public function determineEnvType(): string

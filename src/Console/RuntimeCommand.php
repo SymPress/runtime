@@ -33,6 +33,9 @@ final class RuntimeCommand extends Command
     protected function configure(): void
     {
         $this->setDescription($this->operation === 'validate' ? 'Validate project configuration without running steps.' : 'Run project setup steps.');
+        if ($this->operation === 'dump-env') {
+            $this->addArgument('environment', InputArgument::REQUIRED, 'Raw environment name to resolve and dump.');
+        }
         if ($this->operation !== 'run') {
             return;
         }
@@ -48,7 +51,7 @@ final class RuntimeCommand extends Command
     {
         $io = new Io($input, $output);
         $context = $this->context->withConsole($input->isInteractive(), $output->isDecorated(), $output->getVerbosity());
-        if (!in_array($this->operation, ['run', 'validate', 'flush-env-cache'], true)) {
+        if (!in_array($this->operation, ['run', 'validate', 'flush-env-cache', 'dump-env'], true)) {
             $io->error('Command ' . $this->operation . ' is scheduled for a later implementation phase.');
 
             return self::INVALID;
@@ -88,6 +91,14 @@ final class RuntimeCommand extends Command
 
             return self::SUCCESS;
         }
+        if ($this->operation === 'dump-env') {
+            $environment = $input->getArgument('environment');
+            if (!is_string($environment)) {
+                throw new InvalidArgumentException('A dump requires an explicit environment.');
+            }
+
+            return (new DumpEnvironment($config, $paths, $io))->run($environment);
+        }
         if (in_array($manifest['type'] ?? null, ['sympress-runtime-extension', 'wpstarter-extension'], true)) {
             $io->error('Runtime extension roots do not run project setup.');
 
@@ -104,7 +115,7 @@ final class RuntimeCommand extends Command
             $configure = is_callable($result) ? $result : null;
         }
         $registry = new Registry();
-        $container = (new ContainerFactory())->create($config, $paths, $io, $context, $registry, $configure);
+        $container = (new ContainerFactory())->create($config, $paths, $io, $context, $registry, $configure, $selection);
         $skips = $config['skip-steps']->unwrapOrFallback([]);
         $skips = is_array($skips) ? array_values(array_filter($skips, is_string(...))) : [];
         $resolved = $selection->resolve($registry, $skips, $loaded->profile);

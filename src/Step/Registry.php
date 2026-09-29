@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use SymPress\Runtime\Step\Builtin\CheckPathsStep;
 use SymPress\Runtime\Step\Builtin\FlushEnvCacheStep;
 use SymPress\Runtime\Step\Builtin\IndexStep;
+use SymPress\Runtime\Step\Builtin\WpConfigStep;
 
 final class Registry
 {
@@ -20,6 +21,7 @@ final class Registry
 
     public const array IMPLEMENTATIONS = [
         'checkpaths' => CheckPathsStep::class,
+        'wpconfig' => WpConfigStep::class,
         'index' => IndexStep::class,
         'flushenvcache' => FlushEnvCacheStep::class,
     ];
