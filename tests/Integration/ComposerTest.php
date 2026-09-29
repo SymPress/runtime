@@ -99,12 +99,15 @@ final class RuntimeFixtureStep implements StepInterface
 PHP);
     }
 
-    /** @param list<string> $arguments */
-    private function composer(array $arguments): Process
+    /**
+     * @param list<string> $arguments
+     * @param array<string, string|false> $environment
+     */
+    private function composer(array $arguments, array $environment = []): Process
     {
         $binary = getenv('RUNTIME_TEST_COMPOSER') ?: '/usr/local/bin/composer';
         self::assertFileExists($binary, 'Set RUNTIME_TEST_COMPOSER to a real Composer executable.');
-        $process = new Process([PHP_BINARY, $binary, ...$arguments, '--no-interaction'], $this->root, ['COMPOSER_ALLOW_SUPERUSER' => '1']);
+        $process = new Process([PHP_BINARY, $binary, ...$arguments, '--no-interaction'], $this->root, array_replace(['COMPOSER_ALLOW_SUPERUSER' => '1'], $environment));
         $process->setTimeout(120);
         $process->run();
 
@@ -180,6 +183,39 @@ PHP);
         self::assertSame(256, $this->context()['verbosity']);
         self::assertFalse($this->context()['interactive']);
         self::assertTrue($this->context()['decorated']);
+    }
+
+    public function testEnvironmentServiceIsSharedAndOnlyLoadsWhenUsed(): void
+    {
+        $this->fixture();
+        $this->write('.env', 'malformed synthetic-secret');
+        $install = $this->composer(['install']);
+        self::assertSame(0, $install->getExitCode(), $install->getErrorOutput());
+        $source = (string) file_get_contents($this->root . '/sympress-runtime-autoload.php');
+        $this->write('sympress-runtime-autoload.php', str_replace('return self::SUCCESS;', '$this->services->env()->read("RTV_LAZY"); return self::SUCCESS;', $source));
+        $invalid = $this->composer(['sympress-runtime', 'fixture']);
+        self::assertNotSame(0, $invalid->getExitCode());
+        self::assertStringContainsString('Cannot parse environment file', $invalid->getErrorOutput());
+        self::assertStringNotContainsString('synthetic-secret', $invalid->getErrorOutput());
+        $this->write('.env', "RTV_LAZY=loaded\n");
+        $valid = $this->composer(['sympress-runtime', 'fixture']);
+        self::assertSame(0, $valid->getExitCode(), $valid->getErrorOutput());
+    }
+
+    public function testCustomComposerManifestRetainsProjectRootInBothEntrypoints(): void
+    {
+        $this->fixture(customVendor: true);
+        $manifest = (string) file_get_contents($this->root . '/composer.json');
+        $this->write('config/dependencies.json', $manifest);
+        unlink($this->root . '/composer.json');
+        $install = $this->composer(['install'], ['COMPOSER' => 'config/dependencies.json']);
+        self::assertSame(0, $install->getExitCode(), $install->getErrorOutput());
+        self::assertFileExists($this->root . '/managed.txt');
+        self::assertFileDoesNotExist($this->root . '/config/managed.txt');
+        $standalone = new Process([PHP_BINARY, $this->root . '/tools/sympress-runtime', 'fixture', '-n'], $this->root, ['COMPOSER' => 'config/dependencies.json']);
+        $standalone->run();
+        self::assertSame(0, $standalone->getExitCode(), $standalone->getErrorOutput());
+        self::assertSame('standalone', $this->context()['mode']);
     }
 
     public function testInstalledPackageContributesAutowiredStepAndMetadataIsValidated(): void

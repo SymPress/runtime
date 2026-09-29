@@ -15,7 +15,7 @@ final class ContextFactory
     /** @param list<array{name: string, version: string}> $updatedPackages */
     public function create(Composer $composer, IOInterface $io, string $mode, bool $dev, array $updatedPackages = []): RunContext
     {
-        $root = realpath(dirname(Factory::getComposerFile()));
+        $root = getcwd();
         if ($root === false) {
             throw new RuntimeException('Cannot locate the Composer project root.');
         }
@@ -32,6 +32,6 @@ final class ContextFactory
             default => 32,
         };
 
-        return new RunContext($root, $vendor, $bin, $mode, $dev, $io->isInteractive(), $io->isDecorated(), $verbosity, $updatedPackages);
+        return new RunContext($root, $vendor, $bin, $mode, $dev, $io->isInteractive(), $io->isDecorated(), $verbosity, $updatedPackages, Factory::getComposerFile());
     }
 }

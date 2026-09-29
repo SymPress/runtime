@@ -54,7 +54,7 @@ final class RuntimeCommand extends Command
         }
         $selection = $this->selection($input);
         $loader = new ConfigLoader();
-        $manifest = $loader->readObject($this->context->root . '/composer.json');
+        $manifest = $loader->readObject($this->context->manifestPath());
         $extra = $manifest['extra'] ?? [];
         if (!is_array($extra)) {
             throw new InvalidArgumentException('Composer extra must be an object.');

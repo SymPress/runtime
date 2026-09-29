@@ -22,7 +22,7 @@ final readonly class ComposerConfiguration
 
             return ($flags & 1) !== 0 ? Path::makeRelative($path, $this->context->root) : $path;
         }
-        $manifest = (new ConfigLoader())->readObject($this->context->root . '/composer.json');
+        $manifest = (new ConfigLoader())->readObject($this->context->manifestPath());
         $config = $manifest['config'] ?? [];
 
         return is_array($config) ? ($config[$key] ?? null) : null;

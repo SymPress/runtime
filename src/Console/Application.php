@@ -20,14 +20,16 @@ final class Application
      */
     public static function main(array $arguments, string $root, string $vendor, ?array $data = null): int
     {
-        $manifest = (new ConfigLoader())->readObject($root . '/composer.json');
+        $manifestFile = $data['manifest'] ?? (getenv('COMPOSER') ?: 'composer.json');
+        $manifestFile = is_string($manifestFile) ? Path::makeAbsolute($manifestFile, $root) : $root . '/composer.json';
+        $manifest = (new ConfigLoader())->readObject($manifestFile);
         $composerConfig = $manifest['config'] ?? [];
         $bin = is_array($composerConfig) ? ($composerConfig['bin-dir'] ?? $vendor . '/bin') : $vendor . '/bin';
         $bin = is_string($bin) ? Path::makeAbsolute($bin, $root) : $vendor . '/bin';
         $installedFile = $vendor . '/composer/installed.json';
         $installed = is_file($installedFile) ? json_decode((string) file_get_contents($installedFile), true, 512, JSON_THROW_ON_ERROR) : [];
         $dev = !is_array($installed) || ($installed['dev'] ?? true) !== false;
-        $context = $data === null ? new RunContext($root, $vendor, $bin, dev: $dev) : RunContext::fromArray($data);
+        $context = $data === null ? new RunContext($root, $vendor, $bin, dev: $dev, manifest: $manifestFile) : RunContext::fromArray($data);
         $operation = 'run';
         foreach (array_slice($arguments, 1, preserve_keys: true) as $index => $argument) {
             if ($argument === '--') {

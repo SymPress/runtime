@@ -20,6 +20,7 @@ final readonly class RunContext
         public bool $decorated = false,
         public int $verbosity = 32,
         public array $updatedPackages = [],
+        public string $manifest = 'composer.json',
     ) {
         if (!in_array($mode, ['standalone', 'command', 'install', 'update'], true)) {
             throw new InvalidArgumentException('Invalid runner mode.');
@@ -40,6 +41,7 @@ final readonly class RunContext
         'decorated' => $this->decorated,
             'verbosity' => $this->verbosity,
         'updatedPackages' => $this->updatedPackages,
+        'manifest' => $this->manifest,
         ];
     }
 
@@ -74,7 +76,12 @@ final readonly class RunContext
             $validated[] = ['name' => $package['name'], 'version' => $package['version']];
         }
 
-        return new self($data['root'], $data['vendor'], $data['bin'], $data['mode'], $data['dev'], $data['interactive'], $data['decorated'], $data['verbosity'], $validated);
+        $manifest = $data['manifest'] ?? 'composer.json';
+        if (!is_string($manifest) || $manifest === '' || str_contains($manifest, "\0")) {
+            throw new InvalidArgumentException('Invalid runner manifest path.');
+        }
+
+        return new self($data['root'], $data['vendor'], $data['bin'], $data['mode'], $data['dev'], $data['interactive'], $data['decorated'], $data['verbosity'], $validated, $manifest);
     }
 
     /** @return array<string, mixed> */
@@ -95,6 +102,11 @@ final readonly class RunContext
 
     public function withConsole(bool $interactive, bool $decorated, int $verbosity): self
     {
-        return new self($this->root, $this->vendor, $this->bin, $this->mode, $this->dev, $interactive, $decorated, $verbosity, $this->updatedPackages);
+        return new self($this->root, $this->vendor, $this->bin, $this->mode, $this->dev, $interactive, $decorated, $verbosity, $this->updatedPackages, $this->manifest);
+    }
+
+    public function manifestPath(): string
+    {
+        return preg_match('~^(?:[A-Za-z]:[/\\\\]|/)~', $this->manifest) ? $this->manifest : $this->root . '/' . $this->manifest;
     }
 }
