@@ -20,6 +20,7 @@ use SymPress\Runtime\Filesystem\FileContentBuilder;
 use SymPress\Runtime\Filesystem\Filesystem;
 use SymPress\Runtime\Filesystem\OverwritePolicy;
 use SymPress\Runtime\Filesystem\Paths;
+use SymPress\Runtime\Filesystem\ProjectBoundary;
 use SymPress\Runtime\Generation\Salter;
 use SymPress\Runtime\Generation\WpConfigSectionEditor;
 use SymPress\Runtime\Package\ExtensionMetadata;
@@ -53,6 +54,11 @@ final class ContainerFactory
         $container->register(MysqliProbe::class);
         $container->setAlias(DatabaseProbe::class, MysqliProbe::class);
         $container->register(DbChecker::class)->setAutowired(true)->setPublic(true);
+        $container->register(DatabasePreflight::class)->setAutowired(true)->setPublic(true);
+        $container->register(ProjectBoundary::class)->setAutowired(true);
+        foreach (Registry::IMPLEMENTATIONS as $class) {
+            $container->register($class)->setAutowired(true)->setPublic(true);
+        }
         $container->registerAttributeForAutoconfiguration(AsRuntimeStep::class, static function (ChildDefinition $definition, AsRuntimeStep $attribute): void {
             $definition->addTag('sympress.runtime.step', ['name' => $attribute->name, 'priority' => $attribute->priority]);
         });

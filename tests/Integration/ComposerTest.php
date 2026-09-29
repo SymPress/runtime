@@ -398,4 +398,43 @@ PHP
         self::assertStringNotContainsString('Run-only file executed', $invalid->getErrorOutput());
         self::assertFileDoesNotExist($this->root . '/managed.txt');
     }
+
+    #[Group('PAR-ENV-022')]
+    #[Group('PAR-STEP-003')]
+    public function testComposerRunsBuiltInIndexAndDedicatedFlushCommand(): void
+    {
+        $this->fixture();
+        $install = $this->composer(['install']);
+        self::assertSame(0, $install->getExitCode(), $install->getErrorOutput());
+        $this->write('wordpress/index.php', '<?php echo "actual-core";');
+        $index = $this->composer(['sympress-runtime', 'index']);
+        self::assertSame(0, $index->getExitCode(), $index->getErrorOutput());
+        $front = new Process([PHP_BINARY, $this->root . '/index.php'], $this->root);
+        $front->mustRun();
+        self::assertSame('actual-core', $front->getOutput());
+        $this->write('.env.cached.php', '<?php return [];');
+        $flush = $this->composer(['sympress-runtime:flush-env-cache']);
+        self::assertSame(0, $flush->getExitCode(), $flush->getErrorOutput());
+        self::assertFileDoesNotExist($this->root . '/.env.cached.php');
+    }
+
+    #[Group('PAR-DB-001')]
+    public function testEnabledPreflightRunsBeforeCustomStepButListingDoesNotLoadEnvironment(): void
+    {
+        $this->fixture();
+        $install = $this->composer(['install', '--no-plugins']);
+        self::assertSame(0, $install->getExitCode(), $install->getErrorOutput());
+        $this->write('sympress-runtime.json', '{"db-check":true}');
+        $this->write('.env', 'malformed file');
+        $listing = $this->composer(['sympress-runtime', '--list-steps']);
+        self::assertSame(0, $listing->getExitCode(), $listing->getErrorOutput());
+        $failed = $this->composer(['sympress-runtime', 'fixture']);
+        self::assertNotSame(0, $failed->getExitCode());
+        self::assertStringContainsString('Cannot parse environment file', $failed->getErrorOutput());
+        self::assertFileDoesNotExist($this->root . '/managed.txt');
+        $this->write('.env', "WPDB_ENV_VALID=1\nWPDB_EXISTS=1\nWP_INSTALLED=0\n");
+        $passed = $this->composer(['sympress-runtime', 'fixture']);
+        self::assertSame(0, $passed->getExitCode(), $passed->getErrorOutput());
+        self::assertFileExists($this->root . '/managed.txt');
+    }
 }

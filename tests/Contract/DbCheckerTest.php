@@ -9,7 +9,11 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use SymPress\Runtime\Application\DatabasePreflight;
+use SymPress\Runtime\Config\Config;
+use SymPress\Runtime\Config\Validator;
 use SymPress\Runtime\Console\Io;
+use SymPress\Runtime\Console\Selection;
 use SymPress\Runtime\Database\DbChecker;
 use SymPress\Runtime\Database\DbHost;
 use SymPress\Runtime\Database\DbStatus;
@@ -47,6 +51,8 @@ final class DbCheckerTest extends TemporaryProject
     }
 
     #[Group('PAR-SVC-022')]
+    #[Group('PAR-DB-002')]
+    #[Group('PAR-DB-003')]
     public function testCheckIsLazyMemoizedAndWritesConsistentKnownFlagsOnce(): void
     {
         [$checker, $environment, $probe] = $this->checker(['DB_NAME' => 'fixture', 'DB_USER' => 'fixture']);
@@ -99,6 +105,7 @@ final class DbCheckerTest extends TemporaryProject
     }
 
     #[Group('PAR-SVC-022')]
+    #[Group('PAR-DB-004')]
     public function testHealthCheckUsesPrivateOptionFileAndLiteralArguments(): void
     {
         $this->write('bin/mysqlcheck', <<<'PHP'
@@ -137,5 +144,44 @@ PHP);
     {
         $parsed = DbHost::parse($input);
         self::assertSame([$host, $port, $socket], [$parsed->host, $parsed->port, $parsed->socket]);
+    }
+
+    #[Group('PAR-DB-001')]
+    #[Group('PAR-DB-005')]
+    public function testPreflightHonorsListingDisableAndLegacySelectionBeforeLazyProbe(): void
+    {
+        [$checker, , $probe, $output] = $this->checker(['DB_NAME' => 'fixture', 'DB_USER' => 'fixture']);
+        $paths = new Paths($this->root);
+        $io = new Io(new ArrayInput([]), $output);
+        $config = new Config([], new Validator($paths));
+        self::assertTrue((new DatabasePreflight($config, $checker, $io))->run(new Selection(list: true)));
+        self::assertSame(0, $probe->calls);
+        $disabled = new Config(['db-check' => false], new Validator($paths));
+        self::assertTrue((new DatabasePreflight($disabled, $checker, $io))->run(new Selection()));
+        self::assertSame(0, $probe->calls);
+        $legacy = new Config([], new Validator($paths, 'upstream-dev'), 'upstream-dev');
+        self::assertTrue((new DatabasePreflight($legacy, $checker, $io))->run(new Selection(['wpconfig'])));
+        self::assertSame(0, $probe->calls);
+        $deprecated = new Config(['skip-db-check' => true], new Validator($paths));
+        self::assertTrue((new DatabasePreflight($deprecated, $checker, $io))->run(new Selection()));
+        self::assertSame(0, $probe->calls);
+        self::assertStringContainsString('deprecated', $output->fetch());
+        self::assertTrue((new DatabasePreflight($config, $checker, $io))->run(new Selection(['wpconfig'])));
+        self::assertSame(1, $probe->calls);
+        self::assertTrue($checker->isInstalled());
+        self::assertSame(1, $probe->calls);
+    }
+
+    #[Group('PAR-DB-004')]
+    public function testFailedHealthPreflightStopsNativeExecutionButRetainsLegacyOutcome(): void
+    {
+        [$checker, , , $output] = $this->checker([]);
+        $paths = new Paths($this->root);
+        $io = new Io(new ArrayInput([]), $output);
+        $native = new Config(['db-check' => 'health'], new Validator($paths));
+        self::assertFalse((new DatabasePreflight($native, $checker, $io))->run(new Selection()));
+        $legacy = new Config(['db-check' => 'health'], new Validator($paths, 'upstream-dev'), 'upstream-dev');
+        self::assertTrue((new DatabasePreflight($legacy, $checker, $io))->run(new Selection()));
+        self::assertStringContainsString('did not pass', $output->fetch());
     }
 }
