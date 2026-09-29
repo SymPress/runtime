@@ -85,6 +85,8 @@ final class RuntimeFixtureStep implements StepInterface
             'interactive' => $this->services->runContext()->interactive,
             'decorated' => $this->services->runContext()->decorated,
             'verbosity' => $this->services->runContext()->verbosity,
+            'stdinTty' => stream_isatty(STDIN),
+            'stdoutTty' => stream_isatty(STDOUT),
             'install' => $config['is-composer-install']->unwrap(),
             'update' => $config['is-composer-update']->unwrap(),
             'selected' => $config['is-runtime-selected-command']->unwrap(),
@@ -234,6 +236,76 @@ PHP);
         self::assertNotSame(0, $run->getExitCode());
         self::assertStringContainsString('extension roots', $run->getErrorOutput());
         self::assertFileDoesNotExist($this->root . '/managed.txt');
+    }
+
+    public function testComposerChildInheritsPseudoTerminalStreams(): void
+    {
+        if (!Process::isPtySupported()) {
+            self::markTestSkipped('This platform has no PTY support.');
+        }
+        $this->fixture();
+        $install = $this->composer(['install', '--no-plugins']);
+        self::assertSame(0, $install->getExitCode(), $install->getErrorOutput());
+        $binary = getenv('RUNTIME_TEST_COMPOSER') ?: '/usr/local/bin/composer';
+        $process = new Process([PHP_BINARY, $binary, 'sympress-runtime', 'fixture', '--ansi'], $this->root, ['COMPOSER_ALLOW_SUPERUSER' => '1', 'COMPOSER_NO_INTERACTION' => false]);
+        $process->setPty(true);
+        $process->setTimeout(30);
+        $process->run();
+        self::assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        self::assertTrue($this->context()['stdinTty']);
+        self::assertTrue($this->context()['stdoutTty']);
+        self::assertTrue($this->context()['decorated']);
+        self::assertTrue($this->context()['interactive']);
+    }
+
+    /** @return iterable<string, array{int, int}> */
+    public static function forwardedSignals(): iterable
+    {
+        yield 'SIGINT' => [2, 130];
+        yield 'SIGTERM' => [15, 143];
+    }
+
+    #[DataProvider('forwardedSignals')]
+    public function testComposerForwardsSignalToChild(int $signal, int $exit): void
+    {
+        if (!function_exists('pcntl_signal')) {
+            self::markTestSkipped('Signal forwarding requires pcntl.');
+        }
+        $this->fixture();
+        $install = $this->composer(['install', '--no-plugins']);
+        self::assertSame(0, $install->getExitCode(), $install->getErrorOutput());
+        $source = (string) file_get_contents($this->root . '/sympress-runtime-autoload.php');
+        $this->write('sympress-runtime-autoload.php', str_replace('return self::SUCCESS;', <<<'PHP'
+pcntl_async_signals(true);
+pcntl_signal(SIGTERM, static function () use ($paths): void {
+    file_put_contents($paths->root('signal-received'), 'SIGTERM');
+    exit(143);
+});
+file_put_contents($paths->root('child-ready'), (string) getmypid());
+while (true) { usleep(10000); }
+PHP
+        , $source));
+        $source = (string) file_get_contents($this->root . '/sympress-runtime-autoload.php');
+        $this->write('sympress-runtime-autoload.php', str_replace(['SIGTERM', '143'], [(string) $signal, (string) $exit], $source));
+        $binary = getenv('RUNTIME_TEST_COMPOSER') ?: '/usr/local/bin/composer';
+        $process = new Process([PHP_BINARY, $binary, 'sympress-runtime', 'fixture', '-n'], $this->root, ['COMPOSER_ALLOW_SUPERUSER' => '1']);
+        $process->setTimeout(10);
+        $process->start();
+        try {
+            for ($attempt = 0; $attempt < 500 && !is_file($this->root . '/child-ready'); ++$attempt) {
+                usleep(10000);
+            }
+            self::assertFileExists($this->root . '/child-ready');
+            $process->signal($signal);
+            $process->wait();
+            self::assertSame($exit, $process->getExitCode(), $process->getErrorOutput());
+            self::assertSame((string) $signal, file_get_contents($this->root . '/signal-received'));
+        } finally {
+            $process->stop(1);
+            if (is_file($this->root . '/child-ready') && !is_file($this->root . '/signal-received') && function_exists('posix_kill')) {
+                posix_kill((int) file_get_contents($this->root . '/child-ready'), SIGKILL);
+            }
+        }
     }
 
     #[Group('PAR-CLI-008')]

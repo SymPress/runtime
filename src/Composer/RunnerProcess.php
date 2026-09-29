@@ -37,7 +37,20 @@ final class RunnerProcess
                 }
             }
             try {
-                return proc_close($process);
+                // proc_close blocks PHP signal dispatch while the child is running.
+                while (true) {
+                    $status = proc_get_status($process);
+                    if (!$status['running']) {
+                        break;
+                    }
+                    usleep(10000);
+                }
+                $closed = proc_close($process);
+                if ($status['signaled']) {
+                    return 128 + $status['termsig'];
+                }
+
+                return $status['exitcode'] >= 0 ? $status['exitcode'] : ($closed >= 0 ? $closed : 1);
             } finally {
                 foreach ($previous as $signal => $handler) {
                     pcntl_signal($signal, $handler);
