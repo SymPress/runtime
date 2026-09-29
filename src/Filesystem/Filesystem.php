@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Filesystem;
 
+use FilesystemIterator;
 use InvalidArgumentException;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
@@ -61,22 +64,38 @@ final readonly class Filesystem
         if (!is_dir($sourcePath) || is_link($targetPath) || is_file($targetPath)) {
             return false;
         }
-        $source = Path::canonicalize($sourcePath);
-        $target = Path::canonicalize($targetPath);
+        $source = $this->physicalPath($sourcePath);
+        $target = $this->physicalPath($targetPath);
         if ($source === $target) {
             return true;
         }
-        if (str_starts_with($target . '/', rtrim($source, '/') . '/')) {
+        if (str_starts_with($target . '/', rtrim($source, '/') . '/') || str_starts_with($source . '/', rtrim($target, '/') . '/')) {
             return false;
         }
 
-        return $this->attempt(fn () => $this->filesystem->mirror($sourcePath, $targetPath, options: ['override' => true, 'copy_on_windows' => true]));
+        return $this->attempt(function () use ($source, $target): void {
+            $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST);
+            /** @var \SplFileInfo $entry */
+            foreach ($iterator as $entry) {
+                $destination = $target . substr($entry->getPathname(), strlen($source));
+                if (is_link($destination) && (!$entry->isLink() || readlink($destination) !== $entry->getLinkTarget())) {
+                    throw new InvalidArgumentException('Directory copy would replace or follow a target symlink.');
+                }
+                if (!is_link($destination) && file_exists($destination) && ($entry->isLink() || $entry->isDir() !== is_dir($destination))) {
+                    throw new InvalidArgumentException('Directory copy would replace a conflicting target type.');
+                }
+            }
+            $this->filesystem->mirror($source, $target, options: ['override' => true, 'follow_symlinks' => false]);
+        });
     }
 
     public function moveDir(string $sourcePath, string $targetPath): bool
     {
         if (realpath($sourcePath) !== false && realpath($sourcePath) === realpath($targetPath)) {
             return true;
+        }
+        if (is_link($sourcePath)) {
+            return false;
         }
 
         return $this->copyDir($sourcePath, $targetPath) && $this->removeRealDir($sourcePath);
@@ -162,5 +181,22 @@ final readonly class Filesystem
         } catch (Throwable) {
             return false;
         }
+    }
+
+    private function physicalPath(string $path): string
+    {
+        $suffix = [];
+        $real = realpath($path);
+        while ($real === false) {
+            $parent = dirname($path);
+            if ($parent === $path) {
+                throw new InvalidArgumentException('Cannot resolve filesystem path.');
+            }
+            array_unshift($suffix, basename($path));
+            $path = $parent;
+            $real = realpath($path);
+        }
+
+        return Path::canonicalize($real . '/' . implode('/', $suffix));
     }
 }

@@ -67,6 +67,28 @@ final class ServicesTest extends TemporaryProject
         $builder->build($paths, 'not-found');
     }
 
+    #[Group('PAR-SVC-007')]
+    public function testDirectoryCopiesRejectAliasRecursionAndPreserveSymlinkTargets(): void
+    {
+        $files = new Filesystem();
+        $this->write('source/keep.txt', 'source');
+        $this->write('outside/keep.txt', 'outside');
+        self::assertTrue(symlink($this->root . '/source', $this->root . '/alias'));
+        self::assertFalse($files->copyDir($this->root . '/source', $this->root . '/alias/nested'));
+        self::assertFalse($files->moveDir($this->root . '/source', $this->root));
+        self::assertFileDoesNotExist($this->root . '/keep.txt');
+        $this->write('destination/placeholder', '');
+        self::assertTrue(symlink($this->root . '/outside/keep.txt', $this->root . '/destination/keep.txt'));
+        self::assertFalse($files->copyDir($this->root . '/source', $this->root . '/destination'));
+        self::assertSame('outside', file_get_contents($this->root . '/outside/keep.txt'));
+        self::assertTrue(symlink('.', $this->root . '/source/loop'));
+        self::assertTrue($files->copyDir($this->root . '/source', $this->root . '/safe'));
+        self::assertTrue(is_link($this->root . '/safe/loop'));
+        self::assertSame('.', readlink($this->root . '/safe/loop'));
+        self::assertTrue($files->copyDir($this->root . '/source', $this->root . '/safe'));
+        self::assertSame('source', file_get_contents($this->root . '/source/keep.txt'));
+    }
+
     #[Group('PAR-SVC-010')]
     #[Group('PAR-CLI-012')]
     public function testOverwriteProtectionAndForceKeepDirectoriesSafe(): void
