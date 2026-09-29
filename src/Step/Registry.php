@@ -6,10 +6,14 @@ namespace SymPress\Runtime\Step;
 
 use InvalidArgumentException;
 use SymPress\Runtime\Step\Builtin\CheckPathsStep;
+use SymPress\Runtime\Step\Builtin\DropinsStep;
 use SymPress\Runtime\Step\Builtin\EnvExampleStep;
 use SymPress\Runtime\Step\Builtin\FlushEnvCacheStep;
 use SymPress\Runtime\Step\Builtin\IndexStep;
+use SymPress\Runtime\Step\Builtin\MoveContentStep;
 use SymPress\Runtime\Step\Builtin\MuLoaderStep;
+use SymPress\Runtime\Step\Builtin\PublishContentDevStep;
+use SymPress\Runtime\Step\Builtin\VcsIgnoreCheckStep;
 use SymPress\Runtime\Step\Builtin\WpCliConfigStep;
 use SymPress\Runtime\Step\Builtin\WpCliStep;
 use SymPress\Runtime\Step\Builtin\WpConfigStep;
@@ -32,6 +36,10 @@ final class Registry
         'envexample' => EnvExampleStep::class,
         'wpcliconfig' => WpCliConfigStep::class,
         'wpcli' => WpCliStep::class,
+        'movecontent' => MoveContentStep::class,
+        'dropins' => DropinsStep::class,
+        'publishcontentdev' => PublishContentDevStep::class,
+        'vcsignorecheck' => VcsIgnoreCheckStep::class,
     ];
 
     /** @var array<string, Definition> */
@@ -40,7 +48,7 @@ final class Registry
     public function __construct()
     {
         foreach (self::DEFAULT_ORDER as $name) {
-            $this->definitions[$name] = new Definition($name, self::IMPLEMENTATIONS[$name] ?? null);
+            $this->definitions[$name] = new Definition($name, self::IMPLEMENTATIONS[$name]);
         }
     }
 

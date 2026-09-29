@@ -17,6 +17,7 @@ use SymPress\Runtime\Download\PharInstaller;
 use SymPress\Runtime\Download\UrlDownloader;
 use SymPress\Runtime\Env\EnvFactory;
 use SymPress\Runtime\Env\EnvReader;
+use SymPress\Runtime\Filesystem\ContentPublisher;
 use SymPress\Runtime\Filesystem\FileContentBuilder;
 use SymPress\Runtime\Filesystem\Filesystem;
 use SymPress\Runtime\Filesystem\OverwritePolicy;
@@ -62,6 +63,7 @@ final class ContainerFactory
         $container->register(DbChecker::class)->setAutowired(true)->setPublic(true);
         $container->register(DatabasePreflight::class)->setAutowired(true)->setPublic(true);
         $container->register(ProjectBoundary::class)->setAutowired(true);
+        $container->register(ContentPublisher::class)->setAutowired(true);
         foreach (Registry::IMPLEMENTATIONS as $class) {
             $container->register($class)->setAutowired(true)->setPublic(true);
         }
