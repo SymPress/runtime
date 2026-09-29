@@ -29,6 +29,8 @@ final class EnvironmentTest extends TemporaryProject
     #[Group('PAR-ENV-001')]
     #[Group('PAR-ENV-004')]
     #[Group('PAR-ENV-006')]
+    #[Group('PAR-ENV-003')]
+    #[Group('PAR-NATIVE-003')]
     public function testNativeChainRealEnvironmentInterpolationAndStableEnvironmentSelection(): void
     {
         $this->write('.env', "WP_ENVIRONMENT_TYPE=staging\nRTV_LAYER=base\nRTV_REAL=from-file\nRTV_EXPAND=\"\${RTV_REAL}/base\"\n");
@@ -46,6 +48,7 @@ PHP
     }
 
     #[Group('PAR-ENV-006')]
+    #[Group('PAR-NATIVE-003')]
     public function testTestEnvironmentSkipsGenericLocalFileAndLegacyProfileKeepsTwoFiles(): void
     {
         $this->write('.env', "WP_ENV=test\nRTV_VALUE=base\n");
@@ -142,6 +145,7 @@ PHP
         self::assertSame([true, 'actual', 'actual', 'actual', true, 'staging', false], $restored);
     }
 
+    #[Group('PAR-ENV-003')]
     public function testParseDiagnosticsDoNotExposeEnvironmentContents(): void
     {
         $this->write('.env', 'RTV_SECRET="synthetic-secret');

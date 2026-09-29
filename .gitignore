@@ -4,3 +4,4 @@
 /.phpstan.cache/
 /build/
 /.subversion/
+__pycache__/

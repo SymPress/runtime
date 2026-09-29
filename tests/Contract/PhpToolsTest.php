@@ -49,6 +49,7 @@ final class PhpToolsTest extends TemporaryProject
     }
 
     #[Group('PAR-SVC-012')]
+    #[Group('PAR-WPC-003')]
     public function testPharIsVerifiedBeforeAtomicReplacementAndTemporaryFilesAreRemoved(): void
     {
         $this->write('tool.phar', 'original');
@@ -84,6 +85,7 @@ final class PhpToolsTest extends TemporaryProject
 
     #[Group('PAR-SVC-019')]
     #[Group('PAR-SVC-020')]
+    #[Group('PAR-WPC-001')]
     public function testPackageWinsAndSelectedPhpEnvironmentAndArgumentBoundariesAreRetained(): void
     {
         $source = '<?php file_put_contents("result.json", json_encode([$argv[1], getenv("TOOL_FIXTURE"), "package"]));';

@@ -18,6 +18,17 @@ use Symfony\Component\Process\Process;
 
 final class WpConfigTest extends TemporaryProject
 {
+    #[Group('PAR-WP-010')]
+    public function testDatabaseDefaultsAndExplicitValuesSurviveGeneratedBoot(): void
+    {
+        $this->fixture();
+        self::assertSame(0, $this->generate()->getExitCode());
+        $report = 'echo json_encode([DB_HOST, DB_CHARSET, DB_COLLATE, defined("DB_NAME"), defined("DB_USER"), defined("DB_PASSWORD"), $table_prefix]);';
+        self::assertSame(['localhost', 'utf8', '', false, false, false, 'wp_'], $this->boot($report, environment: ['DB_HOST' => false, 'DB_CHARSET' => false, 'DB_COLLATE' => false, 'DB_TABLE_PREFIX' => false]));
+        $this->write('.env', "DB_HOST=db:3307\nDB_CHARSET=utf8mb4\nDB_COLLATE=utf8mb4_unicode_ci\nDB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=synthetic\nDB_TABLE_PREFIX=site_\n");
+        self::assertSame(['db:3307', 'utf8mb4', 'utf8mb4_unicode_ci', true, true, true, 'site_'], $this->boot($report));
+    }
+
     /** @param array<string, mixed> $settings */
     private function fixture(array $settings = []): void
     {
@@ -141,6 +152,7 @@ PHP);
     }
 
     #[Group('PAR-WP-014')]
+    #[Group('PAR-QA-002')]
     public function testSeparateGenerationsRetainSaltsSectionEditsAndUnchangedBytes(): void
     {
         $this->fixture();
@@ -166,6 +178,8 @@ PHP);
     }
 
     #[Group('PAR-STEP-002')]
+    #[Group('PAR-CFG-012')]
+    #[Group('PAR-TPL-005')]
     public function testProtectedProxyBlocksAllConfigWritesAndForceKeepsExistingSalts(): void
     {
         $this->fixture();
@@ -212,6 +226,7 @@ PHP);
     #[Group('PAR-WP-006')]
     #[Group('PAR-WP-007')]
     /** @param array<bool|string|null> $expected */
+    #[Group('PAR-ENV-007')]
     public function testCanonicalEnvironmentDefaults(string $environment, array $expected): void
     {
         $this->fixture();
@@ -224,6 +239,8 @@ PHP);
     #[Group('PAR-WP-009')]
     #[Group('PAR-WP-015')]
     #[Group('PAR-ENV-021')]
+    #[Group('PAR-WP-011')]
+    #[Group('PAR-WP-012')]
     public function testRuntimeHooksCompatibilityAndHealthAllowlist(): void
     {
         $this->fixture(['register-theme-folder' => true]);

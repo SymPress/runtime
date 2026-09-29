@@ -175,6 +175,7 @@ PHP);
     }
 
     #[Group('PAR-CLI-014')]
+    #[Group('PAR-QA-002')]
     public function testNoPluginsInstallAndStandaloneProduceTheSameFile(): void
     {
         $this->fixture();
@@ -209,6 +210,7 @@ PHP);
         self::assertTrue($this->context()['decorated']);
     }
 
+    #[Group('PAR-SVC-016')]
     public function testEnvironmentServiceIsSharedAndOnlyLoadsWhenUsed(): void
     {
         $this->fixture();
@@ -282,6 +284,7 @@ PHP);
     }
 
     #[DataProvider('extensionTypes')]
+    #[Group('PAR-CLI-017')]
     public function testExtensionRootDoesNotAutorunSetup(string $type): void
     {
         $this->fixture();
