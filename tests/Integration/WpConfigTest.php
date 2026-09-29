@@ -12,6 +12,7 @@ use SymPress\Runtime\Filesystem\Filesystem;
 use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Generation\SectionMerger;
 use SymPress\Runtime\Generation\WpConfigSectionEditor;
+use SymPress\Runtime\Tests\Contract\ConstantCatalogTest;
 use SymPress\Runtime\Tests\Support\TemporaryProject;
 use Symfony\Component\Process\Process;
 
@@ -35,11 +36,14 @@ function _deprecated_function($name, $version, $replacement) { $GLOBALS['depreca
 PHP);
     }
 
-    /** @param list<string> $arguments */
-    private function generate(array $arguments = ['wpconfig']): Process
+    /**
+     * @param list<string> $arguments
+     * @param array<string, string|false> $environment
+     */
+    private function generate(array $arguments = ['wpconfig'], array $environment = []): Process
     {
         $package = dirname(__DIR__, 2);
-        $process = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', '-n', ...$arguments], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
+        $process = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', '-n', ...$arguments], $this->root, array_replace(['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false], $environment));
         $process->run();
 
         return $process;
@@ -236,6 +240,17 @@ PHP);
         self::assertSame('<?php // user-owned', file_get_contents($this->root . '/.env.dump.php'));
     }
 
+    #[Group('PAR-ENV-023')]
+    public function testDumpRejectsConflictingActualEnvironmentBeforeWriting(): void
+    {
+        $this->fixture();
+        $dump = $this->generate(['dump-env', 'production'], ['WP_ENVIRONMENT_TYPE' => 'staging']);
+        self::assertNotSame(0, $dump->getExitCode());
+        self::assertStringContainsString('conflicts', $dump->getErrorOutput());
+        self::assertFileDoesNotExist($this->root . '/.env.dump.php');
+        self::assertFileDoesNotExist($this->root . '/.env.cached.php');
+    }
+
     #[Group('PAR-ENV-020')]
     public function testLocalCacheDefaultCanBeOverriddenByTheNativeFilter(): void
     {
@@ -248,6 +263,20 @@ PHP);
         $this->write('early.php', '<?php add_filter("sympress.runtime.skip-cache-env", static function ($skip, $raw) { return $raw !== "local"; }, 10, 2);');
         self::assertSame(['all'], $this->boot('echo json_encode([WP_DEVELOPMENT_MODE]);'));
         self::assertFileExists($this->root . '/.env.cached.php');
+    }
+
+    #[Group('PAR-WP-014')]
+    public function testKeysSectionDoesNotPermitDiscardingDynamicDefinitionsOutsideIt(): void
+    {
+        $this->fixture();
+        $source = "<?php define('AUTH_KEY', secret_provider());\nKEYS : {\n} #@@/KEYS\n";
+        $this->write('wp-config.php', $source);
+        $generated = $this->generate(['wpconfig', '--force']);
+        self::assertNotSame(0, $generated->getExitCode());
+        self::assertStringContainsString('nonliteral salt definition: AUTH_KEY', $generated->getErrorOutput());
+        self::assertSame($source, file_get_contents($this->root . '/wp-config.php'));
+        self::assertFileDoesNotExist($this->root . '/public/wp-config.php');
+        self::assertDirectoryDoesNotExist($this->root . '/var/runtime');
     }
 
     public function testGeneratedFileContainsEveryInventoriedSection(): void
@@ -282,5 +311,40 @@ PHP);
         $regenerated = $this->generate();
         self::assertSame(0, $regenerated->getExitCode(), $regenerated->getErrorOutput());
         self::assertSame([$name], $this->boot('echo json_encode([$GLOBALS["section_probe"] ?? null]);'));
+    }
+
+    /** @return iterable<string, array{string, string, bool|int|float|string}> */
+    public static function constantCases(): iterable
+    {
+        foreach (ConstantCatalogTest::constants() as $id => [$name, , $raw, $value]) {
+            yield $id => [$name, $raw, $value];
+        }
+    }
+
+    #[DataProvider('constantCases')]
+    public function testEveryConstantThroughGeneratedConfigurationCacheAndBuildDump(string $name, string $raw, bool|int|float|string $expected): void
+    {
+        $this->fixture(['cache-env' => true, 'early-hook-file' => 'early.php']);
+        $this->write('early.php', '<?php add_filter("sympress.runtime.skip-cache-env", static fn () => false);');
+        $this->write('.env', "WP_ENV=production\nDB_NAME=fixture\nDB_USER=fixture\n");
+        self::assertSame(0, $this->generate()->getExitCode());
+        $key = var_export($name, true);
+        $probe = '$value = sympress_runtime_getenv(' . $key . '); echo json_encode([$value, constant(' . $key . '), get_debug_type($value)], JSON_PRESERVE_ZERO_FRACTION);';
+        $constant = match ($name) {
+            'ABSPATH' => $this->root . '/public/wp/',
+            'FTP_ASCII', 'FTP_BINARY' => constant($name),
+            default => $expected,
+        };
+        $record = [$expected, $constant, get_debug_type($expected)];
+        self::assertSame($record, $this->boot($probe, environment: [$name => $raw]));
+        self::assertFileExists($this->root . '/.env.cached.php');
+        self::assertSame($record, $this->boot($probe, environment: [$name => false]));
+        $dump = $this->generate(['dump-env', 'production'], [$name => $raw]);
+        self::assertSame(0, $dump->getExitCode(), $dump->getErrorOutput());
+        self::assertFileExists($this->root . '/.env.dump.php');
+        unlink($this->root . '/.env.cached.php');
+        $this->write('.env', 'malformed and must not load');
+        self::assertSame($record, $this->boot($probe, environment: [$name => false]));
+        self::assertFileDoesNotExist($this->root . '/.env.cached.php');
     }
 }

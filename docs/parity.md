@@ -2,7 +2,7 @@
 
 Status: **Phase 1 foundation implemented and tested locally; full acceptance remains pending.**
 
-`planned` means no behavioral test is registered under the row's ID yet. `partial` means foundation assertions are registered and passing, but the complete row (including generated configuration, compatibility profiles, consumer behavior or differential checks where applicable) is not established. `verified` is reserved for full acceptance. In particular, constant datasets currently exercise the reader and definer, not generated-config/cache/dump execution. Option validation alone does not prove a step's effects. See [the current verification record](phase1-progress.md).
+`planned` means no behavioral test is registered under the row's ID yet. `partial` means behavioral assertions are registered and passing, but the complete row (including compatibility profiles, consumer behavior or differential checks where applicable) is not established. `verified` is reserved for full acceptance. Constant datasets now exercise all 157 valid values through generated configuration, runtime cache and build dump; separate reader/cache datasets cover missing, unrecognized and predefined values. Complete generated edge cases and differential expectations remain open. Option validation alone does not prove a step's effects. See [the current verification record](phase2-progress.md).
 
 The owner-fixed package name is `sympress/runtime`. New class names below are proposed targets under `SymPress\\Runtime`, not existing APIs. All rows are **planned** until their named behavioral tests pass. A test ID is a future named PHPUnit dataset / integration scenario, not evidence of an implemented test.
 
