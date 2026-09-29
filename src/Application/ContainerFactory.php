@@ -9,6 +9,7 @@ use ReflectionClass;
 use SymPress\Runtime\Compatibility\ComposerConfiguration;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Console\Io;
+use SymPress\Runtime\Download\PharInstaller;
 use SymPress\Runtime\Download\UrlDownloader;
 use SymPress\Runtime\Filesystem\FileContentBuilder;
 use SymPress\Runtime\Filesystem\Filesystem;
@@ -20,7 +21,9 @@ use SymPress\Runtime\Package\ExtensionMetadata;
 use SymPress\Runtime\Package\MuPluginList;
 use SymPress\Runtime\Package\PackageFinder;
 use SymPress\Runtime\Process\PhpProcess;
+use SymPress\Runtime\Process\PhpToolProcessFactory;
 use SymPress\Runtime\Process\SystemProcess;
+use SymPress\Runtime\Process\WpCliTool;
 use SymPress\Runtime\Services;
 use SymPress\Runtime\Step\AsRuntimeStep;
 use SymPress\Runtime\Step\Definition;
@@ -47,7 +50,7 @@ final class ContainerFactory
         foreach ($instances as $id => $service) {
             $container->setDefinition($id, (new ServiceDefinition($id))->setSynthetic(true)->setPublic(true));
         }
-        foreach ([Filesystem::class, FileContentBuilder::class, OverwritePolicy::class, PackageFinder::class, MuPluginList::class, UrlDownloader::class, SystemProcess::class, PhpProcess::class, ExecutableFinder::class, Salter::class, WpConfigSectionEditor::class, ComposerConfiguration::class, Services::class] as $class) {
+        foreach ([Filesystem::class, FileContentBuilder::class, OverwritePolicy::class, PackageFinder::class, MuPluginList::class, UrlDownloader::class, PharInstaller::class, PhpToolProcessFactory::class, WpCliTool::class, SystemProcess::class, PhpProcess::class, ExecutableFinder::class, Salter::class, WpConfigSectionEditor::class, ComposerConfiguration::class, Services::class] as $class) {
             $container->register($class, $class)->setAutowired(true)->setPublic(true);
         }
         foreach (['custom-steps' => false, 'command-steps' => true, 'steps' => false] as $option => $commandOnly) {

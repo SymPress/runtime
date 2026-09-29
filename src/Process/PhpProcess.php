@@ -6,8 +6,13 @@ namespace SymPress\Runtime\Process;
 
 final readonly class PhpProcess
 {
-    public function __construct(private SystemProcess $process)
+    public function __construct(private SystemProcess $process, private string $executable = PHP_BINARY)
     {
+    }
+
+    public function withExecutable(string $executable): self
+    {
+        return new self(clone $this->process, $executable);
     }
 
     /** @param array<string, string|false> $environment */
@@ -36,6 +41,6 @@ final readonly class PhpProcess
      */
     private function command(array|string $command): array|string
     {
-        return is_array($command) ? [PHP_BINARY, ...$command] : escapeshellarg(PHP_BINARY) . ' ' . $command;
+        return is_array($command) ? [$this->executable, ...$command] : escapeshellarg($this->executable) . ' ' . $command;
     }
 }

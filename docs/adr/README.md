@@ -10,3 +10,7 @@ The project owner accepted these ADRs with explicit Phase 0 approval on 2026-09-
 6. [Independent runtime bootstrap and deterministic generation](0006-runtime-generation.md)
 
 Source identifiers `R` and `D` refer to pinned upstream commits in [source evidence](../source-evidence.md). Class names in the inventory are implementation targets; consult the implementation record for currently available APIs.
+
+Implementation decisions after Phase 0:
+
+7. [Filesystem and discovery safety](0007-filesystem-and-discovery-safety.md)

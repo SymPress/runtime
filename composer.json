@@ -6,6 +6,7 @@
     "require": {
         "php": "^8.5",
         "composer-plugin-api": "^2.6",
+        "composer/semver": "^3.4",
         "opis/json-schema": "^2.6",
         "symfony/console": "^8.1",
         "symfony/dependency-injection": "^8.1",

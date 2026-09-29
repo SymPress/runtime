@@ -8,6 +8,7 @@ use SymPress\Runtime\Application\RunContext;
 use SymPress\Runtime\Compatibility\ComposerConfiguration;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Console\Io;
+use SymPress\Runtime\Download\PharInstaller;
 use SymPress\Runtime\Download\UrlDownloader;
 use SymPress\Runtime\Filesystem\FileContentBuilder;
 use SymPress\Runtime\Filesystem\Filesystem;
@@ -18,11 +19,16 @@ use SymPress\Runtime\Generation\WpConfigSectionEditor;
 use SymPress\Runtime\Package\MuPluginList;
 use SymPress\Runtime\Package\PackageFinder;
 use SymPress\Runtime\Process\PhpProcess;
+use SymPress\Runtime\Process\PhpToolProcess;
+use SymPress\Runtime\Process\PhpToolProcessFactory;
 use SymPress\Runtime\Process\SystemProcess;
+use SymPress\Runtime\Process\WpCliTool;
 use Symfony\Component\Process\ExecutableFinder;
 
-final readonly class Services
+final class Services
 {
+    private ?PhpToolProcess $wpCli = null;
+
     public function __construct(
         private Config $configuration,
         private Paths $projectPaths,
@@ -40,6 +46,9 @@ final readonly class Services
         private ComposerConfiguration $composerSettings,
         private MuPluginList $muPlugins,
         private UrlDownloader $downloads,
+        private PharInstaller $phars,
+        private PhpToolProcessFactory $tools,
+        private WpCliTool $wpCliTool,
     ) {
     }
 
@@ -86,6 +95,21 @@ final readonly class Services
     public function urlDownloader(): UrlDownloader
     {
         return $this->downloads;
+    }
+
+    public function pharInstaller(): PharInstaller
+    {
+        return $this->phars;
+    }
+
+    public function phpToolProcessFactory(): PhpToolProcessFactory
+    {
+        return $this->tools;
+    }
+
+    public function wpCliProcess(): PhpToolProcess
+    {
+        return $this->wpCli ??= $this->tools->create($this->wpCliTool);
     }
 
     public function systemProcess(): SystemProcess
