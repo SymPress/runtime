@@ -2,7 +2,7 @@
 
 ## Current gate
 
-Phase 0 contains documentation and evidence only. Do not add production code, dependency manifests, executable tests, or migrate consumers until the project owner approves Phase 0. This gate comes from the supplied work order, sections 4 and 11.
+The project owner approved Phase 0 and authorized Phase 1 on 2026-09-29. Implement the foundation according to the accepted ADRs. Consumer migration remains in Phase 6.
 
 ## Implementation contract after approval
 

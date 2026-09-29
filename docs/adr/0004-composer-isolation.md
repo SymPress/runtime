@@ -1,6 +1,6 @@
 # ADR 0004: Composer bridge and process isolation
 
-Status: proposed.
+Status: accepted by the project owner on 2026-09-29 with Phase 0 approval.
 
 ## Evidence and corrected premise
 

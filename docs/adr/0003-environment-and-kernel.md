@@ -1,6 +1,6 @@
 # ADR 0003: Environment identity and kernel cache paths
 
-Status: proposed.
+Status: accepted by the project owner on 2026-09-29 with Phase 0 approval.
 
 ## Verified kernel behavior
 

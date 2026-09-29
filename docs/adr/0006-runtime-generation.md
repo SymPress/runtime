@@ -1,6 +1,6 @@
 # ADR 0006: Self-contained configuration and deterministic generation
 
-Status: proposed.
+Status: accepted by the project owner on 2026-09-29 with Phase 0 approval.
 
 ## Constraint
 

@@ -1,6 +1,6 @@
 # Phase 0 decisions
 
-All ADRs are **proposed**, pending the explicit Phase 0 approval. The package name `sympress/runtime` is already decided by the owner.
+The project owner accepted these ADRs with explicit Phase 0 approval on 2026-09-29. The package name is `sympress/runtime`.
 
 1. [Scope, versions and consumer priorities](0001-scope-and-consumers.md)
 2. [Names and public boundaries](0002-names.md)
@@ -9,4 +9,4 @@ All ADRs are **proposed**, pending the explicit Phase 0 approval. The package na
 5. [Compatibility and intentional differences](0005-compatibility-and-differences.md)
 6. [Independent runtime bootstrap and deterministic generation](0006-runtime-generation.md)
 
-Source identifiers `R` and `D` refer to pinned upstream commits in [source evidence](../source-evidence.md). All new class names in this specification are proposed implementation targets, not APIs already available in the workspace.
+Source identifiers `R` and `D` refer to pinned upstream commits in [source evidence](../source-evidence.md). Class names in the inventory are implementation targets; consult the implementation record for currently available APIs.

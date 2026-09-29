@@ -1,0 +1,215 @@
+<?php
+
+declare(strict_types=1);
+
+namespace SymPress\Runtime\Tests\Integration;
+
+use PHPUnit\Framework\Attributes\Group;
+use SymPress\Runtime\Step\Registry;
+use SymPress\Runtime\Tests\Support\TemporaryProject;
+use Symfony\Component\Process\Process;
+
+final class ComposerTest extends TemporaryProject
+{
+    private string $packageRoot;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->packageRoot = dirname(__DIR__, 2);
+    }
+
+    private function fixture(bool $plugin = true, bool $customVendor = false): void
+    {
+        $lock = json_decode((string) file_get_contents($this->packageRoot . '/composer.lock'), true, flags: JSON_THROW_ON_ERROR);
+        $repositories = [['type' => 'path', 'url' => $this->packageRoot, 'options' => ['symlink' => true, 'versions' => ['sympress/runtime' => 'dev-main']]]];
+        foreach ($lock['packages'] as $package) {
+            $path = $this->packageRoot . '/vendor/' . $package['name'];
+            if (!is_file($path . '/composer.json')) {
+                continue;
+            }
+
+            $repositories[] = ['type' => 'path', 'url' => $path, 'options' => ['symlink' => true, 'versions' => [$package['name'] => $package['version']]]];
+        }
+        $repositories[] = ['packagist.org' => false];
+        $manifest = [
+            'name' => 'fixture/site',
+            'require' => ['sympress/runtime' => 'dev-main'],
+            'repositories' => $repositories,
+            'minimum-stability' => 'dev',
+            'autoload' => ['classmap' => ['host-probe.php']],
+            'scripts' => ['post-install-cmd' => ['RuntimeHostProbe::record'], 'post-update-cmd' => ['RuntimeHostProbe::record']],
+            'config' => ['allow-plugins' => ['sympress/runtime' => $plugin], 'vendor-dir' => $customVendor ? 'dependencies' : 'vendor', 'bin-dir' => $customVendor ? 'tools' : 'vendor/bin'],
+            'extra' => ['sympress-runtime' => ['require-wp' => false, 'db-check' => false, 'custom-steps' => ['fixture' => 'RuntimeFixtureStep'], 'skip-steps' => Registry::DEFAULT_ORDER]],
+        ];
+        $this->write('composer.json', json_encode($manifest, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+        $this->write('host-probe.php', <<<'PHP'
+<?php
+declare(strict_types=1);
+final class RuntimeHostProbe
+{
+    public static function record(Composer\Script\Event $event): void
+    {
+        $host = [
+            'applicationLoaded' => class_exists(SymPress\Runtime\Console\Application::class, false),
+            'containerLoaded' => class_exists(Symfony\Component\DependencyInjection\ContainerBuilder::class, false),
+            'console' => (new ReflectionClass(Symfony\Component\Console\Application::class))->getFileName(),
+        ];
+        file_put_contents('host.json', json_encode($host, JSON_THROW_ON_ERROR));
+        file_put_contents('order.log', "root-script\n", FILE_APPEND);
+    }
+}
+PHP);
+        $this->write('sympress-runtime-autoload.php', <<<'PHP'
+<?php
+declare(strict_types=1);
+use SymPress\Runtime\Config\Config;
+use SymPress\Runtime\Filesystem\Paths;
+use SymPress\Runtime\Services;
+use SymPress\Runtime\Step\StepInterface;
+final class RuntimeFixtureStep implements StepInterface
+{
+    public function __construct(private readonly Services $services) {}
+    public function name(): string { return 'fixture'; }
+    public function success(): string { return 'Fixture generated.'; }
+    public function error(): string { return 'Fixture failed.'; }
+    public function allowed(Config $config, Paths $paths): bool { return true; }
+    public function run(Config $config, Paths $paths): int
+    {
+        $this->services->filesystem()->save('deterministic generated output', $paths->root('managed.txt'));
+        file_put_contents($paths->root('order.log'), "runtime\n", FILE_APPEND);
+        $data = [
+            'mode' => $this->services->runContext()->mode,
+            'dev' => $this->services->runContext()->dev,
+            'install' => $config['is-composer-install']->unwrap(),
+            'update' => $config['is-composer-update']->unwrap(),
+            'selected' => $config['is-runtime-selected-command']->unwrap(),
+            'console' => (new ReflectionClass(Symfony\Component\Console\Application::class))->getFileName(),
+        ];
+        $this->services->filesystem()->save(json_encode($data, JSON_THROW_ON_ERROR), $paths->root('context.json'));
+        return self::SUCCESS;
+    }
+}
+PHP);
+    }
+
+    /** @param list<string> $arguments */
+    private function composer(array $arguments): Process
+    {
+        $binary = getenv('RUNTIME_TEST_COMPOSER') ?: '/usr/local/bin/composer';
+        self::assertFileExists($binary, 'Set RUNTIME_TEST_COMPOSER to a real Composer executable.');
+        $process = new Process([PHP_BINARY, $binary, ...$arguments, '--no-interaction'], $this->root, ['COMPOSER_ALLOW_SUPERUSER' => '1']);
+        $process->setTimeout(120);
+        $process->run();
+
+        return $process;
+    }
+
+    /** @return array<string, mixed> */
+    private function context(): array
+    {
+        return json_decode((string) file_get_contents($this->root . '/context.json'), true, flags: JSON_THROW_ON_ERROR);
+    }
+
+    #[Group('PAR-CLI-001')]
+    #[Group('PAR-CLI-002')]
+    #[Group('PAR-CLI-013')]
+    #[Group('PAR-CLI-018')]
+    public function testFirstInstallRepeatInstallAndComposerCommandInIsolatedChild(): void
+    {
+        $this->fixture(customVendor: true);
+        $first = $this->composer(['install', '--no-dev']);
+        self::assertSame(0, $first->getExitCode(), $first->getOutput() . $first->getErrorOutput());
+        self::assertFileExists($this->root . '/managed.txt');
+        self::assertSame('update', $this->context()['mode'], 'Composer without a lock emits post-update-cmd.');
+        self::assertFalse($this->context()['dev']);
+        self::assertStringContainsString('symfony/console', $this->context()['console']);
+        $host = json_decode((string) file_get_contents($this->root . '/host.json'), true, flags: JSON_THROW_ON_ERROR);
+        self::assertFalse($host['applicationLoaded']);
+        self::assertFalse($host['containerLoaded']);
+        self::assertStringStartsWith('phar://', $host['console']);
+        self::assertSame("runtime\nroot-script\n", file_get_contents($this->root . '/order.log'));
+        $again = $this->composer(['install', '--no-dev']);
+        self::assertSame(0, $again->getExitCode(), $again->getErrorOutput());
+        self::assertTrue($this->context()['install']);
+        $selected = $this->composer(['sympress-runtime', 'fixture', '--skip-custom']);
+        self::assertSame(0, $selected->getExitCode(), $selected->getErrorOutput());
+        self::assertTrue($this->context()['selected']);
+        self::assertSame('command', $this->context()['mode']);
+        $validate = $this->composer(['sympress-runtime:validate']);
+        self::assertSame(0, $validate->getExitCode(), $validate->getErrorOutput());
+        self::assertStringContainsString('configuration is valid', $validate->getOutput());
+    }
+
+    #[Group('PAR-CLI-014')]
+    public function testNoPluginsInstallAndStandaloneProduceTheSameFile(): void
+    {
+        $this->fixture();
+        $install = $this->composer(['install', '--no-plugins']);
+        self::assertSame(0, $install->getExitCode(), $install->getErrorOutput());
+        self::assertFileDoesNotExist($this->root . '/managed.txt');
+        $standalone = new Process([PHP_BINARY, $this->root . '/vendor/bin/sympress-runtime', '-n'], $this->root);
+        $standalone->run();
+        self::assertSame(0, $standalone->getExitCode(), $standalone->getErrorOutput());
+        $standaloneFile = file_get_contents($this->root . '/managed.txt');
+        self::assertSame('standalone', $this->context()['mode']);
+        $plugin = $this->composer(['install']);
+        self::assertSame(0, $plugin->getExitCode(), $plugin->getErrorOutput());
+        self::assertSame($standaloneFile, file_get_contents($this->root . '/managed.txt'));
+    }
+
+    #[Group('PAR-CLI-008')]
+    #[Group('PAR-CLI-015')]
+    public function testListingDoesNotExecuteAndInvalidFlagsFail(): void
+    {
+        $this->fixture();
+        $install = $this->composer(['install', '--no-plugins']);
+        self::assertSame(0, $install->getExitCode(), $install->getErrorOutput());
+        $binary = $this->root . '/vendor/bin/sympress-runtime';
+        $list = new Process([PHP_BINARY, $binary, '--list-steps', 'fixture'], $this->root);
+        $list->run();
+        self::assertSame(0, $list->getExitCode(), $list->getErrorOutput());
+        self::assertSame("fixture\n", $list->getOutput());
+        self::assertFileDoesNotExist($this->root . '/managed.txt');
+        $invalid = new Process([PHP_BINARY, $binary, '--skip'], $this->root);
+        $invalid->run();
+        self::assertNotSame(0, $invalid->getExitCode());
+        self::assertStringContainsString('--skip requires', $invalid->getErrorOutput());
+        self::assertFileDoesNotExist($this->root . '/managed.txt');
+    }
+
+    #[Group('PAR-CLI-015')]
+    public function testStepFailurePropagatesThroughComposerAndStopsRootScripts(): void
+    {
+        $this->fixture();
+        $source = (string) file_get_contents($this->root . '/sympress-runtime-autoload.php');
+        $this->write('sympress-runtime-autoload.php', str_replace('return self::SUCCESS;', 'return self::ERROR;', $source));
+        $process = $this->composer(['install']);
+        self::assertNotSame(0, $process->getExitCode());
+        self::assertStringContainsString('Fixture failed', $process->getErrorOutput());
+        self::assertSame("runtime\n", file_get_contents($this->root . '/order.log'));
+        self::assertFileDoesNotExist($this->root . '/host.json');
+    }
+
+    #[Group('PAR-SYM-002')]
+    public function testValidateDoesNotLoadRunOnlyCodeAndInvalidConfigurationPreventsWrites(): void
+    {
+        $this->fixture();
+        $install = $this->composer(['install', '--no-plugins']);
+        self::assertSame(0, $install->getExitCode(), $install->getErrorOutput());
+        $this->write('sympress-runtime-autoload.php', '<?php throw new RuntimeException("Run-only file executed");');
+        $binary = $this->root . '/vendor/bin/sympress-runtime';
+        $validate = new Process([PHP_BINARY, $binary, 'validate'], $this->root);
+        $validate->run();
+        self::assertSame(0, $validate->getExitCode(), $validate->getErrorOutput());
+        self::assertFileDoesNotExist($this->root . '/managed.txt');
+        $this->write('sympress-runtime.json', '{"cache-env":"synthetic-secret-invalid-value"}');
+        $invalid = new Process([PHP_BINARY, $binary], $this->root);
+        $invalid->run();
+        self::assertNotSame(0, $invalid->getExitCode());
+        self::assertStringContainsString('cache-env', $invalid->getErrorOutput());
+        self::assertStringNotContainsString('synthetic-secret-invalid-value', $invalid->getErrorOutput());
+        self::assertStringNotContainsString('Run-only file executed', $invalid->getErrorOutput());
+        self::assertFileDoesNotExist($this->root . '/managed.txt');
+    }
+}
