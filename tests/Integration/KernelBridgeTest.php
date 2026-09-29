@@ -99,5 +99,11 @@ final class KernelBridgeTest extends TemporaryProject
         self::assertSame(0, $status, $text);
         self::assertStringContainsString('Runtime configuration is valid', $text);
         self::assertDirectoryExists($kernel->getCacheDir());
+        // WP-CLI rewrites --json to --format=json before invoking the kernel bridge.
+        $status = $application->run(new ArrayInput(['command' => 'doctor', '--format' => 'json', '--no-interaction' => true]), $output);
+        $report = json_decode($output->fetch(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertIsArray($report);
+        self::assertSame($status, $report['exit']);
+        self::assertArrayHasKey('checks', $report);
     }
 }

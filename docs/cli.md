@@ -10,7 +10,7 @@ The standalone runner uses the current project directory and its Composer vendor
 | `--skip-custom` | Exclude custom steps in full/opt-out mode |
 | `--ignore-skip-config` | Ignore only the configured skip list |
 | `--list-steps` | List matching steps, sorted; never execute steps or connect to the database |
-| `--force` | Allow overwriting protected files; directories and symlinks remain protected |
+| `--force` | Allow overwriting protected files; content publication can replace a symlink leaf after preparing its replacement, without modifying the referenced destination; generated configuration and real directories remain protected |
 | `validate` | Validate JSON/schema and semantic configuration without executing PHP providers or the run-only autoload file |
 | `flush-env-cache` | Remove only the runtime cache in the configured environment directory; WordPress installation is not required |
 | `dump-env <environment>` | Resolve an explicit raw environment into a private `.env.dump.php`; does not execute steps or run-only autoload |
@@ -31,7 +31,9 @@ Composer exposes `composer sympress-runtime [steps] [flags]`, `composer sympress
 
 Exit status is zero for successful/no-op execution, nonzero for invalid input, configuration errors or any failed step. A blocking step stops subsequent work on pure ERROR; SUCCESS|ERROR continues but the command still fails. Composer event failures stop subsequent root scripts.
 
-Legacy profiles retain their documented selection differences, including rejecting positional opt-in combined with listing. Native mode permits this combination. The current test suite verifies root-script ordering; real asset-compiler coexistence remains a later acceptance check.
+Legacy profiles retain their documented selection differences, including rejecting positional opt-in combined with listing. Native mode permits this combination. The test suite verifies root-script ordering; the fresh demo installation also verifies Runtime setup before asset-compiler execution.
+
+Through the kernel console, `wp console doctor --json` and `wp console check --json` accept WP-CLI's automatic rewrite to `--format=json`. The bridge also accepts explicit `--format=text` or `--format=json`; other formats are rejected.
 
 All twelve default steps are implemented. Composer also exposes `sympress-runtime:doctor`, `sympress-runtime:check` and `sympress-runtime:migrate`, including `--json`. Kernel-only maintenance does not require a database connection or an installed WordPress core; mixed selections retain normal preflight checks. See [migration](migration.md) and [kernel integration](kernel-integration.md) for the corresponding contracts.
 
