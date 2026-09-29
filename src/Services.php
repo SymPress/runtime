@@ -8,8 +8,10 @@ use SymPress\Runtime\Application\RunContext;
 use SymPress\Runtime\Compatibility\ComposerConfiguration;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Console\Io;
+use SymPress\Runtime\Database\DbChecker;
 use SymPress\Runtime\Download\PharInstaller;
 use SymPress\Runtime\Download\UrlDownloader;
+use SymPress\Runtime\Env\EnvReader;
 use SymPress\Runtime\Filesystem\FileContentBuilder;
 use SymPress\Runtime\Filesystem\Filesystem;
 use SymPress\Runtime\Filesystem\OverwritePolicy;
@@ -49,6 +51,8 @@ final class Services
         private PharInstaller $phars,
         private PhpToolProcessFactory $tools,
         private WpCliTool $wpCliTool,
+        private EnvReader $environment,
+        private DbChecker $database,
     ) {
     }
 
@@ -110,6 +114,16 @@ final class Services
     public function wpCliProcess(): PhpToolProcess
     {
         return $this->wpCli ??= $this->tools->create($this->wpCliTool);
+    }
+
+    public function env(): EnvReader
+    {
+        return $this->environment;
+    }
+
+    public function dbChecker(): DbChecker
+    {
+        return $this->database;
     }
 
     public function systemProcess(): SystemProcess

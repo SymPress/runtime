@@ -14,3 +14,4 @@ Source identifiers `R` and `D` refer to pinned upstream commits in [source evide
 Implementation decisions after Phase 0:
 
 7. [Filesystem and discovery safety](0007-filesystem-and-discovery-safety.md)
+8. [Environment and database service boundaries](0008-environment-and-database-boundaries.md)
