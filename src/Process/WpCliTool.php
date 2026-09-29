@@ -10,6 +10,7 @@ use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Console\Io;
 use SymPress\Runtime\Download\UrlDownloader;
 use SymPress\Runtime\Filesystem\Paths;
+use Symfony\Component\Console\Input\StringInput;
 use UnexpectedValueException;
 
 final class WpCliTool implements PhpTool
@@ -120,6 +121,37 @@ final class WpCliTool implements PhpTool
 
     public function prepareCommand(string $command, Paths $paths, Io $io): string
     {
-        return $command . ' --path=' . escapeshellarg($paths->wp());
+        return $this->prepareArguments((new StringInput($command))->getRawTokens(), $paths);
+    }
+
+    /** @param list<string> $tokens */
+    public function prepareArguments(array $tokens, Paths $paths): string
+    {
+        $arguments = [];
+        $terminated = false;
+        $skip = false;
+        foreach ($tokens as $token) {
+            if ($skip) {
+                $skip = false;
+                continue;
+            }
+            if (!$terminated && $token === '--path') {
+                $skip = true;
+                continue;
+            }
+            if (!$terminated && str_starts_with($token, '--path=')) {
+                continue;
+            }
+            if (!$terminated && $token === '--') {
+                $arguments[] = '--path=' . $paths->wp();
+                $terminated = true;
+            }
+            $arguments[] = $token;
+        }
+        if (!$terminated) {
+            $arguments[] = '--path=' . $paths->wp();
+        }
+
+        return implode(' ', array_map(escapeshellarg(...), $arguments));
     }
 }

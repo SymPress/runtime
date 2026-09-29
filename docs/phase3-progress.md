@@ -8,6 +8,8 @@ Implemented:
 - `envexample`: default, custom local and URL sources; existing actual environment/disabled-option skip; optional ask; configured native/dev directory and legacy release root target. Downloads verify checksums before replacing output. Native examples carry a generation marker; the built-in example lists all 157 constants as commented type examples.
 - `wpcliconfig`: YAML-quoted core path and PHP-quoted WP_CONFIG_PATH command, including apostrophes. The release profile retains path-only configuration. Overwrite protection and explicit force operate through the common runner.
 
-Latest full composer qa checkpoint: 885 tests, 6,182 assertions, coding standards and PHPStan max pass, with isolated MariaDB and WordPress SHORTINIT enabled. These three steps have dedicated execution/file tests; their complete oracle file comparisons remain pending.
+- `wpcli`: lazy JSON/PHP providers with scoped service access, version check followed by eval-file and command queues, literal argument arrays, fixed core path and first-failure termination. Errors omit command arguments. A real WP-CLI 2.12.0 fixture executes eval-file and reads the WordPress 7.1.1 version.
 
-Remaining default steps: dropins, movecontent, publishcontentdev, vcsignorecheck and wpcli. Full providers/eval-file execution, actual pinned WP-CLI, complete file differential coverage and phase delivery remain open. Remote Phase-1/2 checks are blocked solely at dependency resolution by the unmerged QA PHPUnit 13 companion.
+Latest full composer qa checkpoint: 891 tests, 6,209 assertions, coding standards and PHPStan max pass, with isolated MariaDB, WordPress SHORTINIT and real WP-CLI enabled. These four steps have dedicated execution/file tests; their complete oracle file comparisons remain pending.
+
+Remaining default steps: dropins, movecontent, publishcontentdev and vcsignorecheck. Complete file differential coverage and phase delivery remain open. Remote Phase-1/2 checks are blocked solely at dependency resolution by the unmerged QA PHPUnit 13 companion.

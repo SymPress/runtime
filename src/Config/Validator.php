@@ -272,10 +272,30 @@ final class Validator
             if ($path === null || strtolower(pathinfo($path, PATHINFO_EXTENSION)) !== 'php') {
                 throw new InvalidArgumentException('Expected a readable PHP file.');
             }
-            $files[] = ['file' => $path, 'args' => $this->strings($file['args'] ?? []), 'skip-wordpress' => $this->boolean($file['skip-wordpress'] ?? false)];
+            $files[] = ['file' => $path, 'args' => $this->fileArguments($file['args'] ?? []), 'skip-wordpress' => $this->boolean($file['skip-wordpress'] ?? false)];
         }
 
         return $files;
+    }
+
+    /** @return list<string> */
+    private function fileArguments(mixed $value): array
+    {
+        if (!is_array($value)) {
+            throw new InvalidArgumentException('WP-CLI file arguments must be an array.');
+        }
+        $arguments = [];
+        foreach ($value as $argument) {
+            if (!is_string($argument) || str_contains($argument, "\0")) {
+                throw new InvalidArgumentException('WP-CLI file arguments must be strings without null bytes.');
+            }
+            if ($argument === '' || ($this->profile !== 'native' && $argument === '0')) {
+                continue;
+            }
+            $arguments[] = $argument;
+        }
+
+        return $arguments;
     }
 
     private function version(mixed $value): ?string

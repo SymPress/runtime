@@ -11,6 +11,7 @@ use SymPress\Runtime\Step\Builtin\FlushEnvCacheStep;
 use SymPress\Runtime\Step\Builtin\IndexStep;
 use SymPress\Runtime\Step\Builtin\MuLoaderStep;
 use SymPress\Runtime\Step\Builtin\WpCliConfigStep;
+use SymPress\Runtime\Step\Builtin\WpCliStep;
 use SymPress\Runtime\Step\Builtin\WpConfigStep;
 
 final class Registry
@@ -30,6 +31,7 @@ final class Registry
         'muloader' => MuLoaderStep::class,
         'envexample' => EnvExampleStep::class,
         'wpcliconfig' => WpCliConfigStep::class,
+        'wpcli' => WpCliStep::class,
     ];
 
     /** @var array<string, Definition> */
