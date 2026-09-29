@@ -34,5 +34,7 @@ final class PackageDestinationTest extends TestCase
         $package->setType($type);
         self::assertSame($expected, (new PackageDestination())->forPackage($package, ['extra' => $extra], ['composer/installers', 'johnpbloch/wordpress-core-installer']));
         self::assertNull((new PackageDestination())->forPackage($package, ['extra' => $extra], []));
+        $package->setExtra(['installer-name' => '']);
+        self::assertSame($expected, (new PackageDestination())->forPackage($package, ['extra' => $extra], ['composer/installers', 'johnpbloch/wordpress-core-installer']));
     }
 }

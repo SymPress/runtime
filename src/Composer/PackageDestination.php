@@ -54,7 +54,8 @@ final class PackageDestination
                 }
             }
         }
-        $leaf = $package->getExtra()['installer-name'] ?? $leaf;
+        $installerName = $package->getExtra()['installer-name'] ?? null;
+        $leaf = empty($installerName) ? $leaf : $installerName;
 
         return strtr($template, ['{$name}' => $this->path($leaf), '{$vendor}' => $vendor, '{$type}' => $package->getType()]);
     }

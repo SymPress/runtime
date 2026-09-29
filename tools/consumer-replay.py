@@ -29,7 +29,7 @@ def snapshot(project):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, default=Path("build/consumer-smoke/replay-report.json"))
-    parser.add_argument("--disable-all-plugins", action="store_true", help="Also disable third-party installers; requires their installation layout to remain valid.")
+    parser.add_argument("--disable-all-plugins", action="store_true", help="Also disable third-party installers and verify standalone layout recovery.")
     parser.add_argument("projects", nargs="+", type=Path)
     args = parser.parse_args()
     reports = []
