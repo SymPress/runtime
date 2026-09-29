@@ -19,6 +19,7 @@ use SymPress\Runtime\Services;
 use SymPress\Runtime\Step\BlockingStepInterface;
 use SymPress\Runtime\Step\ConditionalStepInterface;
 use SymPress\Runtime\Step\FileCreationStepInterface;
+use SymPress\Runtime\Step\NullStep;
 use SymPress\Runtime\Step\OptionalStepInterface;
 use SymPress\Runtime\Step\PostProcessStepInterface;
 use SymPress\Runtime\Step\Runner;
@@ -40,6 +41,7 @@ final class LegacyApi
         'Util\\Paths' => Paths::class,
         'Util\\Locator' => Services::class,
         'Step\\Step' => StepInterface::class,
+        'Step\\NullStep' => NullStep::class,
         'Step\\BlockingStep' => BlockingStepInterface::class,
         'Step\\ConditionalStep' => ConditionalStepInterface::class,
         'Step\\FileCreationStep' => FileCreationStepInterface::class,

@@ -40,6 +40,9 @@ final class Runner implements Countable
     {
         if (!$this->running || $this->preparing) {
             foreach ([$step, ...$steps] as $entry) {
+                if ($entry->name() === '') {
+                    continue;
+                }
                 $this->steps[spl_object_id($entry)] = $entry;
             }
         }

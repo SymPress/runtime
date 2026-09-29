@@ -165,7 +165,7 @@ PHP);
         $deprecated = new Config(['skip-db-check' => true], new Validator($paths));
         self::assertTrue((new DatabasePreflight($deprecated, $checker, $io))->run(new Selection()));
         self::assertSame(0, $probe->calls);
-        self::assertStringContainsString('deprecated', $output->fetch());
+        self::assertSame('', $output->fetch(), 'Configuration loading owns the deprecation; preflight must not repeat it.');
         self::assertTrue((new DatabasePreflight($config, $checker, $io))->run(new Selection(['wpconfig'])));
         self::assertSame(1, $probe->calls);
         self::assertTrue($checker->isInstalled());

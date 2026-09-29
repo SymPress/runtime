@@ -136,12 +136,14 @@ final class LifecycleTest extends TemporaryProject
 
     #[Group('PAR-EXT-001')]
     #[Group('PAR-EXT-004')]
+    #[Group('PAR-RUN-008')]
     public function testPreRunCanRemoveAndAddStepsButPerStepEventsCannotMutateTheQueue(): void
     {
         [$runner, $definitions, $trace, $dispatcher] = $this->fixture([]);
         $added = new TailStep($trace);
         $dispatcher->addListener(PreRunEvent::class, static function (PreRunEvent $event) use ($added): void {
             self::assertInstanceOf(Runner::class, $event->subject);
+            self::assertSame(0, $event->subject->run([]), 'A recursive invocation performs no work.');
             self::assertCount(2, $event->subject);
             $event->subject->removeStep('probe', 'tail')->addStep($added, $added);
             self::assertCount(1, $event->subject);

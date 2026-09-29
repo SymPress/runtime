@@ -65,20 +65,34 @@ final class Registry
     }
 
     /** @return array<string, Definition> */
-    public function all(): array
+    public function all(string $profile = 'native'): array
     {
         $definitions = $this->definitions;
+        if ($profile === 'upstream-dev') {
+            $order = ['checkpaths', 'wpconfig', 'index', 'flushenvcache', 'muloader', 'envexample', 'dropins', 'movecontent', 'publishcontentdev', 'wpcliconfig', 'vcsignorecheck', 'wpcli'];
+            $ordered = [];
+            foreach ($order as $name) {
+                $ordered[$name] = $definitions[$name];
+            }
+            $definitions = $ordered + $definitions;
+        }
         uasort($definitions, static fn (Definition $left, Definition $right): int => $right->priority <=> $left->priority);
 
         return $definitions;
     }
 
-    public function resolve(string $name): ?Definition
+    public function resolve(string $name, bool $compatibility = true): ?Definition
     {
         if (isset($this->definitions[$name])) {
             return $this->definitions[$name];
         }
+        if (!$compatibility) {
+            return null;
+        }
         $normalized = $this->normalize($name);
+        if ($normalized === 'wpcliyml') {
+            $normalized = 'wpcliconfig';
+        }
         foreach ($this->definitions as $definition) {
             if ($normalized !== '' && $this->normalize($definition->name) === $normalized) {
                 return $definition;

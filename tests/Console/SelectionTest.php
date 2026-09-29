@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SymPress\Runtime\Tests\Console;
 
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use SymPress\Runtime\Console\Selection;
@@ -13,6 +14,51 @@ use SymPress\Runtime\Step\Registry;
 
 final class SelectionTest extends TestCase
 {
+    /** @return iterable<string, array{string, string}> */
+    public static function releaseSlugs(): iterable
+    {
+        foreach (['check-paths' => 'checkpaths', 'build-wp-config' => 'wpconfig', 'build-index' => 'index', 'flush-env-cache' => 'flushenvcache', 'build-mu-loader' => 'muloader', 'build-env-example' => 'envexample', 'dropins' => 'dropins', 'move-content' => 'movecontent', 'publish-content-dev' => 'publishcontentdev', 'build-wp-cli-yml' => 'wpcliconfig', 'wp-cli' => 'wpcli'] as $old => $native) {
+            yield $old => [$old, $native];
+        }
+    }
+
+    #[DataProvider('releaseSlugs')]
+    #[Group('PAR-CLI-009')]
+    public function testEveryPinnedReleaseSlugResolvesAndHonorsCompatibility(string $legacy, string $native): void
+    {
+        $registry = new Registry();
+        self::assertSame($native, $registry->resolve($legacy)?->name);
+        self::assertSame($legacy === $native ? $native : null, $registry->resolve($legacy, false)?->name);
+        self::assertSame([$native], array_column((new Selection([$legacy]))->resolve($registry)['steps'], 'name'));
+    }
+
+    #[Group('PAR-CLI-011')]
+    #[Group('PAR-RUN-001')]
+    public function testDefaultOrderMatchesEachPinnedProfileWithoutRemovingOptInCapabilities(): void
+    {
+        $registry = new Registry();
+        $names = static fn (string $profile): array => array_column((new Selection())->resolve($registry, profile: $profile)['steps'], 'name');
+        self::assertSame(['checkpaths', 'wpconfig', 'index', 'flushenvcache', 'muloader', 'envexample', 'dropins', 'movecontent', 'publishcontentdev', 'vcsignorecheck', 'wpcliconfig', 'wpcli'], $names('native'));
+        self::assertSame(['checkpaths', 'wpconfig', 'index', 'flushenvcache', 'muloader', 'envexample', 'dropins', 'movecontent', 'publishcontentdev', 'wpcliconfig', 'vcsignorecheck', 'wpcli'], $names('upstream-dev'));
+        self::assertSame(['checkpaths', 'wpconfig', 'index', 'flushenvcache', 'muloader', 'envexample', 'dropins', 'movecontent', 'publishcontentdev', 'wpcliconfig', 'wpcli'], $names('release-3.0.1'));
+        self::assertSame('vcsignorecheck', (new Selection(['vcsignorecheck']))->resolve($registry, profile: 'release-3.0.1')['steps'][0]->name);
+    }
+
+    #[Group('PAR-SYM-009')]
+    #[Group('PAR-CLI-009')]
+    public function testLegacyAliasesWarnOnceApplyToSkipsAndAreDisabledExplicitly(): void
+    {
+        $registry = new Registry();
+        $result = (new Selection(['build-wp-config', 'build-wp-config']))->resolve($registry);
+        self::assertCount(1, $result['warnings']);
+        self::assertSame(['wpconfig'], array_column($result['steps'], 'name'));
+        $skipped = (new Selection())->resolve($registry, ['build-wp-config']);
+        self::assertNotContains('wpconfig', array_column($skipped['steps'], 'name'));
+        self::assertCount(1, $skipped['warnings']);
+        $this->expectExceptionMessage('No valid selected steps');
+        (new Selection(['build-wp-config']))->resolve($registry, compatibility: false);
+    }
+
     private function registry(): Registry
     {
         $registry = new Registry();
@@ -89,7 +135,7 @@ final class SelectionTest extends TestCase
     {
         $result = (new Selection(['not-real', 'build-wp-config', 'index', 'index']))->resolve($this->registry());
         self::assertSame(['wpconfig', 'index'], array_map(static fn (Definition $step): string => $step->name, $result['steps']));
-        self::assertSame(['Unknown step: not-real'], $result['warnings']);
+        self::assertSame(['Unknown step: not-real', 'Deprecated WP Starter step alias: build-wp-config; use wpconfig.'], $result['warnings']);
         self::assertNull($this->registry()->resolve('INDEX'));
         $this->expectException(InvalidArgumentException::class);
         (new Selection(['not-real']))->resolve($this->registry());

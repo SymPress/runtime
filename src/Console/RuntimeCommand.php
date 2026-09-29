@@ -213,7 +213,7 @@ final class RuntimeCommand extends Command
         $container = (new ContainerFactory())->create($config, $paths, $io, $context, $registry, $configure, $selection);
         $skips = $config['skip-steps']->unwrapOrFallback([]);
         $skips = is_array($skips) ? array_values(array_filter($skips, is_string(...))) : [];
-        $resolved = $selection->resolve($registry, $skips, $loaded->profile);
+        $resolved = $selection->resolve($registry, $skips, $loaded->profile, $compatible);
         foreach ($resolved['warnings'] as $warning) {
             $io->error($warning);
         }
