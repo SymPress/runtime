@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Generation;
 
+use ParseError;
 use PhpToken;
 use RuntimeException;
 
@@ -40,7 +41,11 @@ final readonly class SaltStore
     /** @return array<string, string|null> */
     private function definitions(string $source, bool $allowDynamic): array
     {
-        $tokens = array_values(array_filter(PhpToken::tokenize($source), static fn (PhpToken $token): bool => !$token->isIgnorable()));
+        try {
+            $tokens = array_values(array_filter(PhpToken::tokenize($source, TOKEN_PARSE), static fn (PhpToken $token): bool => !$token->isIgnorable()));
+        } catch (ParseError) {
+            throw new RuntimeException('Cannot recover salts from invalid PHP configuration.');
+        }
         $salts = [];
         foreach ($tokens as $index => $token) {
             if (!in_array($token->id, [T_STRING, T_NAME_FULLY_QUALIFIED], true) || strtolower(ltrim($token->text, '\\')) !== 'define') {

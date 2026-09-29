@@ -99,4 +99,11 @@ final class GenerationServicesTest extends TemporaryProject
         $this->expectExceptionMessage('nonliteral salt definition: AUTH_KEY');
         (new SaltStore(new Salter()))->keys('<?php define("AUTH_KEY", secret_provider());');
     }
+
+    #[Group('PAR-WP-014')]
+    public function testMalformedLiteralConcatenationCannotBeRecoveredAsAValidSalt(): void
+    {
+        $this->expectExceptionMessage('Cannot recover salts from invalid PHP configuration.');
+        (new SaltStore(new Salter()))->keys('<?php define("AUTH_KEY", "synthetic-secret" .);');
+    }
 }

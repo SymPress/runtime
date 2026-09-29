@@ -47,6 +47,10 @@ final readonly class WpConfigGenerator
             throw new RuntimeException('Cannot read existing configuration.');
         }
         $oldSections = $existing === null ? [] : $this->sections->sections($existing);
+        if ($existing !== null && isset($oldSections['KEYS'])) {
+            // Only the retained KEYS body may contain dynamic definitions.
+            $this->salts->existingKeys($this->sections->replace($existing, 'KEYS', ''));
+        }
         $keys = $this->salts->keys($existing, allowDynamic: isset($oldSections['KEYS']));
         $bundle = $this->bundleBuilder->build();
         $directory = dirname($target);
