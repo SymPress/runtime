@@ -120,6 +120,23 @@ PHP);
         return json_decode((string) file_get_contents($this->root . '/context.json'), true, flags: JSON_THROW_ON_ERROR);
     }
 
+    #[Group('PAR-SYM-001')]
+    #[Group('PAR-NATIVE-008')]
+    public function testComposerForwardsDoctorJsonAndExplicitKernelBuildIdGeneration(): void
+    {
+        $this->fixture();
+        $install = $this->composer(['install', '--no-interaction', '--no-progress']);
+        self::assertSame(0, $install->getExitCode(), $install->getErrorOutput());
+        $doctor = $this->composer(['sympress-runtime:doctor', '--json', '--no-interaction']);
+        self::assertSame(1, $doctor->getExitCode());
+        $report = json_decode($doctor->getOutput(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('fail', array_column($report['checks'], 'status', 'id')['paths.wordpress']);
+        $build = $this->composer(['sympress-runtime', 'kernel-cache', '--generate-build-id', '--no-interaction'], ['WP_ENVIRONMENT_TYPE' => 'production']);
+        self::assertSame(0, $build->getExitCode(), $build->getErrorOutput());
+        self::assertFileExists($this->root . '/var/runtime/production/kernel-build-id.json');
+        self::assertMatchesRegularExpression('/SYMPRESS_KERNEL_BUILD_ID=[a-f0-9]{32}/', $build->getOutput());
+    }
+
     #[Group('PAR-CLI-001')]
     #[Group('PAR-CLI-002')]
     #[Group('PAR-CLI-013')]

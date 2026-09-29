@@ -42,7 +42,7 @@ final class Validator
             'wp-version' => $this->version($value),
             'compatibility-profile' => $this->profile($value),
             'download-checksums' => $this->checksums($value),
-            'kernel-build-id' => $value === null ? null : $this->string($value),
+            'kernel-build-id' => $this->buildId($value),
             default => $value,
         };
 
@@ -181,6 +181,19 @@ final class Validator
         }
 
         return $steps;
+    }
+
+    private function buildId(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        $id = $this->string($value);
+        if (!preg_match('/^[a-zA-Z0-9._-]{1,128}$/D', $id)) {
+            throw new InvalidArgumentException('Kernel build ID must contain 1-128 letters, digits, dots, underscores or hyphens.');
+        }
+
+        return $id;
     }
 
     /** @return array<string, list<string|\Closure>> */

@@ -85,6 +85,26 @@ PHP);
         self::assertSame(0600, fileperms($this->root . '/wp-config.php') & 0777);
     }
 
+    #[Group('PAR-SYM-005')]
+    #[Group('PAR-SYM-006')]
+    public function testGeneratedConfigurationRegistersRuntimeWithActualKernelAndWordPressHooks(): void
+    {
+        $core = getenv('RUNTIME_TEST_WORDPRESS_DIR');
+        if (!is_string($core) || !is_file($core . '/wp-includes/plugin.php')) {
+            self::markTestSkipped('Requires an isolated WordPress core source fixture.');
+        }
+        $this->fixture();
+        $this->write('public/wp/wp-includes/plugin.php', '<?php require ' . var_export($core . '/wp-includes/plugin.php', true) . ';');
+        $this->write('vendor/autoload.php', '<?php return require ' . var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true) . ';');
+        $this->write('.env', "WP_ENVIRONMENT_TYPE=production\nSYMPRESS_KERNEL_BUILD_ID=real-hook-build\n");
+        $generated = $this->generate();
+        self::assertSame(0, $generated->getExitCode(), $generated->getErrorOutput());
+        $actual = $this->boot('require "vendor/autoload.php"; $kernel = new SymPress\\Kernel\\Kernel\\SiteKernel(__DIR__); $bundles = $kernel->discoverBundles(); echo json_encode([array_map(static fn ($entry) => $entry->bundle()->id(), $bundles->all()), $kernel->getEnvironment(), SYMPRESS_KERNEL_BUILD_ID]);');
+        self::assertContains('SymPress\\Runtime\\Bridge\\Kernel\\RuntimeBundle', $actual[0]);
+        self::assertSame('production', $actual[1]);
+        self::assertSame('real-hook-build', $actual[2]);
+    }
+
     #[Group('PAR-WP-014')]
     public function testSeparateGenerationsRetainSaltsSectionEditsAndUnchangedBytes(): void
     {

@@ -24,11 +24,14 @@ final class Command extends BaseCommand
         if ($this->operation === 'dump-env') {
             $this->addArgument('environment', InputArgument::REQUIRED, 'Raw environment name to resolve and dump.');
         }
+        if (in_array($this->operation, ['doctor', 'check'], true)) {
+            $this->addOption('json', null, InputOption::VALUE_NONE);
+        }
         if ($this->operation !== null) {
             return;
         }
         $this->addArgument('steps', InputArgument::IS_ARRAY, 'Step names to include, or exclude with --skip.');
-        foreach (['skip', 'skip-custom', 'ignore-skip-config', 'list-steps', 'force'] as $flag) {
+        foreach (['skip', 'skip-custom', 'ignore-skip-config', 'list-steps', 'force', 'generate-build-id'] as $flag) {
             $this->addOption($flag, null, InputOption::VALUE_NONE);
         }
     }
@@ -47,11 +50,14 @@ final class Command extends BaseCommand
     {
         if ($this->operation !== null) {
             $environment = $this->operation === 'dump-env' ? $input->getArgument('environment') : null;
+            if (in_array($this->operation, ['doctor', 'check'], true) && $input->getOption('json') === true) {
+                return [$this->operation, '--json'];
+            }
 
             return is_string($environment) ? [$this->operation, $environment] : [$this->operation];
         }
         $arguments = [];
-        foreach (['skip', 'skip-custom', 'ignore-skip-config', 'list-steps', 'force'] as $flag) {
+        foreach (['skip', 'skip-custom', 'ignore-skip-config', 'list-steps', 'force', 'generate-build-id'] as $flag) {
             if ($input->getOption($flag) !== true) {
                 continue;
             }

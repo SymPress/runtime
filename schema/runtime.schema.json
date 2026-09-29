@@ -160,7 +160,8 @@
             "type": [
                 "string",
                 "null"
-            ]
+            ],
+            "pattern": "^[a-zA-Z0-9._-]{1,128}$"
         },
         "env-file": {
             "type": "string",

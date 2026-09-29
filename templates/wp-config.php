@@ -72,6 +72,7 @@ ENV_VARIABLES : {
     $envIsCached = $envLoader->hasCachedValues();
     $envLoader->loadChain({{{ENV_FILENAME}}}, SYMPRESS_RUNTIME_ENV_PATH, {{{LOCAL_OVERRIDES}}});
     $envLoader->setupConstants();
+    $envLoader->setupKernelBuildId(SYMPRESS_RUNTIME_PATH . '/var/runtime', {{{KERNEL_BUILD_ID}}});
     $envType = $envLoader->determineEnvType();
     if (str_contains($envType, '/') || str_contains($envType, '\\') || str_contains($envType, "\0")) {
         throw new RuntimeException('Invalid environment bootstrap name.');
@@ -174,6 +175,13 @@ DEBUG_INFO : {
 } #@@/DEBUG_INFO
 
 GETENV_FILTER : {
+    // Current kernel discovery accepts library packages and this public bundle filter.
+    add_filter('symfony_register_bundles', static function ($bundles) {
+        if (is_array($bundles) && class_exists(\SymPress\Kernel\Bundle\AbstractBundle::class) && class_exists(\SymPress\Runtime\Bridge\Kernel\RuntimeBundle::class)) {
+            $bundles[\SymPress\Runtime\Bridge\Kernel\RuntimeBundle::class] = ['all' => true];
+        }
+        return $bundles;
+    });
     if ({{{COMPATIBILITY}}}) {
         add_filter('getenv', static function ($name) use ($envLoader) {
             sympress_runtime_deprecated('getenv filter', 'sympress_runtime_getenv');

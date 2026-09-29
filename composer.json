@@ -19,12 +19,17 @@
     "require-dev": {
         "composer/composer": "^2.8",
         "phpunit/phpunit": "^13.0",
+        "sympress/kernel": "dev-main",
         "sympress/qa": "dev-main"
     },
     "autoload": {"psr-4": {"SymPress\\Runtime\\": "src/"}},
     "autoload-dev": {"psr-4": {"SymPress\\Runtime\\Tests\\": "tests/"}},
     "bin": ["bin/sympress-runtime"],
-    "extra": {"class": "SymPress\\Runtime\\Composer\\Plugin"},
+    "extra": {
+        "class": "SymPress\\Runtime\\Composer\\Plugin",
+        "kernel": {"bundle": "SymPress\\Runtime\\Bridge\\Kernel\\RuntimeBundle", "entry": "sympress/runtime"}
+    },
+    "suggest": {"sympress/kernel": "Enables runtime diagnostics, validation and environment dumps through wp console."},
     "scripts": {
         "cs": "qa cs --strict",
         "cs:fix": "qa cs:fix --strict",
