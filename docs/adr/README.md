@@ -20,3 +20,4 @@ Implementation decisions after Phase 0:
 11. [Pinned oracle default environment directory defect](0011-oracle-default-env-directory.md)
 12. [WP-CLI arguments and diagnostics](0012-wp-cli-argument-and-diagnostic-boundaries.md)
 13. [Content publication and VCS verification](0013-content-publication-and-vcs-verification.md)
+14. [Extension lifecycle and legacy API](0014-extension-lifecycle-and-legacy-api.md)

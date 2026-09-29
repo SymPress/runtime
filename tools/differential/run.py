@@ -293,19 +293,82 @@ def compare_steps(work, baseline, autoload, args, report):
         print("PASS dev/steps/vcs-marker: actual ignore evidence replaces marker trust", flush=True)
 
 
+def compare_lifecycle(work, baseline, autoload, args, report):
+    oracle = autoload.parent.parent
+    manifest = json.loads((oracle / "composer.json").read_text())
+    manifest["config"]["allow-plugins"] = {"wecodemore/wpstarter": True, "composer/installers": False}
+    candidate = work / (baseline + "-lifecycle")
+    candidate.mkdir()
+    options = {"db-check": False, "require-wp": False, "env-dir": ".", "autoload": "lifecycle.php", "custom-steps": {"fixture": "FixtureLifecycleStep"}, "scripts": {"pre-wpstarter": "fixture_pre_run", "pre-fixture": [["FixtureLifecycleHooks", "before"], "FixtureLifecycleHooks::next"], "post-fixture": "FixtureLifecycleHooks::after", "post-wpstarter": "FixtureLifecycleHooks::postRun"}}
+    template = (ROOT / "tools/differential/lifecycle.php.tpl").read_text()
+    for project, prefix, interface in [(oracle, "WeCodeMore\\WpStarter", "Step\\Step"), (candidate, "SymPress\\Runtime", "Step\\StepInterface")]:
+        source = template.replace("@@STEP_INTERFACE@@", prefix + "\\" + interface).replace("@@CONFIG@@", prefix + "\\Config\\Config").replace("@@PATHS@@", prefix + ("\\Util\\Paths" if project == oracle else "\\Filesystem\\Paths"))
+        (project / "lifecycle.php").write_text(source)
+        core_fixture(project, "development")
+        extension = project / "vendor/fixture/lifecycle-extension"
+        (extension / "src").mkdir(parents=True)
+        (extension / "srcOther").mkdir()
+        for filename, namespace, name in [("src/Available.php", "FixtureExtension", "Available"), ("src/DifferentCase.php", "FixtureExtension", "DifferentCase"), ("srcOther/Sibling.php", "FixtureExtensionOther", "Sibling")]:
+            (extension / filename).write_text(f"<?php namespace {namespace}; class {name} {{}}")
+        installed = project / "vendor/composer/installed.json"
+        installed.parent.mkdir(parents=True, exist_ok=True)
+        packages = json.loads(installed.read_text()) if installed.exists() else {"packages": []}
+        packages["packages"].append({"name": "fixture/lifecycle-extension", "version": "1.0.0", "version_normalized": "1.0.0.0", "type": "wpstarter-extension", "install-path": "../fixture/lifecycle-extension", "extra": {"wpstarter-autoload": {"psr-4": {"FixtureExtension": "src"}}}})
+        write_json(installed, packages)
+        if project == candidate:
+            (project / "vendor/autoload.php").write_text("<?php return require " + repr(str(ROOT / "vendor/autoload.php")) + ";")
+    manifest["extra"] = {"wordpress-install-dir": "public/wp", "wordpress-content-dir": "public/content", "wpstarter": options}
+    write_json(oracle / "composer.json", manifest)
+    write_json(candidate / "composer.json", {"extra": {"wordpress-install-dir": "public/wp", "wordpress-content-dir": "public/content", "sympress-runtime": options}})
+    for mode, result in [("success", 2), ("error", 1), ("partial", 3), ("none", 4), ("callback-error", 2), ("autoload", 2)]:
+        observed = []
+        for project, php in [(oracle, args.oracle_php), (candidate, args.candidate_php)]:
+            trace = project / "lifecycle.jsonl"
+            trace.unlink(missing_ok=True)
+            environment = dict(os.environ, SYMPRESS_LIFECYCLE_MODE=mode)
+            environment.pop("COMPOSER", None)
+            command = [php, args.composer, "--no-interaction", "wpstarter", "fixture"]
+            if project == candidate:
+                environment.pop("COMPOSER_VENDOR_DIR", None)
+                command = [php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", "fixture"]
+            completed = subprocess.run(command, cwd=project, env=environment, text=True, capture_output=True)
+            if not trace.is_file():
+                raise RuntimeError(f"Lifecycle fixture did not execute: {completed.stdout[-1500:]} {completed.stderr[-1500:]}")
+            observed.append({"exit": completed.returncode, "trace": [json.loads(line) for line in trace.read_text().splitlines()]})
+        expected_trace = [["pre-run", 4, "Composer\\Composer"], ["pre-step", 4], ["next-pre-step", 4], ["body"], ["post-step", result], ["post-run", 2]]
+        expected_oracle = {"exit": 0, "trace": expected_trace}
+        candidate_trace = json.loads(json.dumps(expected_trace))
+        candidate_trace[0][2] = "SymPress\\Runtime\\Application\\RunContext"
+        if mode == "autoload":
+            expected_trace.insert(1, ["autoload", [True, True, True, "error"]])
+            candidate_trace.insert(1, ["autoload", [True, False, False, False]])
+        aggregate = 3 if mode == "callback-error" else result
+        candidate_trace[-1][1] = aggregate
+        expected_candidate = {"exit": int(mode in ["error", "partial", "callback-error"]), "trace": candidate_trace}
+        if observed != [expected_oracle, expected_candidate]:
+            raise RuntimeError(f"Lifecycle mismatch {baseline}/{mode}: {observed}")
+        differences = [{"id": "D14", "field": "trace.0.context", "oracle": "Composer\\Composer", "candidate": "SymPress\\Runtime\\Application\\RunContext"}]
+        if mode == "autoload":
+            differences.append({"id": "D01", "field": "extension_autoload", "oracle": expected_trace[1][1], "candidate": candidate_trace[1][1]})
+        if expected_oracle["exit"] != expected_candidate["exit"] or expected_trace[-1] != candidate_trace[-1]:
+            differences.append({"id": "D12", "oracle": {"exit": expected_oracle["exit"], "post": expected_trace[-1]}, "candidate": {"exit": expected_candidate["exit"], "post": candidate_trace[-1]}})
+        report["cases"].append({"id": baseline + "/lifecycle/" + mode, "trace": candidate_trace, "differences": differences})
+        print(f"PASS {baseline}/lifecycle/{mode}: exact callback ordering, results and context boundary", flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--oracle-php", default="php8.2")
     parser.add_argument("--candidate-php", default="php8.5")
     parser.add_argument("--composer", required=True)
-    parser.add_argument("--scope", choices=["all", "constants", "environment", "generated", "steps"], default="all")
+    parser.add_argument("--scope", choices=["all", "constants", "environment", "generated", "steps", "lifecycle"], default="all")
     args = parser.parse_args()
     build = ROOT / "build/differential"
     build.mkdir(parents=True, exist_ok=True)
     (build / "report.json").unlink(missing_ok=True)
     inventory = json.loads((ROOT / "docs/upstream-inventory.json").read_text())
     candidate_types = {item["name"]: item["type"] for item in inventory["baselines"]["dev"]["constants"]}
-    report = {"scope": "constant reader/definitions, environment aliases, generated index/wp-config, warm-cache runtime, exact content trees, package retention, WP-CLI argv and VCS marker behavior; complete generated-template snapshots remain pending", "oracles": {}, "cases": []}
+    report = {"scope": "constant reader/definitions, environment aliases, generated index/wp-config, warm-cache runtime, exact content trees, package retention, WP-CLI argv, VCS marker, lifecycle and extension autoload behavior; complete generated-template snapshots remain pending", "oracles": {}, "cases": []}
     report["php"] = {key: run([binary, "-r", "echo PHP_VERSION;"], ROOT) for key, binary in [("oracle", args.oracle_php), ("candidate", args.candidate_php)]}
     report["composer"] = run([args.oracle_php, args.composer, "--version", "--no-ansi"], ROOT).strip()
     with tempfile.TemporaryDirectory(prefix="oracle-", dir=build) as temp:
@@ -362,6 +425,8 @@ def main():
                 compare_generated(work, baseline, autoload, args, report)
             if args.scope in ["all", "steps"]:
                 compare_steps(work, baseline, autoload, args, report)
+            if args.scope in ["all", "lifecycle"]:
+                compare_lifecycle(work, baseline, autoload, args, report)
     report["executed_scope"] = args.scope
     write_json(build / "report.json", report)
     print(f"Report: {build / 'report.json'}")
