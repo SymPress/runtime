@@ -1,0 +1,1425 @@
+{
+  "kernel": {
+    "head": "c24273066431b3c33b4dd372022ad42c100aafd2",
+    "status": "",
+    "files": [
+      {
+        "file": "kernel/docs/README.md",
+        "sha256": "3889b4728e96ece204beada2c72af50367a0284064dedd6e6ed0cd92fcfe40d5"
+      },
+      {
+        "file": "kernel/docs/attributes.md",
+        "sha256": "0ffa1ae15a92266ffd15ea0d50da0949d0e410147f807c0c3ed2b101902e15ce"
+      },
+      {
+        "file": "kernel/docs/boot-and-bundles.md",
+        "sha256": "b86bf0404db6646045e968ddb58ff2dcf99e48165366072f0a43f2fce57ac418"
+      },
+      {
+        "file": "kernel/docs/dependency-injection.md",
+        "sha256": "9a9c91d803198f4fc73563666645edfbf1bb08921a96254ff1461eade91d39c0"
+      },
+      {
+        "file": "kernel/docs/hooks.md",
+        "sha256": "858e0d590bc9a07b7a357e020e194342c8bdcb66ddfd1f2b23f6fced4565c16e"
+      },
+      {
+        "file": "kernel/docs/routing.md",
+        "sha256": "3e160a758990db78bffd2f31db50cd8b8f2a7d99791c412db4a0cb9ef24063b9"
+      },
+      {
+        "file": "kernel/docs/services-and-autowiring.md",
+        "sha256": "3b84831c19363c9a68883b9c608918c0fc68829790b814e6a96990737160c2f9"
+      },
+      {
+        "file": "kernel/docs/showcase-plugin.md",
+        "sha256": "0b6cc58c41205b78fcbdd83f317f4398f66d36ff2ac9db2675de8d54fb7e8e87"
+      },
+      {
+        "file": "kernel/README.md",
+        "sha256": "eaa853061cf8a2f2ee8014e2a94fe6a10414d221aadd1ccd16c1e1507e1ca1fe"
+      },
+      {
+        "file": "kernel/AGENTS.md",
+        "sha256": "cb0df099b4d5120b37b65025a790ca237dac7accc790bff13dfa1db5d9d96c3a"
+      },
+      {
+        "file": "kernel/composer.json",
+        "sha256": "e5abf9db853d102f0865aa052da6928a062a9f41fd2010653cf769fa8677f2ce"
+      },
+      {
+        "file": "kernel/phpstan.neon.dist",
+        "sha256": "226f4a8dced6de70e5daa08c00825700fe859751d5a3178efd90a0c218215af5"
+      },
+      {
+        "file": "kernel/schema/kernel-extra.schema.json",
+        "sha256": "afedd7e84ec2c610288f9d4cc4a7bc92a2fd31b08336716b37a1caa19424423c"
+      },
+      {
+        "file": "kernel/src/Admin/PackageManagerActions.php",
+        "sha256": "d74486da2e524a5461e87cb1780ba6e70fe8b2c904d5ec20ead88b2c8b2895a8"
+      },
+      {
+        "file": "kernel/src/Admin/PackageManagerPage.php",
+        "sha256": "b53fb8863064105b61256b83bb9ffd33f69a204c5c3cf1e55c2ec2c6cabbb280"
+      },
+      {
+        "file": "kernel/src/Admin/PackageManagerPageView.php",
+        "sha256": "f42e22b3cb1a369bb024117d9479fa68cfa547149a2475403499e1e2340f653c"
+      },
+      {
+        "file": "kernel/src/App.php",
+        "sha256": "dd044066a45ca486b062cc71ca2243047a0f748e29745ca7c3837d0ba795d966"
+      },
+      {
+        "file": "kernel/src/Attribute/AsHook.php",
+        "sha256": "546d880b4e68f3ae3f52eab8a8534a4ed0fe62fd2a8bf753ec4736d340c4ed6b"
+      },
+      {
+        "file": "kernel/src/Attribute/Route.php",
+        "sha256": "f4c17e67fb286023a6bd8fc17a5f57ca79b7daf8d83c42e7c0e4817d5720c4d4"
+      },
+      {
+        "file": "kernel/src/Bundle/AbstractBundle.php",
+        "sha256": "d0c0c206f86b5ba0d8e3942ac4da3a7f15f351747e71f3754a7ddc887e05ee09"
+      },
+      {
+        "file": "kernel/src/Bundle/BundleInterface.php",
+        "sha256": "6b2aba4d43681990bb32dc936599a7ea5041f3cc9228331d71919eed1c2facbe"
+      },
+      {
+        "file": "kernel/src/Bundle/BundleMetadata.php",
+        "sha256": "ad6a0f89c347a56fbc025964aab7f8e5536b0e1c5ed48b053654145b42611d92"
+      },
+      {
+        "file": "kernel/src/Bundle/BundleRegistry.php",
+        "sha256": "60f0afcabfcca005eae750e41b944177ddeb28d82e51f7595edb59209d4004ab"
+      },
+      {
+        "file": "kernel/src/Console/ConsoleApplicationFactory.php",
+        "sha256": "979879cf4142ddac029597ffda96b4da7d792d4f232590016bb58003a13878db"
+      },
+      {
+        "file": "kernel/src/Console/ContainerDumpCommand.php",
+        "sha256": "0f8cf3cfe8e870e64fe3a3f0fd71831c936a751817d687bd8edb5b87d8afed08"
+      },
+      {
+        "file": "kernel/src/Console/DebugContainerCommand.php",
+        "sha256": "ffafd1b14f7b0f338e98f4bc9027e702532146d2fbae3f317e3871a5019dc01b"
+      },
+      {
+        "file": "kernel/src/Console/KernelConsoleApplication.php",
+        "sha256": "c186ae125b5d77d6113ba7c38743811378291392a9eb9b7dc26b4e355c33afb0"
+      },
+      {
+        "file": "kernel/src/Console/LintContainerCommand.php",
+        "sha256": "6ff83914a191bfc704d4f919a48987eee5b20d4046a33601b8c4a6d2ebc2dd1f"
+      },
+      {
+        "file": "kernel/src/Console/WpCliConsoleBridge.php",
+        "sha256": "923464b16a8102e3a598b95a6a0928517d6578de1ec7f85c42374793e51c63e0"
+      },
+      {
+        "file": "kernel/src/Container.php",
+        "sha256": "ccdb965cf919af0425a15f8897bd026810e02da4c39acc29f61d718e29c47468"
+      },
+      {
+        "file": "kernel/src/DependencyInjection/EnvironmentParameterLoader.php",
+        "sha256": "e550a0e325f40c2c2ee5b452656b3056858a5ea395321a7feb0cf8d8f78c2da9"
+      },
+      {
+        "file": "kernel/src/Discovery/BundleDiscovery.php",
+        "sha256": "d863daa9eda5204298131a23b9424988fc74856883ed78a2206f54a638d00d76"
+      },
+      {
+        "file": "kernel/src/Discovery/KernelPackageManifestCache.php",
+        "sha256": "e8bb3ddbc78c0b8e6def169ebe03150c0df275d7f36f65b9b1a54e39ad9bc5f3"
+      },
+      {
+        "file": "kernel/src/EnvConfig.php",
+        "sha256": "57507a7ab401202dbcebd695c6bc3cdc96fca18c262346dd2c995ccc2fe9c71d"
+      },
+      {
+        "file": "kernel/src/Hook/HookCompilerPass.php",
+        "sha256": "85c5eb221dabf933f10137437984cc18293fecf4caa50ec4b2676eda7ae16e5d"
+      },
+      {
+        "file": "kernel/src/Hook/HookLoader.php",
+        "sha256": "04fb7c8c22f7a964f700ed1aea92aed573a71101dab4b7cfa86aaed84282112c"
+      },
+      {
+        "file": "kernel/src/Kernel/AbstractKernel.php",
+        "sha256": "4836547d77c528b18fa662d871fd15d7e290779425ada1fcbfa8dcf9929c76ae"
+      },
+      {
+        "file": "kernel/src/Kernel/ContainerCacheManager.php",
+        "sha256": "86ae6d17310989f096292523f9e2206084135d337338fb03c7d235b747c0efdb"
+      },
+      {
+        "file": "kernel/src/Kernel/ContainerResourceFingerprinter.php",
+        "sha256": "800b7cf6128cda02d3d7f815c4dec0ca7c3b91fba36e8fd51e397f6924f41676"
+      },
+      {
+        "file": "kernel/src/Kernel/CoreServiceRegistrar.php",
+        "sha256": "a84c57d29daced072e884bb8990295eb41059073bd7aee43e8d3f3bdd4e18cd1"
+      },
+      {
+        "file": "kernel/src/Kernel/FileLocator.php",
+        "sha256": "4214fbc5db3346462d0f20af7eea860ac3e784e6ec9e67f4e772c88bc520ad6b"
+      },
+      {
+        "file": "kernel/src/Kernel/KernelConfigurationResolver.php",
+        "sha256": "3320063c65a870fd2f61dd9e3e45fa485713ab79a8c509ee715ab97f2b1cfb94"
+      },
+      {
+        "file": "kernel/src/Kernel/KernelInterface.php",
+        "sha256": "03a53f06febe90dc3f3ea811d07a720412dc9b00f583b6e67551e661605f60d0"
+      },
+      {
+        "file": "kernel/src/Kernel/SiteKernel.php",
+        "sha256": "2301dd36f26391fe84b2eca9def565c6a5d1c421153ccb764453ecd610957ca7"
+      },
+      {
+        "file": "kernel/src/Location/GenericLocations.php",
+        "sha256": "33cabf75e5e9f6aad534c4ee3d756f44cd0e17cdb1d09bcd2af06d0776147a32"
+      },
+      {
+        "file": "kernel/src/Location/LocationResolver.php",
+        "sha256": "a670a0c6c1215d7edd7a0c6bf7c4a40d92d8593d29a9196b9606237793e03e00"
+      },
+      {
+        "file": "kernel/src/Location/Locations.php",
+        "sha256": "1e7b2dd1835a6b9a7f16c3409f8325bffc8d765957549f24dd519f41e3679c07"
+      },
+      {
+        "file": "kernel/src/Location/ResolverTrait.php",
+        "sha256": "37f1ab2349736d5c58496015f81a99d54ceef5c57d258eee3955ff73857c9316"
+      },
+      {
+        "file": "kernel/src/Location/VipLocations.php",
+        "sha256": "0e87cb86e07314297e5ca0fab9b3a0f48002bfe99244e0d655da487e34069be8"
+      },
+      {
+        "file": "kernel/src/Location/WpEngineLocations.php",
+        "sha256": "178b619fe7f9baaa1509a4ff6136c35b53f04210fe6cf362ff229f4165f49439"
+      },
+      {
+        "file": "kernel/src/Package/PackageDiscovery.php",
+        "sha256": "7e87f04fa797e11d1183af8e1f90eb7ced4e32ed6845fa1d5968d1ae864f8d67"
+      },
+      {
+        "file": "kernel/src/Package/PackageMetadata.php",
+        "sha256": "3e33823fe59d5d71ded457ef84bbaab280227496fbc8c3ee2b8151b73e7f5742"
+      },
+      {
+        "file": "kernel/src/Resolver/ActivePackageResolver.php",
+        "sha256": "4d9c5cea162435aa1b431203664f667fe6e52c069b89684cefd1db5135b9d5d6"
+      },
+      {
+        "file": "kernel/src/Routing/AttributeRouteMetadataLoader.php",
+        "sha256": "19828131339cf9945b0d9b9d38beb771e402472edd3356fba5a6087084797d25"
+      },
+      {
+        "file": "kernel/src/Routing/RouteCompilerPass.php",
+        "sha256": "8f2a024b5f3427958a0eaadef632c7b4f9122b91cbcd3814fe1c00ff0c9c2653"
+      },
+      {
+        "file": "kernel/src/Routing/RouteLoader.php",
+        "sha256": "6f57a2495cc05755cc7e941d8badba23fbc3d7097b568280a57a51d89f3d55cc"
+      },
+      {
+        "file": "kernel/src/SiteConfig.php",
+        "sha256": "d8fa32d59099cb9115cb3f854dbb2ec8d50040bfd1145ad5ed20f2874744cc6c"
+      },
+      {
+        "file": "kernel/src/Translation/TranslationLoader.php",
+        "sha256": "22a478eadc26378313555933d1b063037b0f64ac85e1c512136aea7f11f5eec8"
+      },
+      {
+        "file": "kernel/src/WpContext.php",
+        "sha256": "1c23dfe60b46e358d084453f76e2580de2eb7585a00ed912091659ec94187302"
+      }
+    ]
+  },
+  "starter": {
+    "head": "66ad917f9b78463202c3aee23752c3eb2c5feceb",
+    "status": " M .ddev/nginx_full/nginx-site.conf\n M .env.example\n M .github/dependabot.yml\n M .github/workflows/qa.yml\n M .sympress/cli.json\n M Makefile\n M composer.json\n M composer.lock\n M docs/enterprise.md\n M docs/release.md\n?? .ddev/docker-compose.security.yaml\n?? dev-ops/nginx/security.conf\n",
+    "files": [
+      {
+        "file": "starter/docs/customization.md",
+        "sha256": "0512f8c29d8f21cd94b8bb465c68aba043608ffed8a125b41be33a3c15dbc8ec"
+      },
+      {
+        "file": "starter/docs/development.md",
+        "sha256": "9b733db71abf355bfbb5aad85e70b72e0985a862739c9913cbe65ff166bccb31"
+      },
+      {
+        "file": "starter/docs/enterprise.md",
+        "sha256": "da74b856cc0fe4fd903c8b49438104aa28c8d7947c0bd0e2f2d83e9ae6f2c6f0"
+      },
+      {
+        "file": "starter/docs/environment.md",
+        "sha256": "1d7e1edc930be46e1d7ab217b89e3bee61cc32fb13693d1bd57586ec160c1424"
+      },
+      {
+        "file": "starter/docs/installation.md",
+        "sha256": "9be5a6df8bc4ca76d45670d8012bfc345988cbe04d6d6ebb7c9239f1f7e40cfd"
+      },
+      {
+        "file": "starter/docs/release.md",
+        "sha256": "8add1e9efb02744f1e4f8c5f47e5d07924db22bdc01081c5debb134a34917fe7"
+      },
+      {
+        "file": "starter/docs/starter.md",
+        "sha256": "691246d23e888f0b641d964c3bbcc3af8e851efa87d1a299a488b96091abda11"
+      },
+      {
+        "file": "starter/dev-ops/.htaccess",
+        "sha256": "d06914268fe12db923a7b7dccc2a2b334d1b2c0260683cfd31c7750ba59715c8"
+      },
+      {
+        "file": "starter/dev-ops/nginx/security.conf",
+        "sha256": "c216eab28f1d0ccc48fc697f68e0bf5e6e48ae81f2e6fc1f4a69dd0f9b025f2a"
+      },
+      {
+        "file": "starter/dev-ops/nginx/static-assets-cache.conf",
+        "sha256": "10a17f7aa996909d195556677f5c701ca5cf5575a26b0c5c09563f992e04b22f"
+      },
+      {
+        "file": "starter/dev-ops/orchestrate.php",
+        "sha256": "0cf6654f741184ca83238e0d3326e84c9c6eb6ae4ac2d0cff6915db328ad6917"
+      },
+      {
+        "file": "starter/dev-ops/wpstarter.json",
+        "sha256": "7095ea61164caeb38c31f0d65fca859a7145b992ce24f47591c632f0333ce06b"
+      },
+      {
+        "file": "starter/packages/base-mu-plugins/.gitignore",
+        "sha256": "5f4d0cb39ea5878aeb6d812356654346b4f5f4284ab0d018f2b027c381b636f5"
+      },
+      {
+        "file": "starter/packages/base-mu-plugins/000-error-reporting.php",
+        "sha256": "02a47a31d5530cd00ad180b2ac538d00cc58b89a5f6d063c2a4925a85fc90715"
+      },
+      {
+        "file": "starter/packages/base-mu-plugins/allowed-html-tags.php",
+        "sha256": "20e8fbe3d87f54ba8a9648e6eccd7536c7354e8c91340ed8a5108963e88db0ff"
+      },
+      {
+        "file": "starter/packages/base-mu-plugins/app-starter.php",
+        "sha256": "45bab4fa2801e2b518ff59133fe9896a486b81b75e748fe64a01aa8058b7d475"
+      },
+      {
+        "file": "starter/packages/base-mu-plugins/composer.json",
+        "sha256": "ea7e8a656c86e941fb81337ddb663d5321bd84cb9ca410ff4e672435db8327de"
+      },
+      {
+        "file": "starter/packages/base-mu-plugins/disable.php",
+        "sha256": "872ad9f3db514d56aa5ba7a11c0596f006ee688e99671f8cfe835d4f196007fe"
+      },
+      {
+        "file": "starter/packages/base-mu-plugins/global-functions.php",
+        "sha256": "cf2d80d0732f9850be00b73758dff92d665dc9e778a1a474aacd08efed798acf"
+      },
+      {
+        "file": "starter/packages/base-mu-plugins/phpcs.xml.dist",
+        "sha256": "e99c5fee8e912dc90052799f10d802a41431fd7adc6230fd56744c6a32a0694c"
+      },
+      {
+        "file": "starter/packages/base-mu-plugins/vardumper-integration.php",
+        "sha256": "59e06d92ee09257b1e6609cae5e669b3428fb5afec13ef0ea118e591935a437f"
+      },
+      {
+        "file": "starter/README.md",
+        "sha256": "29b30a8b0d57e9aaa991baf18176d3d181bf00c13e4c602141e76973a7e6e421"
+      },
+      {
+        "file": "starter/AGENTS.md",
+        "sha256": "86814b919ce5dc4e285a99827b99a2a3bb628b67683ca2a1580d3e3de3c69b0a"
+      },
+      {
+        "file": "starter/composer.json",
+        "sha256": "95ce551bb7a5b20248a3e27009dd6369a03bac3d1db0ac107f21b23a4c7ced78"
+      },
+      {
+        "file": "starter/composer.lock",
+        "sha256": "500d14aee8cd5a0a412ace72c3bb0823b06753a07b9dadbe0c2aacc11607c244"
+      },
+      {
+        "file": "starter/bin/console",
+        "sha256": "f00ee107a1252aefd8a0a81b6aba060be9f848417be3a5b64a93db9e8762803b"
+      },
+      {
+        "file": "starter/phpstan.neon.dist",
+        "sha256": "d483c9ffbb0a99e958ac67193cc7d596b78443a87cf02ea22ee7479c89c75155"
+      },
+      {
+        "file": "starter/.sympress/cli.json",
+        "sha256": "d530d811ea925806165f305bdd9e75b362f1ae408ebd76889ac17cb8c30302be"
+      }
+    ]
+  },
+  "demo": {
+    "head": "e70a6869d8bc660e9b6162d88cc9910c6c8cd96a",
+    "status": " M .ddev/nginx_full/nginx-site.conf\n M .env.example\n M .github/dependabot.yml\n M .github/workflows/qa.yml\n M composer.json\n M composer.lock\n?? .ddev/docker-compose.security.yaml\n?? dev-ops/nginx/security.conf\n",
+    "files": [
+      {
+        "file": "demo/docs/README.md",
+        "sha256": "6b8cb660202ad2f4d211d8353fc6ab3bcc946ae97514c0ff3d304387e3d490ce"
+      },
+      {
+        "file": "demo/docs/architecture.md",
+        "sha256": "5b42aa25a5f2806c6be5203354d7e9196eb1941c42959d4d19c9452b5e3d9ef9"
+      },
+      {
+        "file": "demo/docs/developer-walkthrough.md",
+        "sha256": "8c6ac6d52722d0306ff08fa8f6bdede75663f4ee985f3aed91c94bdf079f5b9c"
+      },
+      {
+        "file": "demo/docs/images/README.md",
+        "sha256": "5395812d77a6b8795337d1abcb62efe616501a0a2dee1505546d9c32c3fc8d23"
+      },
+      {
+        "file": "demo/docs/sympress-components.md",
+        "sha256": "55165d038e6700f13dda7106fbf3778b0f1365c3961947744100e971a049bf23"
+      },
+      {
+        "file": "demo/dev-ops/nginx/security.conf",
+        "sha256": "c216eab28f1d0ccc48fc697f68e0bf5e6e48ae81f2e6fc1f4a69dd0f9b025f2a"
+      },
+      {
+        "file": "demo/dev-ops/nginx/static-assets-cache.conf",
+        "sha256": "92bfd24b87693e505cc183afc91820ab590c7d874084521c57b1bb9f21b90d11"
+      },
+      {
+        "file": "demo/dev-ops/orchestrate.php",
+        "sha256": "3df75ea4e47d52113f746271f9a13fc0ca36d45cd29c259f3281ec149c8b6b54"
+      },
+      {
+        "file": "demo/dev-ops/wpstarter.json",
+        "sha256": "730204a0c0a2aeb50cd070e6820f8f1abaf81d8afba0d840a5747616acdfd38e"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/000-error-reporting.php",
+        "sha256": "74fab866bcd460d95dc442c049d93b0b5e0cbb62a68cb71049664575ddb6ca06"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/allowed-html-tags.php",
+        "sha256": "8f49671f03db278aaa16486db3ea543c8f80e3c29cc7fc532ede4a1784ca707f"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/app-starter.php",
+        "sha256": "a1f2676aa2de5fce6f969f722745f19834daa6890e40e61daf431149454a5505"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/composer.json",
+        "sha256": "da0de7df4f57af51daf0d04aa91834193647a60092018322305fd35099f859f9"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/phpcs.xml.dist",
+        "sha256": "ed1ff3d33aeeb8980065bd90674abc3835781149d5e772e17a13ab5495de637a"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/phpstan-bootstrap.php",
+        "sha256": "3a26284d112cd0fd55bb021fb70129eeec6769bef0bd4defc0ff166d50b51abb"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/phpstan.neon",
+        "sha256": "7be232ec055a377f7805a53f50cc3d50f1267dada64a5ca3fcf3c95f59e8aa37"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/00/38/0038458c45525ccb55376b02fe2fb296a69bf284ad3d4698ad5cdac4a578ab25.php",
+        "sha256": "683468473a713150d7c0f489ee8ab62c0f16ccad6d2acc717e16d809bbe4bf70"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/03/b0/03b0011b1fef625c4a01aaccbca7e3b7cb8e38850098d8e9572016742ec5f7a5.php",
+        "sha256": "5a5e19bb8d72fa2ab39fe0b0a52f28f690b5729316a1e74179206240fc147b79"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/04/8c/048c607d197300dea24b289d818eb2911416054243dccb938d38d00e9e724460.php",
+        "sha256": "56921d527cd17f377149350faf15da1be3a2f86dc4c4784c3cc9692ff02af20c"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/05/50/0550cbadeb0969bc2abc3ec7bcf52bf2d719fae2afce09cbf39ccbfe9dcc4032.php",
+        "sha256": "40084c4ed891ab34797a63d82cc82ce28440c78f4897b1c23734abb9c86a3171"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/06/d9/06d94c1d35649aa3052ea1b169348ac200e19bada047771791372c755afc442f.php",
+        "sha256": "0f44070f87d3590ec2403d28f618dcd3e7ba85a5e65d53ae903c9beeddb12028"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/09/3f/093f25ced282df2b739ff93becb0c8633707ffd381e85b9e0ed865583a3367e2.php",
+        "sha256": "f2f96e2cafbbe982d8fab814685350ff7e8d53c34990a4ce9e6983fdc4d47a79"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/0a/bf/0abf5cee1089d5ea8cec39ae68b2d555110414d708fd23829d620776a7f9adc1.php",
+        "sha256": "cc88f6e9ba584607334c3393ef640bebfed62d6f5b689d3e3c6401895669da93"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/0b/79/0b79bf5ad611c349c01b818d9bde2239400d56bb86eca14b361d482abf022bb9.php",
+        "sha256": "eb3dd2a1d1915b2b4ef45fd9d48eee1da2be3b23b71835f409eedf3ca0c00483"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/0b/aa/0baa427a66e5abb2a83343530983558666e8454fb9abe53eccf51826e36a6c83.php",
+        "sha256": "2dec416113ba00c84f86705bc43749d72a8ce6dd0f878e81b9af99ea61d6cd45"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/0c/db/0cdb3d56aa061a75c227067eb3e517c60eafbb66a682c3adacc523e7f7f56ac5.php",
+        "sha256": "9fb5fe4536f9c8ff5790427c4e9d3982539e7a85cee1f6e7f8b4dcff94bf93db"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/0f/f9/0ff95411a672a91d33710768664708119d8076b03aeeae6805939fc070ccbe59.php",
+        "sha256": "79d76484f4a707b37e28ddec29223225dad3bf4430b8c36af2065a6dc0e5715b"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/11/37/1137173fab4d691349286e33da6b97bba57105223c6b73aedfb7b48fc521223c.php",
+        "sha256": "b69b10820866a87e9f65e2314c9e99053d6ae486132f73ca56515a1ade83c05e"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/12/7a/127a76e134df0ae9c6e9957741669bab84ea3003de28d120b3149de7a80b14ce.php",
+        "sha256": "a1541eb039a0d192c17bfbfbd12ed0015d8e7716e1901afa9065151c99e4b19a"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/14/39/1439c9e65b312e331a5c77c09d8c1eb13ef4605582227bb4b20c66e51a350971.php",
+        "sha256": "63c7b408971b41556648b9f25ef121d7524ec24d806bd5614cc0d8b01c54f3ab"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/14/70/147023ee37a63ea241d5405c37643453226229609db48e8ceb9028d306bc1050.php",
+        "sha256": "421f83aceeee6fb7752aa282723293067170d97812270f1b376c741c1c7e85ca"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/14/a2/14a2da58578fcee1bbbd123a261303d4860c7b1d9cc2593db7aa0ddf27d82107.php",
+        "sha256": "716671275a36e0ac1717d588b83e4ed3e6d439f79f2a45558b7894b87ef7b568"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/1d/19/1d19f9ae4bf903652858b7d23f01f1dedbe9bf0ab7513f6e274af07cdd6647b5.php",
+        "sha256": "f879f38da4663369f38f689094e04e9f03ad9f554685a6a6fc6d292cf6879305"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/20/83/20835d55d37504db0cde90bc0ed1bb7339d868152f57ba875f496d76605856c4.php",
+        "sha256": "788158b02863e481fcb2dc5adbd3bc0315b2d5009177f25258561af9923a9e21"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/20/c4/20c435dabb69614f4ea52c8abd7f6809054f06f680ce808e24d98a867dc71bb5.php",
+        "sha256": "1651820e57b5f7e6155b95fc6cafad10315fbb7b8eaddd73283263b8e07dc67c"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/22/67/2267d9f8d8cc91735678a56b4be0afe82c3237b347286ca4625cc6a923320027.php",
+        "sha256": "5006061f26e32a14209d35f9e29d4b5e7c26c0de750a48224cfdf20dec80063a"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/24/19/24198b36642281ddccacf0a9cc4c41adfc6f69a1893ed6b0da5596f355a5a50a.php",
+        "sha256": "fe68bb97da3b9b8ddc35c12978de38361a61cb37e4f26d89e0f2318f19b79313"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/24/d0/24d026cdfaf6126e10b8e9d54c611eb16f1ef87ba4ac185b88be8d156f17ebc5.php",
+        "sha256": "8875bd02cc33d8bb8b3ae7455f7dbf1be5c9fb9462d1e58292312c3cc92b61a5"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/25/fb/25fbe405859c3d07b46141b975f084f8765f34d7fd6c30a7981cd0e2e6a3bfa0.php",
+        "sha256": "1a9a4404e8295f0b447f7eae67ec80af0a9e2953e9ac98ba037d9a162b7b612c"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/27/24/2724c36678f2f745c3e56ee6a345c27b4cf48be3499621b3b885384a650375da.php",
+        "sha256": "f8d2a647c4fa3a3b04805afcc9826ef17ff1ee1d1f9203e9aa2f965c9c6e3833"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/2a/ed/2aed9d1046a9858fe8cdb7f1923a318a8d0b7eceb9fabbdce058bd58ca9132b5.php",
+        "sha256": "018151e492abc17cc687cbb655078a016ad8061006ee7a19b7795c59ceb0820a"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/2d/6c/2d6cc0eba7f0a260052017c54a4e3261a23a002f2a1199f11153ea0865dc0c11.php",
+        "sha256": "4519b48f555f76e2eeaab6539da1cfbece300455321df8eb092512a6aef76a48"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/30/78/3078eb6b6710699229e9eb0fc22defa5129c9ae7fee6714a055d8c121eb5e2ed.php",
+        "sha256": "ff8e463062559e8231cf79e363a66e68d9a5d83d309e05b0f83636078e6db2d5"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/30/f0/30f03853a082b78afb6072f9c6434d3aa18344672415845435a033147990e95c.php",
+        "sha256": "6e63007014af6796c914944a7543756216145ea60cf785325848c8c5ee4771fd"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/32/ff/32ffa84790fec01684642a19afa6e0bf992536f7e0877f4c38e48bf0f3d8d81f.php",
+        "sha256": "d9c183325ddff1f6f475f272dc938f6de8a52f3c20368896afb5f36ceffd4297"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/3a/92/3a92bed87838cf55eaeb4e50e0ed9555dabd9228e55ecb9a8ed0c958d26850b0.php",
+        "sha256": "26a39627422a12e2cfc8252cd4b0e805361adfee1aaf61750ffeda8cf7fc164c"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/3e/76/3e7670db010d94a128139d5ff95743cc9a688faa8925fb2f316e187eb4ae27d5.php",
+        "sha256": "11fcacd3636280265408272572863307922b87d1b8462fc36e28cb28ae1dd378"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/3e/94/3e94c7beb483f1e4ea133a75bc988dd110e4d99801b26f64aecddc6266139a4e.php",
+        "sha256": "61f0c08517a0b1cc3a671976ab1a529918688ebdacd9ec65a415d0ac7276e052"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/40/15/4015d552df9c7d3eedf1a83fdc51a5d8884c0bafe0c86f89e588fc0c41998522.php",
+        "sha256": "49b763388037477adb1b1c8ea3e311756c1f3a1bc9ba5443e6e55253d1d1872d"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/42/75/4275483e079c00c1a46b2b9d066600a9c4cef2f5c497c76056952f0cb17f50b3.php",
+        "sha256": "cadafd9f4243e0b89cdcc5b7b82cfd9d7eef598f5a74b23054752ca767cbe6c6"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/44/2a/442ab476da90d7edf8e3653f471b2acd4e0d8fcfb7181c2c1a100468f8208af0.php",
+        "sha256": "026b812d8729af9b5d8e4c126c0608c5be4892b43859da5dc4093a675eb56e92"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/45/9c/459ced09afc574bbf92cdb6b85a23ff2c7730a303d1c1605424b61526b0c4b1a.php",
+        "sha256": "0cb0454797bee2667a24b855a3ea5c7bdde794f23d284da2a6ac7058ad4114bd"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/47/2e/472ee0e0d17ce2bf802feb2b22d72d898cd4ee609eed981c5114326f55d2746b.php",
+        "sha256": "995c70d45d1be1587cccc95535dbd96552c3031382edcaf8853455252354d684"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/48/59/4859543562b1895de9c1b237ddbaa270667d7d69469e05734a1974da8e54d6ac.php",
+        "sha256": "cee39e7f9f388642543bade8eb3d095d2b5b80e90345c0ea90d476a9d043bfff"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/49/38/4938c77577b0fe6edef399defd435637ba345ba65bc1070c3945a228a8c19eb0.php",
+        "sha256": "94b2884e25f34afbd0e98c7108f96e0f31cd5ca69b8a85aef9bf26a8efe425fa"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/4b/37/4b377a42246b8c9f61141ad8241e35b8ddd3b6657409d77fea43067f100a54ad.php",
+        "sha256": "e662be251afa2f30b65a93575897a2a1a7c78ef17e7419821581c1718f7a193a"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/4c/9a/4c9a577434fe0f97bafad47a89030a95d111fad91f1a32b1af17f8f3e3e13022.php",
+        "sha256": "ddc84395e9c9c411a8029ef46258ebb66f66bc4f59ffcb5fae1445efed4a97ae"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/4f/fe/4ffe1edc54d673ae5dab0951776fa83edb2dd1de5e2c5e8df88567cbb5be5329.php",
+        "sha256": "b5d4df6180403ea44e86993ac0409f70d260d5a6df6c0a12555ff5053fb5a674"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/51/58/5158f85066b97386e6f6d42c3bdc3c7772193a3683d532f33d037613b421008c.php",
+        "sha256": "19c178ea744b9d67b4109270f6f92b9f5700e7e1df5ac6c3629b5c1c8186c3f2"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/51/68/516813e2e7ae0e585a4c2f7bf67a1e5152e0a86beed8853b54356ed9af20a6fb.php",
+        "sha256": "c6293cf49b2b1b52a5a9f33cfa2778358b064131ed80f1357ef3eac2c9dfbb13"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/53/38/5338bc38ed4133751d888e32c149c078497f9610cf85d0723f3f4fe5dbe26630.php",
+        "sha256": "cdd0f9eccf11668e859d983189a35edf76706e8a27893584473246b794fa7f70"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/53/ff/53ff387cfe8fccbd592f7899b1b721898d979859cee731fe8aac5991752a7011.php",
+        "sha256": "6036146fc7be6fc8e920beee7fdc661b8bc7b490c73440a4332ac12ee0e70a96"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/55/76/55764dcb770d3f85dc49ec9aa95eb2dd29cfc6cf48307a5a0f92ea6caa92f9c9.php",
+        "sha256": "5f51ea2cd5a2025660018ea018f58e4f8607499dee071f3a8def973ae1ec2725"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/56/a3/56a360c5a357c52dde26db7de94536496746189788acc51127d6295c9ea6f875.php",
+        "sha256": "f84c7549e6af2e3766bdef32c999965a99bd57fe9286597f451e31a30905cdbe"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/58/7f/587f1d349c3acb41d2d5b46b5551bcd0237b399c3b4409b1b23df15e76cb12ae.php",
+        "sha256": "3483cadf5c0f931c6f50de4c29e3881649e80d64f8b1c12a74148f4b237012f6"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/58/d2/58d2168315c6f60040e373729faf1f7387f82c276b52cd5e4789fb52f3549841.php",
+        "sha256": "d68c341329bbac3f69a242dfd18a4ccd5c8a90646d1bc4dc2bb5d5bef8082fa5"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/59/24/59241f553d0d131296722d066d75b5b26d285503a09c81566bbec006e615a37c.php",
+        "sha256": "6789cd79f23769ab0017086fa0e187f721558f69303014bc5f380f2dd894a75d"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/59/ce/59ce74b3586e59c619ab754fdba856af7e51594e202f549a7007f6527ca6881c.php",
+        "sha256": "a8b9605952333d6dfcf8f4df25d5f1fb6b45b09aca12c84ec21caeee865ac23e"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/5a/9e/5a9eefa60e4a81dbb6b5ceaec38a366a47e9c87a8e98d0275ff0c6a2b6875512.php",
+        "sha256": "54b05d8e2c8fa46ba8f5957b5b22ef1ab190e1675012fa5e4acc6e41ba467298"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/5e/33/5e33faeb90a3346395e29a7b9f0ab0723a24d2d9b240d9945e97669141a1c0b7.php",
+        "sha256": "3d56986438cb6ee130e81de0c64f3c637e8543de9a10ea82d9c1bd8053da2b0f"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/5f/c6/5fc6d641c7c586674e9af187abc3f07a5a5499aa394c996773b695bae3159e63.php",
+        "sha256": "bb44a64b555eff57e226ed0cb1502c5f1e7c4a57dc24b0ee9b3dd0349c6d7254"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/61/62/6162cf6e93208ece73109550fc1b97909cf252ad6559ed43c9c57545eb2305f6.php",
+        "sha256": "cfbd048b0ceecb66c9e9f7802eac2822206eea1b3708391a4fe3b43cf00ebce8"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/62/2d/622db58322f424d40dd8704f63bb26d80a9090e6cae65898c1fbef162afd5e78.php",
+        "sha256": "298230abcade7fc799929cab9bb4f3dcead591dffe13b02f470adc4aa09dca50"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/63/80/6380055166ed5820af8f80fce9c47a81836cb2798d09fa0a0b81d8d398ad20a1.php",
+        "sha256": "beed77f746abf3ffa474da35549503d49ead929f44392dff331af62f08175b08"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/63/8a/638a7f393d0221f2534e9ed3d52a97aa1813f9129754369eb32cf470f6873224.php",
+        "sha256": "d7ca2aae3edcf164a27d7350b371ff58a9f8d0ffe39a35a95eaee29808afa455"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/65/3c/653caa5de3d9aa0134233d58996e47d2799197c3585b22f7136a3b1c674cc488.php",
+        "sha256": "47190f63895a3fcce0d8a90c008c0244ef4f9ba583b358c71026d4ecddac81b9"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/67/9b/679bfab2ccc136ac97cb983f682a3b8474393bea485b26969549ae813547d0b3.php",
+        "sha256": "8f42fe2b780169cc556b5b02320466629a7f97d29e8975aaf976ffa78a5683cf"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/69/32/69323ddf35f84d4cf171e9d4ba9a3ddae531c993af327f4665c94f662fc5862a.php",
+        "sha256": "292d1aef2004c5537dde0c20e8f4c85c8ebb6e400d041c8bd5dccf7556c65b8e"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/69/3f/693f2e273c680353e6fba24f695f8014740de884bdfb778dfa0af36d922be2a8.php",
+        "sha256": "87e1d6416aa14507f6c9da5b9137c92fbdc96ea1d6621cdeaa3e0e89888ff972"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/6b/9b/6b9b24cf95c2213af72bca457e57b3609e21b575ca14ca01ecab4942ba5ac91e.php",
+        "sha256": "347a40454c3ed323c2eb9699af314b477367769cc6bea3fe93541d39c3bb2649"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/6b/bf/6bbf64940289c6d7d3f78504e4cf9b2472415e31ec2f403fda731d98627ee82d.php",
+        "sha256": "7bac1ec2b449269b5d2ef0eadfdfa8baf68f8ccbdf74b07089061a107af2c11c"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/70/14/70147e3167a7350cf4219a2fa9045719ffedd77145709920a350f4db5ca4e513.php",
+        "sha256": "fdd11a08e44096c25954ba4cc5195a937ab9fdaa9ccc2b8c2b1a1d7f042bd7c2"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/71/b2/71b296ba8d0952a24959e316415f962f83ed6cf0b23fb20ee74d2ab7632c7393.php",
+        "sha256": "247559b25eee5bc6c59900d281f7bd86308d0725ea2800902b1844f7d160d031"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/73/e7/73e7d86584d48271b0fbfeb35d17f28fc7b7affd3db1b4e3e2f20b139fc980dc.php",
+        "sha256": "85cec298f6d5b0c4ec515ac0aaf5b26eecfb2ee99b38aae3f997dca1f09f15aa"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/7c/f9/7cf996587b60be078039812dbf528a00bf0ce9f71609e9d2f3027c7918cd2eb4.php",
+        "sha256": "bbfddd34d98f042f20b5bfdb136c1d87876dd48b791f25c029273d3776f6f564"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/7e/2e/7e2e6ce4c22b525159ac1061195e9f1a071a9b5532ee08b9609e9ec0a725f506.php",
+        "sha256": "bb9febd1dc74c48bc1c2fb0775e76dae5d7925d2cf97d41850ac0e5bced47fe3"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/7f/f2/7ff20a3c498049fd251d558e7ecfc9b335e1fa74ae770c8f9b765ba0ddd1fd9f.php",
+        "sha256": "b9e9027a25da31c6e235dfff2488e8f1285b6482eb9c0cc68fc37ae84f70da72"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/80/3d/803dd763059c54844e0047f8441d068a513c4404451eefde0a063f757f44a653.php",
+        "sha256": "7674a033719e3632e08f241c5fe4c0e6d9abddd662b3f47f44931c8c0633e794"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/81/0e/810ee39a6fe89289d1139840f4e34befc24d76d036fb531cf5d95c7448d52f75.php",
+        "sha256": "15b3d8e5212dc85d8f59f6f36b80156654647ba8fd7f77aa8242b51c217a2aba"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/81/67/8167a6f5d79c8757dad8d5c7a5d596e4acdba9ed60b34fb727639053a120c550.php",
+        "sha256": "85bf292a01f36996f811f58209af11669220bd674b69b1e8cf492f992e60479a"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/84/ad/84ad780a328c9fcae998b99d92342d6111b5b244e359be8866302e2845c73349.php",
+        "sha256": "81ea58682345fd0f7b0bd3adacc59468fa7dc77a088fbfdb66888deaff91d796"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/89/7d/897d1f74250bff79ad8bbd68cade10490a31af54da4a7335cf1ff6b6600e84c6.php",
+        "sha256": "c4b39a172096bc94d2cb3ff274cb3b31c6567a558551e6c0dbf5ea7138f6063e"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/92/11/9211c4f923402c9304ba791ac2e7b3fc9a570c2888f62451ab43a79dcc542da1.php",
+        "sha256": "d9f27deac2b67b5fd81394047d4655a560bb217d016ec8b5bdfb358370b27198"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/92/2e/922e2c5be767f203828024d533c5d4acdee2529e547b5c9b3ebc13f8bc3aa79e.php",
+        "sha256": "2ca35c42bb59490c4c4566532f9f88779da42f33a2c0bcd74e868c81f530a4b7"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/93/c6/93c6a33d4b8b4131238fcd4edef06510bd39fc68d54ed32951e6098a4b4c2453.php",
+        "sha256": "aeb80ed366da52f9c37dde04c0f56bd5de217ea3183c9b54b6c80e1c2803e1c5"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/93/e1/93e18aade873a6e1cfba93d7330125c02e43057bca0ef54046bf7ecfcc041638.php",
+        "sha256": "74232bf5f2410f41eea3eb2d75c2d8097023034d280af02e28099d1d20642fce"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/93/f2/93f2ed7f7a32f1cb9ecd464dc854cc534672d727f581f5b4b48e26f89fcf312c.php",
+        "sha256": "97b56dc2975ccbe121af58ae30181eb3ee3291fb59b4b3ca57e5ec231d39ead4"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/95/62/95623cab81464e3f6cebd763590a405d3400fd6149b590bf85e3fa9e387db9f0.php",
+        "sha256": "3fcd3062bafcdcad99bf6e353619fc431ba69ddfd925a43460fcb9dcce42b216"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/98/e9/98e9b46462880eec806b38473299cf5ee7b616b012c1dc1749fb7e8c3cf1d242.php",
+        "sha256": "bdb53a23cd222314c027aa90514a8cbf40d0f843bf3197c67f617da76a6ec9fb"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/9c/57/9c572c2603cf8891cbc5659f2ce43c555df02ecf6e8ef60ccee1b6a3e11b105b.php",
+        "sha256": "07e9930ad83d1598db508439dd491aeceb031c8a6aabd7170e0e279b7203ee38"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/9d/91/9d913aa90dc8af347fc52e0b3c09c5b6bf2feb3ce03b45f91891d420f3c8f088.php",
+        "sha256": "1747f75b1b41b82b35385d976e8b23a3b92780000dce68e027196b1e2108f750"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/9d/95/9d95d93ac09a64d461c694f590105c5ee1f6f91afc72d578bd365ca341455ca1.php",
+        "sha256": "62bc0775e6217100c5e0e87454c9b6bf8e4ea505d2999ee9154a943c8dcfdbcb"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/9e/0b/9e0bc1c6c5c7bcd6b3ff04c121f3c3f2d3f1bd93f271ba3a18d9ed0409f4c90d.php",
+        "sha256": "13088537e17a2db101c27ad5acee920d664a67c8d7102d52d8e2fb741d4e3c37"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/9f/2e/9f2e2e76c8637b60618d8e7b91df47985aaac9ed25356d0af60e14816595b722.php",
+        "sha256": "397d3858e878352af8e1e892acc4138393a10a777148b3cb118fb2fbe83826e5"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/a1/c0/a1c00dbca968e20049128cfe7a35249817facfb985732b43ba5719abbc2817fd.php",
+        "sha256": "5926133aee466c6e68ed85e5d95a196d3d81f196c8c81d0e93ada7c2ca133cd0"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/a4/77/a4772c124ec307cecd258da8d7c527b51fe0cd9d57f9b9a15862b0e02f232fb5.php",
+        "sha256": "51424c856804e2b4284efde21332faaf332f8e961a5d4538331ac9d50ca8c257"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/a5/62/a562076c169d5b7aecdba108d7a1bc8c4f394ba54affe5d63c953d6a64374bdf.php",
+        "sha256": "63d667dfeae7b4e95ccb9f6ec6e845159f6c2b577e1a9e36517a89cfe1be2e42"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/a5/93/a593cc7d49b33eae0a04e07db868fe8ac2dc4d98d53198e80b0da900244e5bbf.php",
+        "sha256": "8b19986b4dcc35c6b0a1071da97925ca8e30ec0f4021fb788be9008682d46e2f"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/a6/f2/a6f22884eabd691b86d0a71a762b026c6befe8de23addd949e7ac005b8eea0b7.php",
+        "sha256": "c0a32dec44068b08e5e896c25013e25bb908956c3dfa6e2e664bb5ec1b4b177f"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/a7/b7/a7b787025080f4861ead76d697698b53580cb06a6e268bb073c42956e626ed1f.php",
+        "sha256": "3fef831f0945d6f6c628fe623e1d4bb9be3d9657a99fad42e040ceaf3d24962f"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/ab/12/ab12ce139884fa3d022a9bb9c2d34aee75aece3be34e9db2165ec7adf019aa43.php",
+        "sha256": "9641b2cbb958f882fe9f505e312c62c9af890c96acc4f7881639f05a58458ac2"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/ae/aa/aeaafed7892e4650da312f47e986a394bb753648fa000489637e8d9a9c33b743.php",
+        "sha256": "f898dd4a78c804457de37fb09ec138bd0aa290153193d463d71e6d6f1ca98fd7"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/b0/18/b018f1e9a1a06f7614adf204478dfbf28ea680a49996cf647f1ca7d4821592c0.php",
+        "sha256": "36648af99183a2c80063fd3abff7637035e7a8f1b874842e6388c04382d77090"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/b1/1b/b11bc11afc53b895aecbb5c4ae5e27ebf12d186bb2430b713e4fd6b1623f9ffe.php",
+        "sha256": "a918de56b3f9688ffdb4178088903398f5d32e53aa790565ca164ebbf93aefe9"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/b1/fd/b1fd29510a4ce3fb11998d90bd2a143db97b323689b564a936648c5e1739da1e.php",
+        "sha256": "332b2b76d282dd990a8e6f37b9858827878ce47ecb7a9205eea2d0fe72ca5fad"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/b5/54/b554cff1bf35ce0dcb728deeb1601721f2e19e4f48a9db37a6a86df064f27807.php",
+        "sha256": "2726c21928453983967c2788c56ccc8d9aff93fd73e21347d4cd66c2793b4f69"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/b5/9c/b59cde75835398d9a57af9ba52805234b01da44ea848747e6f52f897951f6de9.php",
+        "sha256": "32bc5e7cc45aea3483f820e340b527fa6d7bc28757d423857c8359ff337fcb63"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/b5/ac/b5ac36019376f4f78389471d2907a0439217f35e111436268f912b6c320ba0d5.php",
+        "sha256": "920e86fcf421b3b1383153d594f39d631fbc417ce5d2247a9cf95e41008b9038"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/b6/72/b6728322fdae2def076793f6191a3703855c61dbe4f939b936c621bdaa2d2f08.php",
+        "sha256": "d3583e5ce7872387822a388477cac417ce7466be6efcefaed4c1ec9d1e0f9248"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/b6/7a/b67a46ffebd3c6ee57701b64b852de786ac14d738d0f7cb5a42c1524c9dbd131.php",
+        "sha256": "595351dfa44edc3b41d209f6687c0607f992f441768977ff72da8b67958a8c2f"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/b6/df/b6dfc4633e8fea14c37f39f3dd2dfe1c4803d91c962d35e179d077606753d960.php",
+        "sha256": "a63e7080b9a0066d909a012dd002513a0438978cb78c0046014b2284e9424c81"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/ba/33/ba334a6dabbd7c90dfe8541cb0519f51ca9f5547bf4c6d27561a68d831cfc3bd.php",
+        "sha256": "d1be755e2a9655cc395e53109b863a84801909710927eafdbf61cbf5e507172e"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/bc/07/bc07aad7cc6d9d12fc1eb5e7d3ce782dea2957163eb400e1db1f299e6276831f.php",
+        "sha256": "c12345913f8a12c21a72f4e4d1bf41cef5591bbb57a3adae870035f3cfd7676b"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/bc/44/bc44bd50695a53a5e01b531ab7aef200cafa8699d28811870bbf44aa25452afa.php",
+        "sha256": "47e981bf24a276a147f794c4ff5a89df2bdcb85d4c9c1e61c2e299a89ae6a07c"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/bc/dc/bcdc8ae65650f04fad819cec19fdbdb93d3a84fc19a65b285745046eb9213d68.php",
+        "sha256": "6ec8ef4e137dd3814acef583c42fa1b81f9699922ecc17dc0bb5a8b4af439d49"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/bd/61/bd61c56a356efd03daa6ebecf2e9462c4317305d1be67045f32c2884e2a80a71.php",
+        "sha256": "b93a67909b4ebd0f779b322177150ff42f6fc7fa1fb0823b4e945afdf29e8e6c"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/bd/a2/bda2ceac7521e51543ca69cd1e750d68d698ca547fbc39762b099ef387e8161f.php",
+        "sha256": "e92be69cee391682a48740357f00dcfdf7d1dd8d7b104acf09b33f5d180766bd"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/bf/9d/bf9d78d035869fb409fb215250b7e6e90da6d28abd4c0659f38365a65bdaf184.php",
+        "sha256": "a7780f0866c0c112a163263ade11e9481525769c09a9d0cc8208bb27dde368ee"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/c3/dd/c3ddbb3228feaf12cc01e11a7901c8be20258bc963a36fb5b4a5ed2d99afccc5.php",
+        "sha256": "9f869eb75fd99ef58cc256d3b52c96f288428e421a7c7b72aec32134c9ff0390"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/c5/b0/c5b057e4212cdd76bf4cc04c9ca2568060f32c9169feec61520819d5f4c23627.php",
+        "sha256": "4d021a045b218b8fce60271a05eb7e3893f10c0c2be1ec3ac96f7b90cc41a0bb"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/ca/c9/cac99099caa16b55a073b8bca6e5132dfce51ef59e749fe505862e2e08637a83.php",
+        "sha256": "352bc3fdd4f025dd145faa9670b23308c0af72fc82d3f5e9cd1782cf1fbd84c7"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/cache-cleared",
+        "sha256": "53eef8979de9c7510b9c938935c891bfe1b231b50847485aeae54d08d46c2cc2"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/cc/a5/cca5bca7541d76a294a5fc5dce913655dbea78f3a74ea89db677b3dc23b59da0.php",
+        "sha256": "091e776d06a6335cdd96037e1a3ec1e2e1fa3ad64fdbd884fa9bd4bef641b5c8"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/cd/e6/cde6e8d593d2d2c66df96f441ed2043281ca3d11906bca1f1b4a00913cafea88.php",
+        "sha256": "4426e2f8efde0f961d98f2eeafa71cd2a85f98ff874ace41310c59038f569ff3"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/d1/45/d145818a83418a38d012176a844dac33a82773c6d641ca7fc6fab3c82fd57e3a.php",
+        "sha256": "2ff4b3295e18ffb9e9a35966e8822501650988826deb63d58bdeb2565a54e509"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/d1/a7/d1a769aff7924adb9740e01413aae8f5fabcce930a5ff29b9cad07e033a69892.php",
+        "sha256": "4c847b8eebfaa588641ad4cfaeb8b6c2e726fec1cef8d9be00ca110a0cbe4c70"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/d4/df/d4df331a30e6977f871f4a441ac3e40ea8a0870b1eb18d772c4a0b848e2a7f15.php",
+        "sha256": "5ba583eeabaf37939256534775ecb87a27826f4b1434bcadd7915731bf1e284c"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/d7/6e/d76ec9ee8312e3101fafde31fb614b70c79c948483d7a565e4d0825e3506dfb3.php",
+        "sha256": "52b6758f04fbc799eabf6f243cbab121f22e1d0a712b08d95f174662ed9c4f1a"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/da/41/da41dabf146ea90211e523a70ca7a4021dfb3be758252d3fb159161ce795d335.php",
+        "sha256": "ca25415cd99e3aeeac20284b84388b75a9349690d244989c07a3547702093504"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/e0/0e/e00efe613ac9f9b985527ae1ee3ca39d85b8f6c69ad9c75010220f854fa43a63.php",
+        "sha256": "f9d0629801cf477b5a40695104af78f7cc691155e7f376e201db521e0caa7216"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/e1/d2/e1d2b2f2fa399cb612f8f747e316708b759f2845bfcd95f721b855603481fde9.php",
+        "sha256": "622bb92df5b0bc4252feaefeaefafa04d0d634ea7de4476e782a762f7bd013ba"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/e4/91/e491bfc6a105954171cea6e9dbed9debd83ba8a6c22a9c0ef2c9ca4d33910f81.php",
+        "sha256": "3f6310555367994474b97926f73a0d033c20f7063edecc3780210f0d092613b6"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/e6/aa/e6aabfa799e2cdeb0e4a2f6d4545a2ccb5c58b4d0f0c06d9763b8cfc8fb95dbf.php",
+        "sha256": "199d0cb6748608b01d0f41425f947433d70a6c4d4ca2222e268bd19be44c0578"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/e7/69/e769204855bd61313daed40721f2f189add943e431f4daef95514a2fcdad017d.php",
+        "sha256": "1db87d0d21ec875b466d5b861fc3b548c8ef3916ae43fd243427eca46828f1d2"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/f1/f7/f1f77f60b35d896c65f379c4df60ce06c7909bf4b5dfa44a9a247472e08efc8e.php",
+        "sha256": "8cb343d40b956e005df5fcd4a6168e37026e35816d0bb248c71f9043718f24b4"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/f2/1b/f21b72872cf097b00ad0e578a6352eed5b127fa7d43c9d5f72ffe27397c9af78.php",
+        "sha256": "395ec5399977ce9988dd4a218541d9b8d92b0ea8003683f4ead7943fbe776a9f"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/f3/26/f32623205d26e8860c8a9656d64f88b02fd0c36fd3b63f3de9644046c8b76a39.php",
+        "sha256": "7b55cfd13fbda01af0257a3fb28a52ff202e90aa1aeb25988304499bda00199d"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/f4/bd/f4bd833521c623251f26d7a98ac953ef3d636b668b1643b73ccb14f7c1b9d3e1.php",
+        "sha256": "551628c29a8aca5c73bbeb2642cf06333d16606fd1ec53383a8d07cd7a4de3ca"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/fc/7b/fc7be6af8ccfc3b9e944f40c446a77a000e2ebcaf691423b4e2f0e2762cb5585.php",
+        "sha256": "f0a20bdf68c33fbb640564e0a3ac00e3e829c56b401fa7c385ac541178551e25"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/fd/a3/fda3c25ba3f42834a3fa3c157cab1301cf0cfd846f1255f39d427daa4965f790.php",
+        "sha256": "57f51e4e72d2c161bc1d277980ddcd959bbf5b21ad9c2feb5f91fc837bac730c"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/PHPStan/ff/1f/ff1f29d22ded118a78bbae51b99300dc5e7c44ae5173bce6f88c387762ab638a.php",
+        "sha256": "83b18e4ae201a7b0826313eac284adbfd9082705cd25d0a730634364bfeb87de"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/nette.configurator/Container_d8161e8f39.php",
+        "sha256": "ac9279c9d266b80916eadb0494cc82a0b38383bb337ed56db2b648063dfabfd1"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/nette.configurator/Container_d8161e8f39.php.lock",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/nette.configurator/Container_d8161e8f39.php.meta",
+        "sha256": "24ef0ff213aca9b9dc55460a77b3f86f5a3133a65208f7e1864c9192f8c8968a"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/var/cache/phpstan/cache/nette.configurator/container.journal",
+        "sha256": "aaab99f5ffa7e77d1e6e571447402f1408a2ea5b58b96eb04bc43dedd34f1952"
+      },
+      {
+        "file": "demo/packages/base-mu-plugins/vardumper-integration.php",
+        "sha256": "86a8d314e1a0289f0ccc23d9f4283543acea30415852e66ad36075f63d130192"
+      },
+      {
+        "file": "demo/README.md",
+        "sha256": "7f78056faa8a8d55f579c332bdd25bb66f7150e5317b3094004bc7a5a48b6eee"
+      },
+      {
+        "file": "demo/AGENTS.md",
+        "sha256": "d9d0384eb86d8c846ee5071a3ea15175c70e09583025060c2cd61714c1ef589b"
+      },
+      {
+        "file": "demo/composer.json",
+        "sha256": "49ec64cd7c97b0bda30f2f572aedc53b29367430a904271a2e2074a86f7126cb"
+      },
+      {
+        "file": "demo/composer.lock",
+        "sha256": "7dc9664c63e9029587fc0e140663d66694cfd02744bf672d47a8706cdb65cecb"
+      },
+      {
+        "file": "demo/bin/console",
+        "sha256": "d0bb4088a164dc221f4fc23a1871b5a016d99c1011615511ee0d372bd0b2c0cd"
+      }
+    ]
+  },
+  "asset-compiler": {
+    "head": "d0a17af62e389ba22e789aee11ec7435faccef5d",
+    "status": "",
+    "files": [
+      {
+        "file": "asset-compiler/docs/architecture.md",
+        "sha256": "962963307b233ec3f5f155709f56f1d500dd648bdd5db4471fb3fa4c1e36f9c7"
+      },
+      {
+        "file": "asset-compiler/docs/commands.md",
+        "sha256": "4ac865b19d5c8bdb872165d73be0f88c916dbcf7c3b5e800e849ca34cf66686b"
+      },
+      {
+        "file": "asset-compiler/docs/configuration.md",
+        "sha256": "b1f29c66aa257d1ea7f902356db80012464ffc5856be7b66e3135198a5ead9c5"
+      },
+      {
+        "file": "asset-compiler/docs/migration.md",
+        "sha256": "da426e5b7a6234d986b0560351dcf80d1d6bf10ff54b3f28c8a947a0773f6837"
+      },
+      {
+        "file": "asset-compiler/README.md",
+        "sha256": "021df31b9f6a9f816f6b6711fef9ddc955732f371a59df804c588a149e98f6c3"
+      },
+      {
+        "file": "asset-compiler/AGENTS.md",
+        "sha256": "cde31ef8720cf15696ebf657de31c322bb73793414c011c0301996f443a4148e"
+      },
+      {
+        "file": "asset-compiler/composer.json",
+        "sha256": "7221820eabb2879154df8e89fccef30498b0a076de30c6f4008fd5e3cc70bb5e"
+      },
+      {
+        "file": "asset-compiler/phpstan.neon.dist",
+        "sha256": "efde21902bc16135d05467e17da79a295628ebf6e2354fe8d9f87f7971d94516"
+      },
+      {
+        "file": "asset-compiler/src/Composer/AssetHashCommand.php",
+        "sha256": "2107591611491665a79e42dc87c700202a3ef0b7b939b1bdf6991b972d6d8625"
+      },
+      {
+        "file": "asset-compiler/src/Composer/AssetInfoCommand.php",
+        "sha256": "49ab478cb6219bdee96c1fc85454da90144ba4e761d76be55de8e3b59dcc41f0"
+      },
+      {
+        "file": "asset-compiler/src/Composer/CommandProvider.php",
+        "sha256": "d38436758785fe9d82b69ffb8fa238718c9239fe44c0540d18137c8dca0710e2"
+      },
+      {
+        "file": "asset-compiler/src/Composer/CompilationReporter.php",
+        "sha256": "660354685ed3062b50354bdd400475b308919c5025de1cd327879facc53f1e59"
+      },
+      {
+        "file": "asset-compiler/src/Composer/CompileAssetsCommand.php",
+        "sha256": "fd7866fb0ec912f75e941e133f6897d9fda8d9c57ee2774e63246cfd71a0531c"
+      },
+      {
+        "file": "asset-compiler/src/Composer/Plugin.php",
+        "sha256": "48033e640d96ca975aabf6a4dddafe28c78d2c168520b6f474d24827870b804e"
+      },
+      {
+        "file": "asset-compiler/src/Application/CompilerFactory.php",
+        "sha256": "e0b1e0bd855162aecd813fb97f19d4019f3cd6c073c173057bc3c512240d70c7"
+      }
+    ]
+  },
+  "cli": {
+    "head": "85a5a42bc4b7e2e01228579a01b907e0cf5ba075",
+    "status": "",
+    "files": [
+      {
+        "file": "cli/README.md",
+        "sha256": "0f41597b181b57731327a1deeb20b5dd57e7007af00130222f9f80d804c28716"
+      },
+      {
+        "file": "cli/AGENTS.md",
+        "sha256": "5b794ffbce722dd8f577811f806d2322060cf178851356e92027057f867e8308"
+      },
+      {
+        "file": "cli/composer.json",
+        "sha256": "a4bd5b097fb516f3f77f142cdddfd198e349d421f801c99bd374c2f5fa11bd42"
+      },
+      {
+        "file": "cli/phpstan.neon.dist",
+        "sha256": "54009101d09d7dbad206b653869ba7b13539fcc52a74725b3fa414ef90a0c6e9"
+      }
+    ]
+  },
+  "qa": {
+    "head": "4f7c85c2c04a58cb0a23929683c74de58040d171",
+    "status": "",
+    "files": [
+      {
+        "file": "qa/docs/adoption.md",
+        "sha256": "b89e3b94194aa3ccafd19b7d754959bdca859b7c471b9ed30d62dbe7dfc84a76"
+      },
+      {
+        "file": "qa/docs/edge-cases.md",
+        "sha256": "963c43314af0465f35edd7018566174bc5929a052b40ea3487849ac393271882"
+      },
+      {
+        "file": "qa/docs/package-profiles.md",
+        "sha256": "c6858fe2eb0d38f65399a182daf8a6d5a2104a8a85d41b0c682263cf1469305b"
+      },
+      {
+        "file": "qa/docs/qa-adoption.schema.json",
+        "sha256": "588ff19bb535dc333ebe696956bbb31e6e4850045513200314856d3f659d4ea2"
+      },
+      {
+        "file": "qa/README.md",
+        "sha256": "3570dc2e6ab25b3eae98bcd1d88c617588f3d36fd3cdb93b11eced17536578d3"
+      },
+      {
+        "file": "qa/AGENTS.md",
+        "sha256": "135cbb0a318fc3627f89f6a692461dad6fc94b9cb62d1a3f5867b3ccb7a25b49"
+      },
+      {
+        "file": "qa/composer.json",
+        "sha256": "0a9d254ed4e85b371e1edc00c4affbb40e6ca04d14c7d2086994f69e4d7a7311"
+      },
+      {
+        "file": "qa/phpstan.neon.dist",
+        "sha256": "978b6cb93c865bd661ab9cb357c6ad3ae683853ecbbb1f684d307bb8b2525985"
+      }
+    ]
+  },
+  "coding-standards": {
+    "head": "577ff65c94177e6d632f7f45861d08eb3624993c",
+    "status": "",
+    "files": [
+      {
+        "file": "coding-standards/docs/Adoption.md",
+        "sha256": "76aeaf961b0a2de967230da4a1ce729a35bad67be7b1aaf8c8a1404980fadab3"
+      },
+      {
+        "file": "coding-standards/docs/Compatibility.md",
+        "sha256": "3ba6cec9c32a4aac1a00e15d9f09e0a1e28cd100a876f290c73fb93148eacce5"
+      },
+      {
+        "file": "coding-standards/docs/Disabling.md",
+        "sha256": "d5e9dc13324f1e5e99738467c08c182c2266c4654296282f6e168088815ce820"
+      },
+      {
+        "file": "coding-standards/docs/IDE-Integration.md",
+        "sha256": "0e4b586da0c785588e4246bdf8398c24d0a09620895eaa07ece07f1982053587"
+      },
+      {
+        "file": "coding-standards/docs/Integration.md",
+        "sha256": "3be2a5ca52c925ad0057161647d9f51ad9372e385c931dced709f6f6fab4d5d6"
+      },
+      {
+        "file": "coding-standards/docs/Release.md",
+        "sha256": "aafb55fe3a9f38c5087bb55229351d6c238b3a3a8cabcaf49e22ae90f14861a3"
+      },
+      {
+        "file": "coding-standards/docs/Rules.md",
+        "sha256": "bda69a9a1ce43fc0b93e140c41a106f1c2e82952be3f26356c1b6a21f5e9fe5a"
+      },
+      {
+        "file": "coding-standards/docs/Sniffs.md",
+        "sha256": "3766fa94ea269923ad4efad022bbdce427053d0e31307d71634a221e76e51577"
+      },
+      {
+        "file": "coding-standards/README.md",
+        "sha256": "696eab016b56d0b95f5bd1dbe06028c69c433d393f157b8724a7bcbfa9bd99a6"
+      },
+      {
+        "file": "coding-standards/AGENTS.md",
+        "sha256": "a5b9b5c13585483dbe900d6fd7200e44aec3a281834392a94a8d157d20279811"
+      },
+      {
+        "file": "coding-standards/composer.json",
+        "sha256": "8e14728620bb6a19dbb478559d6b0fa4f1055e1344fdf4990ff6117b6d09304f"
+      },
+      {
+        "file": "coding-standards/phpstan.neon.dist",
+        "sha256": "a5ee09fad2c7e69f26d1c0dedda87c2cf1778eb55eb706594e81fc0f4c1fdd8d"
+      }
+    ]
+  },
+  "reusable-workflows": {
+    "head": "990bfdadc6cbc7db3cf39053116c49ddefb2129e",
+    "status": "",
+    "files": [
+      {
+        "file": "reusable-workflows/docs/archive-check.md",
+        "sha256": "6e12a1bfd27254ef56d2a67e4c2a4216d9af49a987da87cfbdd818392129a4a5"
+      },
+      {
+        "file": "reusable-workflows/docs/archive.md",
+        "sha256": "a9ee8e58b4ae1418cf266dbf5892d6185fe4aef84aa895329ca7adfc349dcd8b"
+      },
+      {
+        "file": "reusable-workflows/docs/assets.md",
+        "sha256": "5ee7df2396158b9bc6c5468a7d96b4dbf8258b2e122f94478ff69fa6487a19ca"
+      },
+      {
+        "file": "reusable-workflows/docs/build-and-distribute.md",
+        "sha256": "46f7fcc8d55aa723b4288cc26d9d2f9a4a6ee875a00e770823dc8ea70f88a574"
+      },
+      {
+        "file": "reusable-workflows/docs/consumer-canary.md",
+        "sha256": "c614b92cc1ad5a19396085547ecadaa126a0ebd95f707849813c90cd2e9ec24b"
+      },
+      {
+        "file": "reusable-workflows/docs/consumer-setup.md",
+        "sha256": "2b5b974ed5e70be56aa231d6b4253a569b4e7c4c77604617acc51e87677be28c"
+      },
+      {
+        "file": "reusable-workflows/docs/ddev-playwright.md",
+        "sha256": "ed3c09727c9eaa8c56cde568a0cbf66a14002637694d7ecc0cc81a5c2cd661e7"
+      },
+      {
+        "file": "reusable-workflows/docs/decision-guide.md",
+        "sha256": "6fb39eeb9a3f73702db44697e5228d1678f6c00e9e82a960b99e64d6ce8b6864"
+      },
+      {
+        "file": "reusable-workflows/docs/deploy.md",
+        "sha256": "2264f45a4b01573f32da8221d268a4a509e6a8e5c6688f3d33554350f9a5cb88"
+      },
+      {
+        "file": "reusable-workflows/docs/enterprise-wordpress-monorepo.md",
+        "sha256": "0dbb1136b1b4ea09ae7c461553f35a73ec447842373f172597b2e2846f371daf"
+      },
+      {
+        "file": "reusable-workflows/docs/feature-map.md",
+        "sha256": "7f7ce3a4088a04111f60ba00fc0e43d26ba8c7ee3cc577626d0e1a2c8fbc614d"
+      },
+      {
+        "file": "reusable-workflows/docs/index.md",
+        "sha256": "8704a91da6d353ce2191c90326291406390633664b33f3b4eb3924450856c2a7"
+      },
+      {
+        "file": "reusable-workflows/docs/installation.md",
+        "sha256": "8c2d1e5ab5cd6b4fcaa7fafc9222e7c0c90a33d7d7d05ebd659320c3bd93acc1"
+      },
+      {
+        "file": "reusable-workflows/docs/javascript.md",
+        "sha256": "fb85c6da19da84d0c56d5f0cda6311a8f3d5026d177ddd6462ea77f816db1015"
+      },
+      {
+        "file": "reusable-workflows/docs/maintainer-guide.md",
+        "sha256": "ace3740e0a0116ac64dae56f46f3aef7547bf5bc7d1e57c53e38bad1c228dd47"
+      },
+      {
+        "file": "reusable-workflows/docs/php.md",
+        "sha256": "a52b8e7b1fb43af69b4843ba4974f4304b975227b9aeb5ad3ae49ad92fd876c0"
+      },
+      {
+        "file": "reusable-workflows/docs/playwright.md",
+        "sha256": "a3a6f56963d861f6b39b1fe505d6166dd5412cad47983068d52bcad626d66a67"
+      },
+      {
+        "file": "reusable-workflows/docs/release-strategy.md",
+        "sha256": "262f3838f7fa62dcee611b3079f8207f71f65e627f78c45ffac07b8e55e3e4a1"
+      },
+      {
+        "file": "reusable-workflows/docs/release.md",
+        "sha256": "bf7fd95e0c08b77457d0891728afee40091f547caf81d32b9ec8bb99ec803302"
+      },
+      {
+        "file": "reusable-workflows/docs/security-hardening.md",
+        "sha256": "396c5dfd04d282fd90f32e4e6473f3639b16ed954fdb82cd9d5a48056d66a95e"
+      },
+      {
+        "file": "reusable-workflows/docs/sympress-qa.md",
+        "sha256": "a534d54f382dc0afe39dbba24d58ae8413ed3c17c9caca543dcc01651837259f"
+      },
+      {
+        "file": "reusable-workflows/docs/text-quality.md",
+        "sha256": "610fcbffd7ddfc1a0f22464e1c5e7f07ea829f2b1bcfefd90cb3f9fce1f9e9eb"
+      },
+      {
+        "file": "reusable-workflows/docs/troubleshooting.md",
+        "sha256": "c7e9c9ea321c5d40774727e219186c4b34f49e8936b06bcdf36bce37846a7194"
+      },
+      {
+        "file": "reusable-workflows/docs/usage.md",
+        "sha256": "1ebf5a16ef4768c294da2729120c0f2caecd870ad03b78bd536f7700fec0c3b4"
+      },
+      {
+        "file": "reusable-workflows/docs/woo-qit.md",
+        "sha256": "ef387928192ecfd5b959baa27b3cbb083ec8c6499f455d95fdb96641fec41992"
+      },
+      {
+        "file": "reusable-workflows/docs/workflow-reference.md",
+        "sha256": "e1a4040e215df09e37a07092b5937afd7ecaddb9728c0075ef20eea26d606cec"
+      },
+      {
+        "file": "reusable-workflows/docs/wp-scripts.md",
+        "sha256": "87294ab7f8e9c3f1c9a1c0f7d4d2c350e0f0b068251f428572269f8fadf82bbb"
+      },
+      {
+        "file": "reusable-workflows/README.md",
+        "sha256": "6fa922de701cefc8c94c3cf91149015dedd0ee411a253f5482da06575c914b4c"
+      },
+      {
+        "file": "reusable-workflows/AGENTS.md",
+        "sha256": "c259d7df4c3c76ab20c83e2b1b5b84686e345c115abac81b61dd6db441f44a61"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/_repository-checks.yml",
+        "sha256": "9e5c9ff6cdbc85f9063cd4af976bc43e83cef70814159833713d3bd1b270e88a"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/assets-build.yml",
+        "sha256": "2da8a57ae0114fef5b6899a6748795e80171a1fbdafae7788bdace87a557f30f"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/automatic-release.yml",
+        "sha256": "140aadc5d0794aad3ed0cef37451c8e2d6bcc0587bef8258d7370e8944d33635"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/build-and-distribute.yml",
+        "sha256": "a72efa952b36db43970894177e71ddb4ec854a5f92941e9dbdc8f2292610ac48"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/codeql.yml",
+        "sha256": "17a98d1a094b513aac7935552b5f22b88ba7ca306568f0af89280e91a1524e15"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/composer-validate.yml",
+        "sha256": "ac1d9d5a1eeda25077161873f944d96160be3abcce6d30fe94af66d6f0b65358"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/ddev-playwright.yml",
+        "sha256": "13e8fd208efa8718b6a53e08677467ac113ef7ec3e849fec2e764ae92efed97c"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/deploy-deployer.yml",
+        "sha256": "6af6a3980b070554e8f796567b8a02b7622242f9af7788c249b1013d4dc99539"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/javascript-static-analysis.yml",
+        "sha256": "9c84c0f2009033c11b5a8dab4d193451a25c40bc056fd666b7abd89772d2eaf4"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/javascript-unit.yml",
+        "sha256": "a78ddc2fd87ca132d25339d5013c4018b3346f437bdb39250c7d3066a4d768e9"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/lint-workflows.yml",
+        "sha256": "65aeac04ca8a98565a728bee19d95990f5a04d464b1f2db231aa643aee387855"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/php-coding-standards.yml",
+        "sha256": "c26a45da0c740d510fe99a0b24377dd095d799158f953f166ec1785627ee8aa0"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/php-static-analysis.yml",
+        "sha256": "89c607743961456c02da435bce487da79c49888aa8832aaa3d5645622e9a0190"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/php-unit.yml",
+        "sha256": "88ee90a08d05ed9ba107dbbe4d3f4c4f6329a82636f1832e8115324e0874262b"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/playwright.yml",
+        "sha256": "591c8a97f5d2dafd666520cf346f934caaca174e2cb21841437ff54cbee3039b"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/sympress-qa.yml",
+        "sha256": "4a60fbba98c05a4080a1cbf2dabe3d5c6042a7f53e9fccedcba8fb8927727c34"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/text-quality.yml",
+        "sha256": "238f01b313741628ecea94e0c70fa0914784e951b14021e021bd91321bd674d5"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/woo-qit.yml",
+        "sha256": "66d90b14de205270b6930f0f570251b360c38ea5184bd2e7ff29b741d4f96263"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/wordpress-archive-check.yml",
+        "sha256": "3b9b62de1e5c73024854be8ef6dca3ffb2598a7e394e0a3435630a99e55026b6"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/wordpress-archive.yml",
+        "sha256": "bbb40b2163c1bffecd30871539031e8d785d4baf79c354cdddf97132dc1b8e3d"
+      },
+      {
+        "file": "reusable-workflows/.github/workflows/wp-scripts-lint.yml",
+        "sha256": "64f58bc20aaa48e18e8a53d79ff9391961c9896ac195f396004ef759cffa0f56"
+      }
+    ]
+  },
+  "wp-cli-console": {
+    "head": "8e27c1b8d5a8499b16f065de7329fb7afe064fd4",
+    "status": "",
+    "files": [
+      {
+        "file": "wp-cli-console/README.md",
+        "sha256": "a914f93793fa856025117144f914b0216bd1ea62987e1ba9ac3914739bdcf132"
+      },
+      {
+        "file": "wp-cli-console/AGENTS.md",
+        "sha256": "ae799d2d8251d17e25f2dad4d2a4ff9b84d644c484e5dcd328bf7f3899fdf128"
+      },
+      {
+        "file": "wp-cli-console/composer.json",
+        "sha256": "95f8944e307b568a0fe2f323d3705c32c639d1bcc82eb0de1a7e163245fa824a"
+      },
+      {
+        "file": "wp-cli-console/phpstan.neon.dist",
+        "sha256": "b66f44cee716e826077c39b0abf49b306fb5b1fec65a11aaa32cdafefefed2d4"
+      }
+    ]
+  },
+  "coreDropins": {
+    "file": "demo/public/wp/wp-admin/includes/plugin.php",
+    "sha256": "8ce517bd2907759934c76663571d5c3ed52ca705c87ecc0063a11fc4c972d02e"
+  }
+}
+
