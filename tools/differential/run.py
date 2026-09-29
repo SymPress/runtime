@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 
@@ -160,19 +161,151 @@ def compare_generated(work, baseline, autoload, args, report):
             print(f"PASS {baseline}/cache/{mode}: exact runtime reports", flush=True)
 
 
+def compare_steps(work, baseline, autoload, args, report):
+    oracle = autoload.parent.parent
+    manifest = json.loads((oracle / "composer.json").read_text())
+    manifest["config"]["allow-plugins"] = {"wecodemore/wpstarter": True, "composer/installers": False}
+    runtime_env = dict(os.environ, COMPOSER_VENDOR_DIR=str(ROOT / "vendor"))
+    runtime_env.pop("COMPOSER", None)
+
+    def setup(label, options, files):
+        candidate = work / (baseline + "-steps-" + label)
+        candidate.mkdir()
+        for project in [oracle, candidate]:
+            shutil.rmtree(project / "public", ignore_errors=True)
+            core_fixture(project, "development")
+            for name, content in files.items():
+                destination = project / name
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_text(content)
+        options = dict({"db-check": False, "require-wp": False, "env-dir": ".", "register-theme-folder": False}, **options)
+        manifest["extra"] = {"wordpress-install-dir": "public/wp", "wordpress-content-dir": "public/content", "wpstarter": options}
+        write_json(oracle / "composer.json", manifest)
+        write_json(candidate / "composer.json", {"extra": {"wordpress-install-dir": "public/wp", "wordpress-content-dir": "public/content", "sympress-runtime": options}})
+        return candidate
+
+    def execute(candidate, old_steps, new_steps):
+        run([args.oracle_php, args.composer, "--no-interaction", "wpstarter", *old_steps], oracle)
+        run([args.candidate_php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", *new_steps], candidate, runtime_env)
+
+    def snapshot(project):
+        result = {}
+        for path in sorted((project / "public/content").rglob("*")):
+            name = path.relative_to(project / "public/content").as_posix()
+            if path.is_symlink():
+                result[name] = {"kind": "link", "target": os.path.relpath(path.resolve(), project)}
+            elif path.is_file():
+                result[name] = {"kind": "file", "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+            else:
+                result[name] = {"kind": "directory"}
+        return result
+
+    dropins = ["advanced-cache.php", "db.php", "db-error.php", "install.php", "maintenance.php", "object-cache.php", "sunrise.php", "blog-deleted.php", "blog-inactive.php", "blog-suspended.php"]
+    files = {"sources/" + name: "<?php // synthetic " + name + "\n" for name in dropins}
+    files.update({"content-dev/plugins/shop/main.php": "<?php // plugin\n", "content-dev/themes/theme/style.css": "/* theme */\n", "content-dev/mu-plugins/mu.php": "<?php // mu\n", "content-dev/languages/de_DE.mo": "synthetic translation", "content-dev/plugins/.hidden": "must not publish"})
+    for operation in ["copy", "symlink"]:
+        candidate = setup("publish-" + operation, {"dropins": {name: "sources/" + name for name in dropins}, "dropins-op": operation, "content-dev-dir": "content-dev", "content-dev-op": operation}, files)
+        execute(candidate, ["dropins", "publish-content-dev" if baseline == "release" else "publishcontentdev"], ["dropins", "publishcontentdev"])
+        expected = snapshot(oracle)
+        actual = snapshot(candidate)
+        differences = []
+        if baseline == "release" and operation == "symlink":
+            for name in dropins:
+                before = {"kind": "file", "sha256": hashlib.sha256(files["sources/" + name].encode()).hexdigest()}
+                after = {"kind": "link", "target": "sources/" + name}
+                if expected.get(name) != before or actual.get(name) != after:
+                    raise RuntimeError("Release copy-only dropins did not match the exact D02 fixture.")
+                differences.append({"id": "D02", "path": name, "oracle": before, "candidate": after})
+                expected[name] = after
+        if baseline == "release" and operation == "copy":
+            hidden = {"kind": "file", "sha256": hashlib.sha256(b"must not publish").hexdigest()}
+            if expected.get("plugins/.hidden") != hidden or "plugins/.hidden" in actual:
+                raise RuntimeError("Release hidden-file publication fixture did not match D02.")
+            differences.append({"id": "D02", "path": "plugins/.hidden", "oracle": hidden, "candidate": None})
+            del expected["plugins/.hidden"]
+            configuration = json.loads((candidate / "composer.json").read_text())
+            configuration["extra"]["sympress-runtime"]["compatibility-profile"] = "release-3.0.1"
+            write_json(candidate / "composer.json", configuration)
+            run([args.candidate_php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", "publishcontentdev"], candidate, runtime_env)
+            compatible = snapshot(candidate)
+            if compatible != dict(expected, **{"plugins/.hidden": hidden}):
+                raise RuntimeError("Release compatibility must preserve whole-directory copy including hidden files.")
+        if expected != actual or len(actual) != (20 if operation == "copy" else 18):
+            mismatch = {key: [expected.get(key), actual.get(key)] for key in expected.keys() | actual.keys() if expected.get(key) != actual.get(key)}
+            raise RuntimeError(f"Unregistered published file mismatch in {baseline}/{operation} ({len(expected)}/{len(actual)} entries): {mismatch}")
+        report["cases"].append({"id": baseline + "/steps/publish-" + operation, "snapshot": actual, "differences": differences})
+        print(f"PASS {baseline}/steps/publish-{operation}: exact file hashes and normalized link targets", flush=True)
+    candidate = setup("move", {"move-content": True}, {"public/wp/wp-content/plugins/hello.php": "<?php // hello\n", "public/wp/wp-content/themes/theme/style.css": "/* theme */\n", "public/wp/wp-content/languages/de_DE.mo": "translation"})
+    execute(candidate, ["move-content" if baseline == "release" else "movecontent"], ["movecontent"])
+    if snapshot(oracle) != snapshot(candidate) or (oracle / "public/wp/wp-content").exists() or (candidate / "public/wp/wp-content").exists():
+        raise RuntimeError("Core content move does not match the pinned oracle.")
+    report["cases"].append({"id": baseline + "/steps/move", "snapshot": snapshot(candidate), "differences": []})
+    print(f"PASS {baseline}/steps/move: exact file hashes and source removal", flush=True)
+
+    fake_cli = '<?php file_put_contents(__DIR__ . "/argv.jsonl", json_encode(array_slice($argv, 1)) . "\\n", FILE_APPEND);\n'
+    candidate = setup("wpcli", {"install-wp-cli": False, "wp-cli-files": [{"file": "scripts/eval.php", "args": ["alpha", "space value", "0"], "skip-wordpress": True}], "wp-cli-commands": ["wp option get 'site name'"]}, {"wp-cli.phar": fake_cli, "scripts/eval.php": "<?php // eval\n"})
+    execute(candidate, ["wp-cli" if baseline == "release" else "wpcli"], ["wpcli"])
+    def arguments(project):
+        return [[item.replace(str(project), "<ROOT>") for item in json.loads(line)] for line in (project / "argv.jsonl").read_text().splitlines()]
+    upstream, actual = arguments(oracle), arguments(candidate)
+    expected_upstream = [["cli", "version", "--path=<ROOT>/public/wp"], ["eval-file", "<ROOT>/scripts/eval.php", "alpha", "space", "value", "--skip-wordpress", "--path=<ROOT>/public/wp"], ["option", "get", "site name", "--path=<ROOT>/public/wp"]]
+    expected_candidate = json.loads(json.dumps(expected_upstream))
+    expected_candidate[1] = ["eval-file", "<ROOT>/scripts/eval.php", "alpha", "space value", "0", "--skip-wordpress", "--path=<ROOT>/public/wp"]
+    if baseline == "release":
+        del expected_upstream[1]  # D17: release validator mapping never supplies eval-file descriptors.
+    if upstream != expected_upstream or actual != expected_candidate:
+        raise RuntimeError(f"WP-CLI argument mismatch: {upstream} / {actual}")
+    report["cases"].append({"id": baseline + "/steps/wpcli", "differences": [{"id": "D17" if baseline == "release" else "D24", "oracle": upstream, "candidate": actual}]})
+    print(f"PASS {baseline}/steps/wpcli: exact argv and registered eval-file differences", flush=True)
+
+    candidate = setup("package-dropin", {"dropins": {"db.php": "sources/db.php"}, "dropins-op": "symlink"}, {"sources/db.php": "<?php // mapped\n", "vendor/fixture/dropins/object-cache.php": "<?php // package\n", "vendor/fixture/dropins/LICENSE": "synthetic license\n"})
+    package = {"name": "fixture/dropins", "version": "1.0.0", "version_normalized": "1.0.0.0", "type": "wordpress-dropin", "install-path": "../fixture/dropins"}
+    installed_file = oracle / "vendor/composer/installed.json"
+    installed = json.loads(installed_file.read_text())
+    installed["packages"].append(package)
+    write_json(installed_file, installed)
+    (candidate / "vendor/composer").mkdir(parents=True)
+    write_json(candidate / "vendor/composer/installed.json", {"packages": [package]})
+    (candidate / "vendor/autoload.php").write_text("<?php return require " + json.dumps(str(ROOT / "vendor/autoload.php")) + ";\n")
+    run([args.oracle_php, args.composer, "--no-interaction", "wpstarter", "dropins"], oracle)
+    candidate_env = dict(runtime_env, COMPOSER_VENDOR_DIR=str(candidate / "vendor"))
+    run([args.candidate_php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", "dropins"], candidate, candidate_env)
+    def package_state(project):
+        target = project / "public/content/object-cache.php"
+        return {"source": (project / "vendor/fixture/dropins/object-cache.php").is_file(), "license": (project / "vendor/fixture/dropins/LICENSE").is_file(), "target_exists": target.is_file(), "target_link": target.is_symlink(), "target_hash": hashlib.sha256(target.read_bytes()).hexdigest() if target.is_file() else None}
+    package_hash = hashlib.sha256(b"<?php // package\n").hexdigest()
+    expected_oracle = {"source": False, "license": False, "target_exists": baseline == "release", "target_link": baseline != "release", "target_hash": package_hash if baseline == "release" else None}
+    expected_candidate = {"source": True, "license": True, "target_exists": True, "target_link": True, "target_hash": package_hash}
+    if package_state(oracle) != expected_oracle or package_state(candidate) != expected_candidate:
+        raise RuntimeError(f"Package source retention mismatch: {package_state(oracle)} / {package_state(candidate)}")
+    report["cases"].append({"id": baseline + "/steps/package-dropin", "differences": [{"id": "D10", "oracle": expected_oracle, "candidate": expected_candidate}]})
+    print(f"PASS {baseline}/steps/package-dropin: exact D10 source, license and link state", flush=True)
+
+    if baseline == "dev":
+        candidate = setup("vcs-marker", {"check-vcs-ignore": True}, {".gitignore": "# -~ Generated by WP Starter x~-\n"})
+        for project in [oracle, candidate]:
+            run(["git", "init", "-q"], project)
+        upstream = run([args.oracle_php, args.composer, "--no-interaction", "wpstarter", "vcsignorecheck"], oracle)
+        actual = subprocess.run([args.candidate_php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", "vcsignorecheck"], cwd=candidate, env=runtime_env, text=True, capture_output=True)
+        if "Found a WP-Starter generated .gitignore file." not in upstream or actual.returncode != 1 or "VCS ignore protection could not be verified" not in actual.stdout + actual.stderr:
+            raise RuntimeError("VCS generated-marker fixture did not match exact D18 behavior.")
+        report["cases"].append({"id": "dev/steps/vcs-marker", "differences": [{"id": "D18", "oracle": {"exit": 0, "trusted_marker": True}, "candidate": {"exit": 1, "protection_verified": False}}]})
+        print("PASS dev/steps/vcs-marker: actual ignore evidence replaces marker trust", flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--oracle-php", default="php8.2")
     parser.add_argument("--candidate-php", default="php8.5")
     parser.add_argument("--composer", required=True)
-    parser.add_argument("--scope", choices=["all", "constants", "environment", "generated"], default="all")
+    parser.add_argument("--scope", choices=["all", "constants", "environment", "generated", "steps"], default="all")
     args = parser.parse_args()
     build = ROOT / "build/differential"
     build.mkdir(parents=True, exist_ok=True)
     (build / "report.json").unlink(missing_ok=True)
     inventory = json.loads((ROOT / "docs/upstream-inventory.json").read_text())
     candidate_types = {item["name"]: item["type"] for item in inventory["baselines"]["dev"]["constants"]}
-    report = {"scope": "constant reader/definitions, environment aliases, generated index/wp-config and warm-cache runtime; complete file snapshots remain pending", "oracles": {}, "cases": []}
+    report = {"scope": "constant reader/definitions, environment aliases, generated index/wp-config, warm-cache runtime, exact content trees, package retention, WP-CLI argv and VCS marker behavior; complete generated-template snapshots remain pending", "oracles": {}, "cases": []}
     report["php"] = {key: run([binary, "-r", "echo PHP_VERSION;"], ROOT) for key, binary in [("oracle", args.oracle_php), ("candidate", args.candidate_php)]}
     report["composer"] = run([args.oracle_php, args.composer, "--version", "--no-ansi"], ROOT).strip()
     with tempfile.TemporaryDirectory(prefix="oracle-", dir=build) as temp:
@@ -227,6 +360,8 @@ def main():
                 print(f"PASS {baseline}/environment: {len(aliases) * 3} name/variable combinations", flush=True)
             if args.scope in ["all", "generated"]:
                 compare_generated(work, baseline, autoload, args, report)
+            if args.scope in ["all", "steps"]:
+                compare_steps(work, baseline, autoload, args, report)
     report["executed_scope"] = args.scope
     write_json(build / "report.json", report)
     print(f"Report: {build / 'report.json'}")
