@@ -6,8 +6,11 @@ namespace SymPress\Runtime\Step;
 
 use InvalidArgumentException;
 use SymPress\Runtime\Step\Builtin\CheckPathsStep;
+use SymPress\Runtime\Step\Builtin\EnvExampleStep;
 use SymPress\Runtime\Step\Builtin\FlushEnvCacheStep;
 use SymPress\Runtime\Step\Builtin\IndexStep;
+use SymPress\Runtime\Step\Builtin\MuLoaderStep;
+use SymPress\Runtime\Step\Builtin\WpCliConfigStep;
 use SymPress\Runtime\Step\Builtin\WpConfigStep;
 
 final class Registry
@@ -24,6 +27,9 @@ final class Registry
         'wpconfig' => WpConfigStep::class,
         'index' => IndexStep::class,
         'flushenvcache' => FlushEnvCacheStep::class,
+        'muloader' => MuLoaderStep::class,
+        'envexample' => EnvExampleStep::class,
+        'wpcliconfig' => WpCliConfigStep::class,
     ];
 
     /** @var array<string, Definition> */
