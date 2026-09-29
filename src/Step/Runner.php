@@ -4,26 +4,72 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Step;
 
+use Countable;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Console\Io;
 use SymPress\Runtime\Console\Selection;
+use SymPress\Runtime\Event\Lifecycle;
 use SymPress\Runtime\Filesystem\OverwritePolicy;
 use SymPress\Runtime\Filesystem\Paths;
 use Throwable;
 
-final readonly class Runner
+final class Runner implements Countable
 {
-    public function __construct(private Config $config, private Paths $paths, private Io $io, private ContainerInterface $container, private Selection $selection = new Selection())
+    /** @var array<int, StepInterface> */
+    private array $steps = [];
+    private bool $running = false;
+    private bool $preparing = false;
+
+    public function __construct(private readonly Config $config, private readonly Paths $paths, private readonly Io $io, private readonly ContainerInterface $container, private readonly Selection $selection = new Selection())
     {
+    }
+
+    public function name(): string
+    {
+        return 'sympress-runtime';
+    }
+
+    public function count(): int
+    {
+        return count($this->steps);
+    }
+
+    public function addStep(StepInterface $step, StepInterface ...$steps): self
+    {
+        if (!$this->running || $this->preparing) {
+            foreach ([$step, ...$steps] as $entry) {
+                $this->steps[spl_object_id($entry)] = $entry;
+            }
+        }
+
+        return $this;
+    }
+
+    public function removeStep(StepInterface|string $step, StepInterface|string ...$steps): self
+    {
+        if ($this->running && !$this->preparing) {
+            return $this;
+        }
+        foreach ([$step, ...$steps] as $remove) {
+            foreach ($this->steps as $key => $entry) {
+                if ($entry !== $remove && $entry->name() !== $remove) {
+                    continue;
+                }
+                unset($this->steps[$key]);
+            }
+        }
+
+        return $this;
     }
 
     /** @param list<Definition> $definitions */
     public function run(array $definitions): int
     {
-        $failed = false;
-        $postprocessors = [];
+        if ($this->running) {
+            return 0;
+        }
         foreach ($definitions as $definition) {
             if ($definition->class === null) {
                 throw new RuntimeException('Step ' . $definition->name . ' is scheduled for a later implementation phase and is not available yet.');
@@ -32,11 +78,45 @@ final readonly class Runner
             if (!$step instanceof StepInterface || $step->name() !== $definition->name) {
                 throw new RuntimeException('Step service name does not match its registration: ' . $definition->name);
             }
+            $this->addStep($step);
+        }
+        $lifecycle = $this->container->get(Lifecycle::class);
+        if (!$lifecycle instanceof Lifecycle) {
+            throw new RuntimeException('Runtime lifecycle service is unavailable.');
+        }
+        $this->running = true;
+        $this->preparing = true;
+        $pre = $lifecycle->dispatch($this, true);
+        $this->preparing = false;
+        foreach ($this->steps as $key => $step) {
+            if ($step->name() === 'wpcli') {
+                unset($this->steps[$key]);
+                $this->steps[$key] = $step;
+                break;
+            }
+        }
+        $failed = $pre->failed();
+        $aggregate = 0;
+        $postprocessors = [];
+        foreach ($pre->isStepHalted() ? [] : $this->steps as $step) {
             try {
                 if (!$this->allowed($step)) {
                     continue;
                 }
-                $result = $step->run($this->config, $this->paths);
+                $before = $lifecycle->dispatch($step, true);
+                $failed = $failed || $before->failed();
+                if ($before->isStepHalted()) {
+                    continue;
+                }
+                try {
+                    $result = $step->run($this->config, $this->paths);
+                } catch (Throwable $error) {
+                    $this->io->error($step->name() . ': ' . $error->getMessage());
+                    $result = StepInterface::ERROR;
+                }
+                $after = $lifecycle->dispatch($step, false, $result);
+                $failed = $failed || $after->failed();
+                $aggregate |= $result & (StepInterface::SUCCESS | StepInterface::ERROR);
                 if ($step instanceof PostProcessStepInterface) {
                     $postprocessors[] = $step;
                 }
@@ -51,7 +131,7 @@ final readonly class Runner
                     break;
                 }
             } catch (Throwable $error) {
-                $this->io->error($definition->name . ': ' . $error->getMessage());
+                $this->io->error($step->name() . ': ' . $error->getMessage());
                 $failed = true;
                 if ($step instanceof BlockingStepInterface) {
                     break;
@@ -66,6 +146,12 @@ final readonly class Runner
                 $failed = true;
             }
         }
+        if ($failed) {
+            $aggregate |= StepInterface::ERROR;
+        }
+        $post = $lifecycle->dispatch($this, false, $aggregate ?: StepInterface::NONE);
+        $failed = $failed || $post->failed();
+        $this->running = false;
 
         return $failed ? 1 : 0;
     }

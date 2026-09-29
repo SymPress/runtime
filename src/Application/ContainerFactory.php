@@ -7,6 +7,7 @@ namespace SymPress\Runtime\Application;
 use InvalidArgumentException;
 use ReflectionClass;
 use SymPress\Runtime\Compatibility\ComposerConfiguration;
+use SymPress\Runtime\Compatibility\LegacyApi;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Console\Io;
 use SymPress\Runtime\Console\Selection;
@@ -17,6 +18,7 @@ use SymPress\Runtime\Download\PharInstaller;
 use SymPress\Runtime\Download\UrlDownloader;
 use SymPress\Runtime\Env\EnvFactory;
 use SymPress\Runtime\Env\EnvReader;
+use SymPress\Runtime\Event\Lifecycle;
 use SymPress\Runtime\Filesystem\ContentPublisher;
 use SymPress\Runtime\Filesystem\FileContentBuilder;
 use SymPress\Runtime\Filesystem\Filesystem;
@@ -41,13 +43,19 @@ use SymPress\Runtime\Services;
 use SymPress\Runtime\Step\AsRuntimeStep;
 use SymPress\Runtime\Step\Definition;
 use SymPress\Runtime\Step\Registry;
+use SymPress\Runtime\Step\ScriptDispatcher;
 use SymPress\Runtime\Step\StepInterface;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition as ServiceDefinition;
 use Symfony\Component\DependencyInjection\Reference;
+use Symfony\Component\EventDispatcher\DependencyInjection\RegisterListenersPass;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\Process\ExecutableFinder;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface as EventDispatcherContract;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class ContainerFactory
@@ -55,6 +63,13 @@ final class ContainerFactory
     public function create(Config $config, Paths $paths, Io $io, RunContext $context, Registry $registry, ?callable $configure = null, Selection $selection = new Selection()): ContainerBuilder
     {
         $container = new ContainerBuilder();
+        $container->register('event_dispatcher', EventDispatcher::class)->setPublic(true);
+        $container->setAlias(EventDispatcherInterface::class, 'event_dispatcher')->setPublic(true);
+        $container->setAlias(EventDispatcherContract::class, 'event_dispatcher')->setPublic(true);
+        $container->registerForAutoconfiguration(EventSubscriberInterface::class)->addTag('kernel.event_subscriber');
+        $container->register(ScriptDispatcher::class)->setAutowired(true)->addTag('kernel.event_subscriber');
+        $container->register(Lifecycle::class)->setAutowired(true)->setPublic(true);
+        $container->addCompilerPass(new RegisterListenersPass());
         $container->register(HttpClientInterface::class)->setFactory([HttpClient::class, 'create']);
         $container->register(EnvFactory::class)->setAutowired(true);
         $container->register(EnvReader::class)->setFactory([new Reference(EnvFactory::class), 'create'])->setLazy(true)->setPublic(true);
@@ -81,6 +96,9 @@ final class ContainerFactory
         foreach ([SaltStore::class, ArtifactWriter::class, RuntimeBundleBuilder::class, SectionMerger::class, WpConfigGenerator::class] as $class) {
             $container->register($class)->setAutowired(true)->setPublic(true);
         }
+        if (!$config['compatibility']->is(false)) {
+            LegacyApi::configure($container);
+        }
         foreach (['custom-steps' => false, 'command-steps' => true, 'steps' => false] as $option => $commandOnly) {
             $steps = $config[$option]->unwrapOrFallback([]);
             if (!is_array($steps)) {
@@ -97,6 +115,10 @@ final class ContainerFactory
                 $registry->add(new Definition($name, $class, !$commandOnly, $commandOnly, $priority));
                 $container->register($class, $class)->setAutowired(true)->setPublic(true)
                     ->addTag('sympress.runtime.step', ['name' => $name, 'priority' => $priority]);
+                if ($config['compatibility']->is(false)) {
+                    continue;
+                }
+                LegacyApi::configureStep($container->getDefinition($class), $class);
             }
         }
         foreach ((new PackageFinder($context))->all() as $package) {
@@ -113,6 +135,10 @@ final class ContainerFactory
                 }
                 $container->register($class, $class)->setAutowired(true)->setPublic(true)
                     ->addTag('sympress.runtime.step', ['name' => $name, 'priority' => $attribute->priority ?? 0]);
+                if ($config['compatibility']->is(false)) {
+                    continue;
+                }
+                LegacyApi::configureStep($container->getDefinition($class), $class);
             }
         }
         if ($configure !== null) {
