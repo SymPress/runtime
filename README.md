@@ -2,7 +2,7 @@
 
 `sympress/runtime` will replace WP Starter across the SymPress ecosystem.
 
-**Status: Phases 1-4 are available as stacked draft PRs; Phase 5 implements kernel integration and diagnostics. Phase 0 was approved on 2026-09-29. Full parity acceptance and consumer migration remain open.**
+**Status: Phases 1-5 are available as stacked draft PRs. Phase 6 implements migration and compatibility diagnostics; full parity acceptance and consumer migration remain open. Phase 0 was approved on 2026-09-29.**
 
 Requires PHP 8.5 and Symfony 8.1. The Composer plugin runs application code in a separate PHP process, with a standalone binary for installs performed using `--no-plugins`.
 
@@ -28,5 +28,7 @@ All twelve inventoried setup steps are implemented, together with scripts/events
 - [Configuration](docs/configuration.md)
 - [CLI](docs/cli.md)
 - [Custom steps and services](docs/custom-steps.md)
+- [Migration](docs/migration.md)
+- [Phase 6 progress](docs/phase6-progress.md)
 
 All inventoried functionality remains in scope, including features not used by the current starter or demo. No `wecodemore/*` package is required. The isolated differential job installs its pinned oracles separately. See [NOTICE](NOTICE) for upstream attribution.

@@ -32,6 +32,9 @@ final class ConfigLoaderTest extends TemporaryProject
     }
 
     #[Group('PAR-CFG-005')]
+    #[Group('PAR-NATIVE-001')]
+    #[Group('PAR-NATIVE-002')]
+    #[Group('PAR-SYM-009')]
     public function testNativeFamilyWinsAndLegacySelectsReleaseProfile(): void
     {
         $this->write('wpstarter.json', '{"cache-env":false,"skip-steps":["index"]}');
@@ -70,5 +73,13 @@ final class ConfigLoaderTest extends TemporaryProject
     {
         $this->expectExceptionMessage('provided by the runner');
         (new ConfigLoader())->load($this->root, ['sympress-runtime' => ['is-composer-install' => true]]);
+    }
+
+    #[Group('PAR-NATIVE-001')]
+    #[Group('PAR-SYM-009')]
+    public function testDisabledCompatibilityRejectsLegacyLifecycleNames(): void
+    {
+        $this->expectExceptionMessage('Legacy script names or skip-db-check require compatibility');
+        (new ConfigLoader())->load($this->root, ['sympress-runtime' => ['compatibility' => false, 'scripts' => ['pre-wpstarter' => 'legacy_callback']]]);
     }
 }

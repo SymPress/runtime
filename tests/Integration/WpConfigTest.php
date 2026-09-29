@@ -64,6 +64,41 @@ PHP);
         return json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR);
     }
 
+    #[Group('PAR-SYM-009')]
+    #[Group('PAR-ENV-021')]
+    public function testHttpDeprecationsAreOnceOnlyAndNeverContaminateTheResponse(): void
+    {
+        $this->fixture();
+        $this->write('.env', "DB_PASSWORD='private-http-test-value'\n");
+        $generated = $this->generate();
+        self::assertSame(0, $generated->getExitCode(), $generated->getErrorOutput());
+        $this->write('probe.php', <<<'PHP'
+<?php
+require __DIR__ . '/public/wp-config.php';
+$GLOBALS['deprecations'] = 0;
+add_action('deprecated_function_run', static function (): void { ++$GLOBALS['deprecations']; });
+wpstarter_getenv('DB_PASSWORD');
+wpstarter_getenv('DB_PASSWORD');
+echo json_encode(['ok' => true, 'deprecations' => $GLOBALS['deprecations']]);
+PHP);
+        $socket = stream_socket_server('tcp://127.0.0.1:0');
+        self::assertIsResource($socket);
+        $address = stream_socket_get_name($socket, false);
+        self::assertIsString($address);
+        fclose($socket);
+        $server = new Process([PHP_BINARY, '-d', 'display_errors=1', '-S', $address, '-t', $this->root], $this->root);
+        $server->start();
+        try {
+            self::assertTrue($server->waitUntil(static fn (string $type, string $buffer): bool => str_contains($buffer, 'Development Server')));
+            $response = file_get_contents('http://' . $address . '/probe.php');
+            self::assertSame('{"ok":true,"deprecations":1}', $response);
+            self::assertSame(1, substr_count($server->getErrorOutput(), 'wpstarter_getenv is deprecated'));
+            self::assertStringNotContainsString('private-http-test-value', $server->getErrorOutput());
+        } finally {
+            $server->stop();
+        }
+    }
+
     #[Group('PAR-STEP-002')]
     #[Group('PAR-WP-001')]
     #[Group('PAR-WP-002')]

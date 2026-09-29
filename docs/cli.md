@@ -19,6 +19,9 @@ The standalone runner uses the current project directory and its Composer vendor
 | `kernel-cache` | Explicitly clear only the selected environment's kernel cache/build and discovery metadata |
 | `kernel-cache --generate-build-id` | Explicitly generate and persist a new kernel deployment ID |
 | `kernel-boot` | Reconcile optional boot ownership; generation requires kernel-boot configuration |
+| `migrate` | Write native configuration and statically report PHP migration findings |
+| `migrate --output=<path> --dry-run --json` | Preview a private configuration target and structured report without writes |
+| `migrate --force` | Replace a differing regular target; originals, directories and symlinks stay protected |
 | `-n`, `--no-interaction` | Use documented question defaults |
 | `-q`, `-v`, `-vv`, `-vvv`, `--ansi`, `--no-ansi` | Standard Symfony Console output controls |
 
@@ -30,6 +33,6 @@ Exit status is zero for successful/no-op execution, nonzero for invalid input, c
 
 Legacy profiles retain their documented selection differences, including rejecting positional opt-in combined with listing. Native mode permits this combination. The current test suite verifies root-script ordering; real asset-compiler coexistence remains a later acceptance check.
 
-All twelve default steps are implemented. Composer also exposes `sympress-runtime:doctor` and `sympress-runtime:check`, including `--json`. Kernel-only maintenance does not require a database connection or an installed WordPress core; mixed selections retain normal preflight checks. `migrate` remains reserved for Phase 6. See [kernel integration](kernel-integration.md) for optional kernel-console commands and boot ownership.
+All twelve default steps are implemented. Composer also exposes `sympress-runtime:doctor`, `sympress-runtime:check` and `sympress-runtime:migrate`, including `--json`. Kernel-only maintenance does not require a database connection or an installed WordPress core; mixed selections retain normal preflight checks. See [migration](migration.md) and [kernel integration](kernel-integration.md) for the corresponding contracts.
 
 A build dump takes precedence over the runtime cache and disables request-time cache writes. Actual process values still win. The requested raw environment must agree with an actual process environment selector; otherwise dump creation fails. Remove or rebuild the dump to switch its environment. Flush never deletes a build dump. Deploy generated configuration and dumps with PHP-readable private permissions; defaults are mode 0600.
