@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Tests\Contract;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use SymPress\Runtime\Application\RunContext;
 use SymPress\Runtime\Config\Config;
@@ -22,11 +23,46 @@ use SymPress\Runtime\Step\StepInterface;
 use SymPress\Runtime\Tests\Support\TemporaryProject;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 
 final class ContentPublisherTest extends TemporaryProject
 {
+    /** @return iterable<string, array{string, bool}> */
+    public static function replacements(): iterable
+    {
+        foreach (['copy', 'symlink', 'auto'] as $operation) {
+            yield $operation . ' file' => [$operation, false];
+            yield $operation . ' directory' => [$operation, true];
+        }
+    }
+
+    #[DataProvider('replacements')]
+    #[Group('PAR-FS-002')]
+    #[Group('PAR-FS-003')]
+    public function testExplicitForceReplacesOnlyTheLinkAndPreservesItsExternalDestination(string $operation, bool $directory): void
+    {
+        $external = $this->root . '-external';
+        mkdir($external);
+        file_put_contents($external . '/keep.txt', 'external');
+        $this->write($directory ? 'source/file.txt' : 'source', 'replacement');
+        symlink($directory ? $external : $external . '/keep.txt', $this->root . '/target');
+        try {
+            self::assertSame(StepInterface::ERROR, $this->services()[7]->publish($this->root . '/source', $this->root . '/target', $operation));
+            self::assertTrue(is_link($this->root . '/target'));
+            self::assertSame(StepInterface::ERROR, $this->services(force: true)[7]->publish($this->root . '/missing', $this->root . '/target', $operation));
+            self::assertTrue(is_link($this->root . '/target'));
+            self::assertSame(StepInterface::SUCCESS, $this->services(force: true)[7]->publish($this->root . '/source', $this->root . '/target', $operation));
+            self::assertSame($operation !== 'copy', is_link($this->root . '/target'));
+            self::assertSame('replacement', file_get_contents($this->root . ($directory ? '/target/file.txt' : '/target')));
+            self::assertSame('external', file_get_contents($external . '/keep.txt'));
+            self::assertSame([], glob($this->root . '/.runtime-publish-*'));
+        } finally {
+            (new SymfonyFilesystem())->remove($external);
+        }
+    }
+
     /**
      * @param array<string, mixed> $settings
      * @return array{Paths, Config, Io, Filesystem, OverwritePolicy, ProjectBoundary, Selection, ContentPublisher}

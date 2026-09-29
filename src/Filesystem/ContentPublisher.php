@@ -33,6 +33,9 @@ final readonly class ContentPublisher
             if (realpath($source) === realpath($target)) {
                 return StepInterface::SUCCESS;
             }
+            if (is_link($target) && $this->selection->force) {
+                return $this->replaceLink($source, $target, $operation);
+            }
             $this->boundary->assertWritablePath($target);
             if (is_dir($source)) {
                 if (!$this->canMerge($source, $target)) {
@@ -65,6 +68,41 @@ final readonly class ContentPublisher
             return StepInterface::ERROR;
         } finally {
             if ($temporary !== null && (file_exists($temporary) || is_link($temporary))) {
+                $this->files->unlinkOrRemove($temporary);
+            }
+        }
+    }
+
+    /** Prepare first; replace only the link leaf, never its referenced file/directory. */
+    private function replaceLink(string $source, string $target, string $operation): int
+    {
+        $temporary = dirname($target) . '/.runtime-publish-' . bin2hex(random_bytes(12));
+        $backup = $temporary . '-previous';
+        $previous = readlink($target);
+        try {
+            // Use the physical parent, rather than resolving the destination link.
+            $parent = realpath(dirname($target));
+            $sourceReal = realpath($source);
+            if ($parent === false || $sourceReal === false || (is_dir($source) && ($parent === $sourceReal || Path::isBasePath($sourceReal, $parent)))) {
+                return StepInterface::ERROR;
+            }
+            if (!$this->files->symlinkOrCopyOperation($source, $temporary, $operation) || !is_link($target) || readlink($target) !== $previous) {
+                return StepInterface::ERROR;
+            }
+            if (!rename($target, $backup)) {
+                return StepInterface::ERROR;
+            }
+            if (!rename($temporary, $target)) {
+                return StepInterface::ERROR;
+            }
+            $this->files->unlinkOrRemove($backup);
+
+            return StepInterface::SUCCESS;
+        } finally {
+            if (is_link($backup) && !file_exists($target) && !is_link($target)) {
+                rename($backup, $target);
+            }
+            if (file_exists($temporary) || is_link($temporary)) {
                 $this->files->unlinkOrRemove($temporary);
             }
         }
