@@ -1,6 +1,6 @@
 # Runtime acceptance record
 
-The implementation is available through the six stacked Runtime PRs. This record deliberately keeps final acceptance open.
+The implementation is available through the six stacked Runtime PRs, ending at [Phase 6](https://github.com/SymPress/runtime/pull/6). Consumer changes are separate drafts: [starter #29](https://github.com/SymPress/starter/pull/29) and [demo #49](https://github.com/SymPress/demo/pull/49). Their lockfiles pin Runtime commit `65348d5`. This record deliberately keeps final acceptance open.
 
 ## Reproduced evidence
 
