@@ -4,7 +4,7 @@
 
 **Status: Phases 1-5 are available as stacked draft PRs. Phase 6 implements migration and compatibility diagnostics; full parity acceptance and consumer migration remain open. Phase 0 was approved on 2026-09-29.**
 
-Requires PHP 8.5 and Symfony 8.1. The Composer plugin runs application code in a separate PHP process, with a standalone binary for installs performed using `--no-plugins`.
+Requires PHP 8.5 and Symfony 8.1. The Composer plugin runs application code in a separate PHP process. The standalone binary runs the same setup without an active Composer plugin. Projects using third-party WordPress installers must retain a valid installed layout: globally disabling all plugins can change Composer's installation metadata and autoload paths. Full consumer `--no-plugins` acceptance remains open; see [the acceptance record](docs/acceptance.md).
 
 ```sh
 composer install
