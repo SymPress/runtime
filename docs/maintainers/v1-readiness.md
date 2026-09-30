@@ -41,11 +41,15 @@ testing or an independent migration deployment has already happened.
   real WP-CLI tests and [source consumer smoke](v1-source-smoke.md) passed.
 - [x] Version lock/cache/dump/payload formats and test unsupported/older formats.
 - [x] Document compatibility deprecation and 2.0 removal boundary.
-- [ ] Publish the contract milestone and `v1.0.0-beta.1` after its gates pass.
+- [x] Publish the contract milestone and signed `v1.0.0-beta.1` tag at `14368d6`
+  after all 16 checks passed on PR #13. The tagged tree is identical to the
+  checked PR head `53161d4`; the release workflow also verifies its exact signed
+  tag object before publication.
 
 ## Phase 3 — Platforms and dependencies
 
-- [ ] Linux, Windows and macOS with minimum and latest stable Composer.
+- [x] Linux, Windows and macOS with minimum and latest stable Composer: all six
+  jobs passed on the final PR #13 head `53161d4`.
 - [x] Windows copy fallback, binary proxies, paths and permission semantics tested
   with minimum/latest Composer at `2101bda`. Windows file flushes remain mandatory;
   the documented platform boundary excludes directory-entry power-loss durability.
@@ -54,12 +58,22 @@ testing or an independent migration deployment has already happened.
   passes with stable development tools and the lowest production dependencies.
 - [x] Kernel 1.1.0 and QA 0.1.0 resolve stable tags; no dev constraints.
 - [x] Package manifest contains no local path repository.
-- [ ] Composer `^2.10.3` and scheduled compatibility reporting verified.
+- [x] Composer `^2.10.3` and scheduled compatibility workflow verified by
+  [run 36755778970](https://github.com/SymPress/runtime/actions/runs/36755778970)
+  on `main` at `14368d6`: both installation/recovery jobs passed. The issue-reporting
+  job was correctly skipped on success; no live failure issue was generated.
+
+The final PR integration job passed 1,253 tests and 9,329 assertions with
+`--fail-on-skipped`, followed by the isolated differential harness. Ordinary QA
+and lowest-dependency jobs report 18 skipped tests where their external fixtures
+are absent; these are covered by the dedicated integration job. Minimum and
+latest Composer currently both resolve to 2.10.3; this is not evidence of an
+upgrade to an unreleased Composer minor.
 
 ## Phase 4 — Public distribution
 
 - [x] Full-history secret scan reviewed; public docs contain no private host details.
-  The implementation history through `efcb915` was rescanned: 73 commits with
+  The implementation history through `53161d4` was rescanned: 76 commits with
   scanned diffs, zero findings, exit status 0.
 - [x] Repository public; license/notice retained.
 - [ ] Packagist registration and automatic GitHub update integration verified.
@@ -69,6 +83,12 @@ testing or an independent migration deployment has already happened.
   dependency audit pass on PR #13.
 - [x] Public newcomer docs, migration guide and platform compatibility table.
 - [ ] Empty-project installation from Packagist with `^1.0@RC` succeeds.
+
+Packagist still returns HTTP 404 for `sympress/runtime`. Registration and the
+GitHub update integration require the package owner's authenticated Packagist
+account. A public repository and a signed GitHub tag do not prove Composer
+distribution. RC/stable publication and consumer upgrades remain pending this
+gate; the beta release workflow reports missing propagation as a failure.
 
 ## Phase 5 — Release candidate
 
