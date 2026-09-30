@@ -9,12 +9,15 @@ privately until a fix and upgrade guidance are available.
 
 ## Supported revisions
 
-The currently published supported stable release is `0.2.0`. The 1.0 line is in
-preparation; beta and release-candidate tags are evaluation releases. Once 1.0.0
-is published, security fixes target the latest 1.x patch release and 0.x users
-must upgrade. Unsupported development snapshots are not a maintenance promise.
-Fixes are developed on `main` and shipped as reviewed, signed tags. Pin a reviewed
-release and its lockfile; update deliberately when a relevant fix is available.
+Security fixes target the latest stable 1.x release. Users of 0.x, beta and
+release-candidate versions must upgrade; those versions and development snapshots
+are not maintained security lines. Fixes ship as reviewed, signed tags. Use
+`sympress/runtime:^1.0`, commit the resolved lockfile, and update to the latest
+1.x patch when a relevant fix is available.
+
+The [compatibility policy](docs/compatibility-policy.md) applies to 1.x. Security
+fixes may reject unsafe inputs outside the supported contract, with a release
+note and a documented safe migration path.
 
 The supported Composer library begins at 2.10.3. The minimum and latest stable
 Composer CLI/library combinations are tested for package recovery, including a

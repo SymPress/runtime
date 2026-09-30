@@ -1,7 +1,10 @@
 # Configuration
 
-This page describes Runtime 0.2.0. See the [upgrade notes](releases/0.2.0.md)
-for new options and changed native defaults when moving from 0.1.0.
+This page describes the Runtime 1.x configuration contract. Existing schema keys
+and their profile-specific defaults remain stable in 1.x; new optional keys may
+be added. See the [compatibility policy](compatibility-policy.md) and
+[1.0 upgrade notes](releases/1.0.0.md). Projects moving from 0.1 must also review
+the native-default changes in the [0.2 upgrade notes](releases/0.2.0.md).
 
 Runtime settings describe setup behavior. WordPress environment values such as
 database credentials and public URLs belong in [environment configuration](environment.md).

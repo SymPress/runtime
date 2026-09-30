@@ -1,9 +1,10 @@
 # Release-candidate recovery evidence
 
-This records focused technical checks executed on 2026-09-30 against the current
-V1 implementation worktree. It does not claim that an RC tag exists, that these
-checks ran on a published RC artifact, or that a production rollout or observation
-period has taken place. Repeat the release gates against the eventual tagged RC.
+These focused technical checks were repeated on 2026-09-30 against the exact
+signed `v1.0.0-rc.1` source at `b532fdc`: 68 tests / 462 assertions and the
+separate Composer replay batch of 2 tests / 34 assertions passed without skips
+or warnings. The tagged release workflow independently runs the complete fixture
+suite. These checks do not claim a production rollout or observation period.
 
 ## Executed scenarios
 

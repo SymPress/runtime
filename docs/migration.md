@@ -14,13 +14,16 @@ web-server routes. Adding Runtime does not require a URL change.
 Install the package without running setup while preparing the configuration:
 
 ```sh
-composer require sympress/runtime:0.2.0 --no-plugins --no-scripts
+composer require 'sympress/runtime:^1.0' --no-plugins --no-scripts
 ```
 
 Runtime is available from Packagist; remove a Runtime-specific VCS repository
 if your project previously used one. Keep repositories required by other packages,
 including WPackagist. Once reviewed, allow the Runtime Composer plugin explicitly.
-See the [RC guide](releases/1.0.0-rc.1.md) when evaluating the 1.0 candidate.
+For an existing Runtime installation, follow the [1.0 upgrade guide](releases/1.0.0.md).
+The [compatibility policy](compatibility-policy.md) defines the supported 1.x
+configuration and extension API. Deprecated compatibility adapters remain
+available throughout 1.x; removal is scheduled for 2.0.
 
 ## Choose what Runtime will own
 

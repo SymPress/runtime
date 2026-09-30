@@ -4,6 +4,22 @@
 
 No changes yet.
 
+## 1.0.0 — 2026-09-30
+
+- Establish the 1.x compatibility contract for documented PHP extension APIs, configuration/defaults, command behavior, environment controls, hooks, managed sections and persisted formats.
+- Use `sympress/runtime:^1.0` from Packagist in public installation guides and the complete site example; retain exact resolved versions in project lockfiles.
+- Support `vendor/bin/runtime`, native `wp runtime` and Composer aliases without requiring the SymPress kernel.
+- Retain deprecated compatibility adapters throughout 1.x, with removal scheduled for 2.0.
+- Document upgrades from 0.x and prereleases, retained payloads for rollback, platform limits and the stable security support policy.
+- Verify Packagist propagation with a release-specific metadata URL so a cached pre-release package response cannot hide a newly published tag.
+
+See the [1.0 installation and upgrade guide](docs/releases/1.0.0.md),
+[compatibility policy](docs/compatibility-policy.md),
+[compatibility migration guide](docs/compatibility.md) and
+[parity comparison](https://github.com/SymPress/runtime/blob/main/docs/maintainers/parity.md).
+The owner waived timed production and independent migration trials; no completed
+production field trial is claimed.
+
 ## 1.0.0-rc.1 — 2026-09-30
 
 - Make Runtime available directly from Packagist, with automatic GitHub updates and verification of the published source revision in the release workflow.

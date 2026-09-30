@@ -5,12 +5,13 @@ You need PHP 8.5+, Composer 2.10.3+, a database and a web server. Runtime is ava
 from Packagist without a custom repository or access credentials. Private project
 dependencies can use their own Composer authentication or SSH agent.
 
-Commands below use `runtime`, the executable provided by the pinned 0.2.0 release.
-Existing 0.1.0 projects should follow the [upgrade notes](releases/0.2.0.md).
+Commands below use `runtime`, the executable provided by Runtime 1.x. Existing
+projects should follow the [1.0 upgrade notes](releases/1.0.0.md); projects on 0.1
+first need the [0.2 upgrade notes](releases/0.2.0.md).
 
 ## 1. Describe the project
 
-From 1.0.0-beta.2, installing Runtime alone in an unconfigured project defers
+Installing Runtime alone in an unconfigured project defers
 automatic setup when no WordPress core is installed. Composer still installs the
 package and `vendor/bin/runtime`; it reports that setup was deferred. Add the
 project configuration and WordPress dependencies before running setup. Explicit
@@ -31,7 +32,9 @@ cd my-site
 composer install
 ```
 
-The example pins Runtime `0.2.0`. Commit `composer.lock` and deploy with `composer install`, not an unreviewed update.
+The example requires Runtime `^1.0` from Packagist. Composer selects a stable 1.x
+release; commit the resulting `composer.lock` to pin exact versions and deploy
+with `composer install`. Review dependency updates before deploying them.
 
 The resulting layout is:
 
