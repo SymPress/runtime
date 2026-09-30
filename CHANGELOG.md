@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## Unreleased — 1.1 development
 
 No changes yet.
 

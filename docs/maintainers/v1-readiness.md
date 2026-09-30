@@ -1,7 +1,10 @@
 # Runtime 1.0 readiness
 
-This is a requirement checklist, not a release certification. An item is complete
-only when its implementation and current evidence are recorded here.
+Technical acceptance of `v1.0.0` was completed on 2026-09-30. This checklist
+records the implemented contract, exact release evidence and consumer acceptance.
+It does not certify production field experience; the owner's waiver is explicit
+below. The post-release change advances `main` to 1.1 development while `1.x`
+retains the stable release baseline.
 
 ## Scope and decisions
 
@@ -74,7 +77,8 @@ upgrade to an unreleased Composer minor.
 
 - [x] Full-history secret scan reviewed; public docs contain no private host details.
   The implementation history through `53161d4` was rescanned: 76 commits with
-  scanned diffs, zero findings, exit status 0.
+  scanned diffs, zero findings, exit status 0. The final release preparation at
+  `8498986` was scanned again: 86 commits, zero findings, exit status 0.
 - [x] Repository public; license/notice retained.
 - [x] Packagist registered by the owner on 2026-09-30; beta 1 and beta 2 source
   revisions match their signed tags. The active GitHub push webhook targets
@@ -106,21 +110,42 @@ as the separate Packagist installation proof.
   gate passed. The final distribution job then hit a stale Packagist response;
   public Composer installation and a fresh metadata query independently verified
   the exact tag. The 1.0 workflow fixes this cache issue; the signed RC is unchanged.
-- [ ] Starter and Demo consume the RC with green CI and smoke tests.
+- [x] Starter PR #32 and Demo PR #52 merged after green RC CI and authenticated
+  browser smoke. Both locks fixed RC 1 at `b532fdc`; only Runtime changed in their
+  dependency graphs. Starter also passed a fresh installation with a new database.
+  Demo's CI installs only Chromium, matching its unchanged browser test project.
 - [x] Verify payload rollback, journal recovery and environment switching/cache
   invalidation on the RC tag: 68 tests / 462 assertions plus 2 Composer replay
   tests / 34 assertions passed. See [recovery evidence](rc-recovery.md) for the
   explicit limit: minimum/latest Composer both resolve to 2.10.3, so no transition
   to a newer stable Composer library can yet be tested.
-- [ ] RC fixes are bug fixes only; high/critical issues are resolved.
+- [x] RC fixes are bug fixes only; no unresolved high/critical issue was found.
+  The observed Packagist verification cache issue is fixed in 1.0; the example
+  test harness now handles the documented version range and retains WPackagist.
 - Production/non-SymPress field trials and minimum elapsed soak time: explicitly
   waived by the owner. Technical fixtures do not constitute production experience.
 - Independent external security review: optional, not claimed as completed.
 
 ## Phase 6 — Publish 1.0
 
-- [ ] Signed `v1.0.0` and release highlights/upgrade instructions published.
-- [ ] Starter and Demo use `^1.0` with reviewed locks and passing CI.
-- [ ] Announcement links to parity evidence, migration and compatibility policy.
-- [ ] Create `1.x` maintenance branch; advance `main` to 1.1 development.
-- [ ] Final requirement-by-requirement audit and 407/407 executed parity evidence.
+- [x] Signed `v1.0.0` at `56b89a0` and release highlights/upgrade instructions
+  published. [Release run 36766001204](https://github.com/SymPress/runtime/actions/runs/36766001204)
+  passed every gate, including exact Packagist propagation. A separate empty
+  project installed `^1.0` from public archives without credentials and repeated
+  installation successfully; see [distribution acceptance](v1-distribution.md).
+- [x] Starter PR #33 and Demo PR #53 merged with `^1.0`, reviewed locks fixed to
+  `v1.0.0` / `56b89a0`, and every CI check green. Runtime is the only updated
+  dependency in each lock. Fresh local QA, doctor and authenticated browser tests
+  passed; Starter also passed a clean public archive installation with a new
+  database. Public URLs and Nginx routing remain unchanged.
+- [x] The [1.0 release announcement](https://github.com/SymPress/runtime/releases/tag/v1.0.0)
+  links the upgrade guide, compatibility migration, public contract and parity matrix.
+- [x] Create `1.x` at `56b89a0`; the post-release change sets the `main` executable
+  to `1.1-dev` and its Composer branch alias to `1.1.x-dev`. Stable installation
+  guides continue to use `^1.0`; contributor/security guides distinguish both branches.
+- [x] Final requirement audit found no additional unfulfilled requirement under
+  the owner's waiver. The stable tag's integration artifact proves 407/407 parity
+  rows with 1,277 tests and 9,396 assertions, no failures and no skips. The separate
+  main-development QA rerun produced the same full-suite counts. No unresolved
+  high/critical finding was identified; platform and operational limits remain
+  documented rather than being represented as production experience.
