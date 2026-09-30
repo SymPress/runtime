@@ -18,6 +18,7 @@ final class WpCliBridgeTest extends TemporaryProject
         yield 'unknown flag rejected' => [['validate', '--unknown-runtime-option']];
         yield 'negated unknown flag rejected' => [['validate', '--no-unknown-runtime-option']];
         yield 'negated output flag' => [['validate', '--no-ansi']];
+        yield 'WP-CLI global quiet flag' => [['validate', '--quiet']];
         yield 'environment diff' => [['env:diff', '--json']];
         yield 'dump argument boundaries' => [['dump-env', 'environment with spaces']];
         yield 'list setup steps' => [['--list-steps']];

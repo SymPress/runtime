@@ -32,14 +32,15 @@ testing or an independent migration deployment has already happened.
 
 ## Phase 2 — Freeze the contract
 
-- [ ] Source-derived PHP API inventory; every source class/interface marked.
-- [ ] Stable service surface excludes unreviewed concrete implementation methods.
-- [ ] Extension examples and architecture tests enforce the public API boundary.
-- [ ] Publish compatibility policy for PHP, all 56 schema keys/defaults, commands,
+- [x] Source-derived PHP API inventory; every source class/interface marked.
+- [x] Stable service surface excludes unreviewed concrete implementation methods.
+- [x] Extension examples and architecture tests enforce the public API boundary.
+- [x] Prepare compatibility policy for PHP, all 56 schema keys/defaults, commands,
   flags/exits, environment controls, hooks, config sections and persisted formats.
-- [ ] `wp runtime` shares command behavior/options/exits with the standalone binary.
-- [ ] Version lock/cache/dump/payload formats and test unsupported/older formats.
-- [ ] Document compatibility deprecation and 2.0 removal boundary.
+- [x] `wp runtime` shares command behavior/options/exits with the standalone binary;
+  real WP-CLI tests and [source consumer smoke](v1-source-smoke.md) passed.
+- [x] Version lock/cache/dump/payload formats and test unsupported/older formats.
+- [x] Document compatibility deprecation and 2.0 removal boundary.
 - [ ] Publish the contract milestone and `v1.0.0-beta.1` after its gates pass.
 
 ## Phase 3 — Platforms and dependencies
@@ -48,17 +49,19 @@ testing or an independent migration deployment has already happened.
 - [ ] Windows copy fallback, binary proxies, paths and permission semantics tested.
 - [ ] macOS case-insensitive paths and BSD tooling tested.
 - [ ] Lowest supported Symfony 8.1 dependency set tested.
-- [ ] Kernel/QA and dependency closure resolve stable tags; no dev constraints.
-- [ ] Published manifest contains no local path repository.
+- [x] Kernel 1.1.0 and QA 0.1.0 resolve stable tags; no dev constraints.
+- [x] Package manifest contains no local path repository.
 - [ ] Composer `^2.10.3` and scheduled compatibility reporting verified.
 
 ## Phase 4 — Public distribution
 
-- [ ] Full-history secret scan reviewed; public docs contain no private host details.
-- [ ] Repository public; license/notice retained.
+- [x] Full-history secret scan reviewed; public docs contain no private host details.
+  The implementation history through `efcb915` was rescanned: 73 commits with
+  scanned diffs, zero findings, exit status 0.
+- [x] Repository public; license/notice retained.
 - [ ] Packagist registration and automatic GitHub update integration verified.
 - [ ] Signed release tags and QA-gated release/changelog/Packagist workflow.
-- [ ] Private vulnerability reporting and supported-version policy.
+- [x] Private vulnerability reporting enabled; supported-version policy prepared.
 - [ ] Weekly dependency/action updates and PHP security analysis.
 - [ ] Public newcomer docs, migration guide and platform compatibility table.
 - [ ] Empty-project installation from Packagist with `^1.0@RC` succeeds.

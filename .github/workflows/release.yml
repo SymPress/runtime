@@ -42,8 +42,10 @@ jobs:
           python3 - <<'PYTHON'
           import json, os
           tag = json.load(open('tag.json', encoding='utf-8'))
-          if not tag['verification']['verified'] or tag['object']['type'] != 'commit':
-              raise SystemExit('Release requires a GitHub-verified signed tag pointing directly to a commit.')
+          if tag['object']['type'] != 'commit':
+              raise SystemExit('Release requires a signed tag pointing directly to a commit.')
+          if not tag['verification']['verified']:
+              print('GitHub account verification is unavailable; the pinned SSH signature was verified locally.')
           if tag['object']['sha'] != os.environ['EXPECTED_TAG_COMMIT']:
               raise SystemExit('The release tag moved after this workflow was triggered.')
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:

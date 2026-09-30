@@ -39,6 +39,12 @@ final readonly class Command
         }
         // Diagnostics must not prompt when invoked by another command runner.
         $command[] = '--no-interaction';
+        if (\WP_CLI::get_config('quiet') === true) {
+            $command[] = '--quiet';
+        }
+        if (\WP_CLI::get_config('color') === false) {
+            $command[] = '--no-ansi';
+        }
         $pipes = [];
         $process = proc_open($command, [STDIN, STDOUT, STDERR], $pipes, $this->root);
         if (!is_resource($process)) {

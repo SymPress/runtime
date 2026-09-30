@@ -47,7 +47,7 @@ final class LayoutBinaries extends BinaryInstaller
             $previous = (string) file_get_contents($bat);
             $owned = false;
             foreach ($sources as $source) {
-                if (!is_file($source . '/' . $binary) || $previous !== $this->generateWindowsProxyCode($source . '/' . $binary, $bat)) {
+                if (!is_file($source . '/' . $binary) || $previous !== $this->generateWindowsProxyCode($source . '/' . $binary, $this->physicalProxyPath($bat))) {
                     continue;
                 }
 
@@ -71,12 +71,20 @@ final class LayoutBinaries extends BinaryInstaller
             if (is_link($link) && realpath($link) === realpath($file)) {
                 return true;
             }
-            if ($contents !== null && $contents === $this->generateUnixyProxyCode($file, $link)) {
+            if ($contents !== null && $contents === $this->generateUnixyProxyCode($file, $this->physicalProxyPath($link))) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private function physicalProxyPath(string $link): string
+    {
+        // BinaryInstaller resolves bin-dir before generating proxies (including Windows 8.3 aliases).
+        $directory = realpath(dirname($link));
+
+        return $directory === false ? $link : $directory . '/' . basename($link);
     }
 
     /** @return list<string> */
@@ -92,7 +100,7 @@ final class LayoutBinaries extends BinaryInstaller
             if (!is_file($change['binary']) || !self::isBinPathInsidePackage($change['package'], $change['binary'])) {
                 throw new RuntimeException('Package binary is missing or escapes its package.');
             }
-            $contents = str_ends_with($link, '.bat') ? $this->generateWindowsProxyCode($change['binary'], $link) : $this->generateUnixyProxyCode($change['binary'], $link);
+            $contents = str_ends_with($link, '.bat') ? $this->generateWindowsProxyCode($change['binary'], $this->physicalProxyPath($link)) : $this->generateUnixyProxyCode($change['binary'], $this->physicalProxyPath($link));
             if (is_link($link)) {
                 $filesystem->remove($link);
             }
