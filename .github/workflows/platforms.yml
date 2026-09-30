@@ -46,8 +46,25 @@ jobs:
           composer check-platform-reqs
           # shellcheck disable=SC2016 # PHP variables must not be expanded by Bash.
           php -r 'require "vendor/autoload.php"; $lock = json_decode(file_get_contents("composer.lock"), true, flags: JSON_THROW_ON_ERROR); foreach (array_merge($lock["packages"], $lock["packages-dev"] ?? []) as $package) { if (Composer\Semver\VersionParser::parseStability($package["version"]) !== "stable" || ($package["dist"]["type"] ?? "") === "path") { throw new RuntimeException("Unstable or local dependency: " . $package["name"]); } }'
+      - name: Use an explicitly case-insensitive APFS fixture volume on macOS
+        if: runner.os == 'macOS'
+        run: |
+          hdiutil create -size 256m -fs APFS -volname RuntimeCaseInsensitive "$RUNNER_TEMP/runtime-case.dmg"
+          hdiutil attach -nobrowse -mountpoint "$RUNNER_TEMP/runtime-case" "$RUNNER_TEMP/runtime-case.dmg"
+          mkdir -p "$RUNNER_TEMP/runtime-case/tmp"
+          echo "TMPDIR=$RUNNER_TEMP/runtime-case/tmp" >> "$GITHUB_ENV"
+          touch "$RUNNER_TEMP/runtime-case/tmp/CaseProbe"
+          test -f "$RUNNER_TEMP/runtime-case/tmp/caseprobe"
+          rm "$RUNNER_TEMP/runtime-case/tmp/CaseProbe"
       - name: Exercise portable filesystem and actual Composer relocation contracts
         run: php vendor/bin/phpunit --no-logging --fail-on-skipped --fail-on-warning tests/Platform tests/Unit/PackageDestinationTest.php
+      - name: Detach the macOS fixture volume
+        if: ${{ always() && runner.os == 'macOS' }}
+        run: |
+          echo "TMPDIR=$RUNNER_TEMP" >> "$GITHUB_ENV"
+          if [[ -d "$RUNNER_TEMP/runtime-case" ]]; then
+            hdiutil detach "$RUNNER_TEMP/runtime-case"
+          fi
       - name: Record exact toolchain and dependency versions
         if: always()
         run: |
