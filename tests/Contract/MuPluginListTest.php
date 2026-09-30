@@ -45,11 +45,13 @@ final class MuPluginListTest extends TemporaryProject
         $finder = new PackageFinder(new RunContext($this->root, $paths->vendor(), $paths->bin()));
         $list = (new MuPluginList($finder, $paths))->pluginsList($config);
         self::assertSame([
-            'fixture/single' => $paths->root($muDirectory . 'single/bootstrap.php'),
             'fixture/multiple_first' => $paths->root($muDirectory . 'multiple/first.php'),
             'fixture/multiple_second' => $paths->root($muDirectory . 'multiple/second.php'),
+            'fixture/single' => $paths->root($muDirectory . 'single/bootstrap.php'),
             'untyped' => $paths->root($muDirectory . 'untyped/plugin.php'),
         ], $list);
+        $legacy = new Config(['compatibility-profile' => 'release-3.0.1'], new Validator($paths, 'release-3.0.1'));
+        self::assertSame('fixture/single', array_key_first((new MuPluginList($finder, $paths))->pluginsList($legacy)));
     }
 
     #[Group('PAR-SVC-015')]

@@ -52,6 +52,7 @@ final class MuLoaderStep implements FileCreationStepInterface, ConditionalStepIn
         }
         $content = $this->builder->build($paths, $template, [
             'MU_PLUGINS_ARRAY' => var_export($relative, true),
+            'MU_NATIVE' => var_export($config['compatibility-profile']->is('native'), true),
             'MU_PLUGINS_LIST' => str_replace(['\\', "'"], ['\\\\', "\\'"], implode(', ', $relative)),
         ]);
 

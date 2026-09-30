@@ -15,6 +15,69 @@ use mysqli;
 
 final class WordPressBootTest extends TemporaryProject
 {
+    #[Group('wordpress')]
+    #[Group('database')]
+    public function testNativeMuPluginsLoadThroughRealWordPressAndAppearInAdminMetadata(): void
+    {
+        $core = getenv('RUNTIME_TEST_WORDPRESS_DIR');
+        $host = getenv('RUNTIME_TEST_DB_HOST');
+        if (!$core || !is_file($core . '/wp-settings.php') || !$host) {
+            self::markTestSkipped('Set WordPress and database fixtures for the native MU integration.');
+        }
+        $endpoint = DbHost::parse($host);
+        $user = getenv('RUNTIME_TEST_DB_USER') ?: 'root';
+        $password = getenv('RUNTIME_TEST_DB_PASSWORD') ?: '';
+        $database = 'runtime_mu_' . bin2hex(random_bytes(8));
+        $connection = new mysqli($endpoint->host, $user, $password, null, $endpoint->port, $endpoint->socket);
+        try {
+            $connection->query('CREATE DATABASE `' . $database . '`');
+            self::assertTrue(symlink($core, $this->root . '/wp'));
+            $this->write('composer.json', '{"extra":{"wordpress-install-dir":"wp","wordpress-content-dir":"content","sympress-runtime":{"require-wp":false,"db-check":false,"cache-env":false,"compatibility":false}}}');
+            $this->write('content/mu-plugins/z-last/main.php', "<?php\n/* Plugin Name: Last */\n" . '$GLOBALS["fixture_boots"][] = "last"; $file = "changed";');
+            $this->write('content/mu-plugins/a-first/main.php', "<?php\n/* Plugin Name: First */\n" . '$GLOBALS["fixture_boots"][] = "first";');
+            $package = dirname(__DIR__, 2);
+            $setup = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', '-n', 'wpconfig', 'muloader'], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
+            $setup->mustRun();
+            $loader = $this->root . '/content/mu-plugins/sympress-runtime-mu-loader.php';
+            rename($loader, $this->root . '/linked-loader.php');
+            self::assertTrue(symlink($this->root . '/linked-loader.php', $loader));
+            $this->write('probe.php', <<<'PHP'
+<?php
+define('WP_INSTALLING', true);
+require __DIR__ . '/wp/wp-includes/plugin.php';
+add_action('mu_plugin_loaded', static function ($file) {
+    $GLOBALS['fixture_hooks'][] = basename(dirname($file));
+});
+require __DIR__ . '/wp-config.php';
+require_once ABSPATH . 'wp-admin/includes/plugin.php';
+require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
+require_once ABSPATH . 'wp-admin/includes/class-wp-plugins-list-table.php';
+$rows = apply_filters('plugins_list', ['mustuse' => get_mu_plugins()]);
+echo json_encode([$GLOBALS['fixture_boots'], $GLOBALS['fixture_hooks'], array_keys($rows['mustuse']), $rows['mustuse']['a-first/main.php']['Name']]);
+PHP);
+            $probe = new Process([PHP_BINARY, $this->root . '/probe.php'], $this->root, [
+                'DB_HOST' => $host,
+            'DB_USER' => $user,
+            'DB_PASSWORD' => $password,
+            'DB_NAME' => $database,
+                'WP_HOME' => 'https://fixture.invalid',
+            'WP_SITEURL' => 'https://fixture.invalid',
+                'WP_ENVIRONMENT_TYPE' => 'production',
+            'SHORTINIT' => false,
+            ]);
+            $probe->mustRun();
+            self::assertSame('', $probe->getErrorOutput());
+            $result = json_decode($probe->getOutput(), true, flags: JSON_THROW_ON_ERROR);
+            self::assertSame(['first', 'last'], $result[0]);
+            self::assertSame(['a-first', 'z-last', 'mu-plugins'], $result[1]);
+            self::assertSame(['a-first/main.php', 'z-last/main.php', 'sympress-runtime-mu-loader.php'], $result[2]);
+            self::assertSame('First', $result[3]);
+        } finally {
+            $connection->query('DROP DATABASE IF EXISTS `' . $database . '`');
+            $connection->close();
+        }
+    }
+
     /** @return iterable<string, array{bool}> */
     public static function bootModes(): iterable
     {
