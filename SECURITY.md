@@ -6,9 +6,10 @@ Do not include production credentials in the report.
 
 ## Supported revisions
 
-There is no stable release tag yet. Security fixes are developed on `main`;
-pin and review a lockfile revision before deployment, and update it deliberately
-when a relevant fix is available.
+The initial supported release is `0.1.0`. Fixes are developed on `main` and shipped
+as tagged releases. Pin a reviewed release and its lockfile; update deliberately
+when a relevant fix is available. The Composer library is restricted to `~2.10.3`;
+new minor lines require recovery-matrix validation before widening that constraint.
 
 ## Trust boundaries
 

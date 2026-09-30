@@ -6,7 +6,7 @@ guide when public behavior changes.
 
 ## Local setup
 
-Use PHP 8.5+, Composer 2.8+ and Git. The development dependencies include SymPress
+Use PHP 8.5+, Composer 2.10.3+ and Git. The development dependencies include SymPress
 QA and the kernel integration fixture; authenticate private repositories if your
 package source requires it.
 

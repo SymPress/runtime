@@ -21,7 +21,7 @@ def main():
         # Exercise this checkout while leaving the documented project settings intact.
         manifest["repositories"][0] = {
             "type": "path", "url": str(ROOT),
-            "options": {"symlink": False, "versions": {"sympress/runtime": "dev-main"}},
+            "options": {"symlink": False, "versions": {"sympress/runtime": manifest["require"]["sympress/runtime"]}},
         }
         (project / "composer.json").write_text(json.dumps(manifest, indent=2))
         def run(command):

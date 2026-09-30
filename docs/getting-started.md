@@ -1,7 +1,7 @@
 # Getting started
 
 This guide creates a Composer-managed WordPress site with a `public/` document root.
-You need PHP 8.5+, Composer 2.8+, a database and a web server. Runtime's private
+You need PHP 8.5+, Composer 2.10.3+, a database and a web server. Runtime's private
 repository also requires GitHub read access. Keep credentials in Composer's private
 authentication configuration or an SSH agent, never in `composer.json`.
 
@@ -20,8 +20,7 @@ cd my-site
 composer install
 ```
 
-The example uses a development revision of Runtime because no stable tag exists
-yet. Commit `composer.lock` and deploy with `composer install`, not an unreviewed update.
+The example pins Runtime `0.1.0`. Commit `composer.lock` and deploy with `composer install`, not an unreviewed update.
 
 The resulting layout is:
 
@@ -67,7 +66,23 @@ endpoints such as `/wp-login.php`, `/wp-admin/` and core assets to the installed
 directory. Runtime does not configure Nginx or Apache. Preserve existing working
 routes; do not append `/wp` merely because the files live there.
 
-## 3. Verify setup and install WordPress
+## 3. Decide whether early code needs Composer
+
+**Native mode defaults `wp-config-autoload` to `false`.** If Composer
+`autoload.files` registers early hooks, or environment PHP / `early-hook-file`
+uses vendor classes, enable it in your Runtime settings:
+
+```json
+{"wp-config-autoload": true}
+```
+
+The autoloader then runs after WordPress's hook API and before environment PHP and
+early hooks. A later kernel/MU-plugin bootstrap cannot retroactively register hooks
+for this earlier phase. This matters especially in projects without a kernel boot.
+The environment parser itself works without Composer; legacy profiles default this
+option to true. Review preserved `AUTOLOAD` sections when adopting existing files.
+
+## 4. Verify setup and install WordPress
 
 ```sh
 vendor/bin/sympress-runtime validate
@@ -91,7 +106,7 @@ php wp-cli.phar core install --url=https://my-site.test --title='My site' --admi
 Enter a unique password at the prompt. Verify the homepage, root login page and
 admin dashboard before considering the site ready.
 
-## 4. Add plugins and themes
+## 5. Add plugins and themes
 
 The example's `installer-paths` places plugins and themes in the public content
 directory. For example:
