@@ -4,7 +4,7 @@ The implementation is available through the six stacked Runtime PRs, ending at [
 
 ## Reproduced evidence
 
-- Full local package QA passes with 1,035 tests / 7,208 assertions, no skips, coding standards and PHPStan max.
+- Full local package QA passes with 1,043 tests / 7,298 assertions, no skips, coding standards and PHPStan max.
 - All 407 source-inventory rows map to executed PHPUnit behavioral tests. The evidence checker also rejects duplicate or unknown IDs, missing results, failed tests and skipped-only rows. It does not claim complete branch coverage from a passing test count.
 - The isolated differential harness passes 249 cases against the exact release and development commits in `upstream-inventory.json`. It compares constant types and values, environment precedence, generated configuration execution, cache behavior, content hashes/links, WP-CLI arguments, lifecycle callbacks, extension loading, effective step order, all nineteen section edits, MU-loader execution, parsed WP-CLI YAML and active env-example assignments. Intentional differences are asserted as exact expected values, not unrestricted exclusions.
 - Real WordPress SHORTINIT connects to a disposable MariaDB database without a Composer autoloader. Its production build dump also boots under an unprivileged identity with read-only project files and unchanged file hashes. A separate actual SiteKernel test loads a precompiled production container under the same permission constraint.
@@ -15,8 +15,12 @@ The implementation is available through the six stacked Runtime PRs, ending at [
 ## Open acceptance gates
 
 1. **Layout boundary review.** The reproduced starter/demo and WPackagist no-plugins gaps are fixed by offline package placement and metadata/autoload recovery, documented in [ADR 0019](adr/0019-standalone-wordpress-package-layout.md). Root-directory installs, overlapping package destinations and arbitrary third-party installer semantics still require the regular Composer installers. Unknown destination conflicts fail while preserving files. This is a deliberate safety boundary, not a claim that every possible Composer installer layout has been verified.
-2. **Remote QA.** The separate [QA PHPUnit 13 PR](https://github.com/SymPress/qa/pull/3) is green but still awaits merge authorization. Runtime requires QA main, so local checks do not establish green remote Runtime CI. No merge is implied by repository creation or draft PR publication.
+2. **Consumer CI access.** The [QA PHPUnit 13 PR](https://github.com/SymPress/qa/pull/3) and Runtime phases 1–5 were reviewed and merged after successful CI. All six Runtime PRs passed remote QA before the final Phase 6 review fixes; those fixes pass the complete local suite above and require their own final CI result before merging. Starter and demo still need CI read access to the private Runtime repository and must move their dependency to Runtime main after Phase 6 merges. No CI credentials or repository access have been changed.
 3. **Final parity sign-off.** Matrix rows remain `partial` until the preceding gates are resolved and the complete acceptance record is reviewed. The implementation and behavioral evidence are present; there is no claim of complete drop-in acceptance yet.
+
+## Review corrections
+
+The standards review found that offline recovery restrictions also rejected already-correct root and nested package layouts. Preparation now preserves those regular-installer layouts, with regression tests for repeated setup and rejection without mutation when recovery is actually required. The specification review found that URL dropins ignored `--force` when the destination was a symlink. Verified downloads now replace only the link; failed checksum verification leaves the link and its source intact. Both corrections are covered by the full local suite above.
 
 ## Reproduction
 
