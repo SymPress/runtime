@@ -73,6 +73,7 @@ final readonly class WpConfigGenerator
             'PAYLOAD_ID' => var_export($bundle->fingerprint, true),
             'PROFILE' => var_export($this->config['compatibility-profile']->unwrap(), true),
             'ENV_FILENAME' => var_export($this->config['env-file']->unwrap(), true),
+            'KERNEL_BUILD_ID' => var_export($this->config['kernel-build-id']->unwrap(), true),
             'ENV_BOOTSTRAP_PATH' => $this->expression($directory, $envBootstrap),
             'EARLY_HOOK_PATH' => $earlyHook === '' ? "''" : $this->expression($directory, $earlyHook),
             'CORE_URL_PATH' => var_export($this->urlPath($this->paths->wp()), true),

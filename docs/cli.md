@@ -14,6 +14,11 @@ The standalone runner uses the current project directory and its Composer vendor
 | `validate` | Validate JSON/schema and semantic configuration without executing PHP providers or the run-only autoload file |
 | `flush-env-cache` | Remove only the runtime cache in the configured environment directory; WordPress installation is not required |
 | `dump-env <environment>` | Resolve an explicit raw environment into a private `.env.dump.php`; does not execute steps or run-only autoload |
+| `doctor`, `check` | Read-only project, environment, permission, symlink, database and kernel diagnostics |
+| `doctor --json`, `check --json` | Structured redacted results; exit 0 pass, 1 fail, 2 unknown without failures |
+| `kernel-cache` | Explicitly clear only the selected environment's kernel cache/build and discovery metadata |
+| `kernel-cache --generate-build-id` | Explicitly generate and persist a new kernel deployment ID |
+| `kernel-boot` | Reconcile optional boot ownership; generation requires kernel-boot configuration |
 | `-n`, `--no-interaction` | Use documented question defaults |
 | `-q`, `-v`, `-vv`, `-vvv`, `--ansi`, `--no-ansi` | Standard Symfony Console output controls |
 
@@ -25,6 +30,6 @@ Exit status is zero for successful/no-op execution, nonzero for invalid input, c
 
 Legacy profiles retain their documented selection differences, including rejecting positional opt-in combined with listing. Native mode permits this combination. The current test suite verifies root-script ordering; real asset-compiler coexistence remains a later acceptance check.
 
-During phased implementation, pending built-in steps are labeled and fail if selected. `doctor`, `check` and `migrate` are reserved command names and are not yet implemented.
+All twelve default steps are implemented. Composer also exposes `sympress-runtime:doctor` and `sympress-runtime:check`, including `--json`. Kernel-only maintenance does not require a database connection or an installed WordPress core; mixed selections retain normal preflight checks. `migrate` remains reserved for Phase 6. See [kernel integration](kernel-integration.md) for optional kernel-console commands and boot ownership.
 
 A build dump takes precedence over the runtime cache and disables request-time cache writes. Actual process values still win. The requested raw environment must agree with an actual process environment selector; otherwise dump creation fails. Remove or rebuild the dump to switch its environment. Flush never deletes a build dump. Deploy generated configuration and dumps with PHP-readable private permissions; defaults are mode 0600.

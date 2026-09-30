@@ -406,6 +406,30 @@ final class EnvReader
         $this->wordPressSetup = defined('DB_NAME') && defined('DB_USER');
     }
 
+    public function setupKernelBuildId(string $directory, ?string $configured = null): void
+    {
+        if (defined('SYMPRESS_KERNEL_BUILD_ID')) {
+            return;
+        }
+        $id = $this->rawValue('SYMPRESS_KERNEL_BUILD_ID') ?? $configured;
+        $environment = EnvironmentName::canonical($this->determineEnvType());
+        $file = rtrim($directory, '/\\') . '/' . $environment . '/kernel-build-id.json';
+        if ($id === null && is_file($file)) {
+            $data = json_decode((string) file_get_contents($file), true);
+            if (!is_array($data) || ($data['environment'] ?? null) !== $environment || !is_string($data['id'] ?? null)) {
+                throw new RuntimeException('Invalid persisted kernel build ID.');
+            }
+            $id = $data['id'];
+        }
+        if ($id === null) {
+            return;
+        }
+        if (!preg_match('/^[a-zA-Z0-9._-]{1,128}$/D', $id)) {
+            throw new RuntimeException('Invalid kernel build ID.');
+        }
+        define('SYMPRESS_KERNEL_BUILD_ID', $id);
+    }
+
     public function setupConstants(): void
     {
         if ($this->constantsSet) {

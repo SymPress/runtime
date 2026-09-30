@@ -16,6 +16,9 @@ use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Package\AutoloadRegistry;
 use SymPress\Runtime\Package\ExtensionMetadata;
 use SymPress\Runtime\Package\PackageFinder;
+use SymPress\Runtime\Step\Builtin\KernelBootStep;
+use SymPress\Runtime\Step\Builtin\KernelCacheStep;
+use SymPress\Runtime\Step\Definition;
 use SymPress\Runtime\Step\Registry;
 use SymPress\Runtime\Step\Runner;
 use SymPress\Runtime\WordPress\VersionDiscovery;
@@ -25,6 +28,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Throwable;
 
 final class RuntimeCommand extends Command
 {
@@ -39,6 +43,9 @@ final class RuntimeCommand extends Command
         if ($this->operation === 'dump-env') {
             $this->addArgument('environment', InputArgument::REQUIRED, 'Raw environment name to resolve and dump.');
         }
+        if (in_array($this->operation, ['doctor', 'check'], true)) {
+            $this->addOption('json', null, InputOption::VALUE_NONE, 'Print structured diagnostics without environment values.');
+        }
         if ($this->operation !== 'run') {
             return;
         }
@@ -48,13 +55,28 @@ final class RuntimeCommand extends Command
         $this->addOption('ignore-skip-config', null, InputOption::VALUE_NONE, 'Ignore configured skip-steps.');
         $this->addOption('list-steps', null, InputOption::VALUE_NONE, 'List selected steps without executing them.');
         $this->addOption('force', null, InputOption::VALUE_NONE, 'Explicitly allow overwriting protected files.');
+        $this->addOption('generate-build-id', null, InputOption::VALUE_NONE, 'Generate a kernel build ID when explicitly selecting kernel-cache.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        try {
+            return $this->executeOperation($input, $output);
+        } catch (Throwable $error) {
+            if (!in_array($this->operation, ['doctor', 'check'], true) || $input->getOption('json') !== true) {
+                throw $error;
+            }
+            $output->writeln(json_encode(['environment' => null, 'checks' => [['id' => 'configuration', 'status' => 'fail', 'detail' => 'Cannot validate project configuration; values are redacted.']], 'exit' => 1], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+
+            return self::FAILURE;
+        }
+    }
+
+    private function executeOperation(InputInterface $input, OutputInterface $output): int
+    {
         $io = new Io($input, $output);
         $context = $this->context->withConsole($input->isInteractive(), $output->isDecorated(), $output->getVerbosity());
-        if (!in_array($this->operation, ['run', 'validate', 'flush-env-cache', 'dump-env'], true)) {
+        if (!in_array($this->operation, ['run', 'validate', 'flush-env-cache', 'dump-env', 'doctor', 'check'], true)) {
             $io->error('Command ' . $this->operation . ' is scheduled for a later implementation phase.');
 
             return self::INVALID;
@@ -75,7 +97,14 @@ final class RuntimeCommand extends Command
             $this->directory($extra, 'wordpress-content-dir', 'wp-content'),
         );
         $loaded = $loader->load($paths->root(), $extra);
-        $config = new Config(array_replace($loaded->values, $this->context->configuration($selection->selected())), new Validator($paths, $loaded->profile), $loaded->profile);
+        $values = array_replace($loaded->values, $this->context->configuration($selection->selected()));
+        if ($this->operation === 'run' && $input->getOption('generate-build-id')) {
+            if (!$selection->selected() || !in_array('kernel-cache', $selection->names, true)) {
+                throw new InvalidArgumentException('--generate-build-id requires explicit kernel-cache selection.');
+            }
+            $values['kernel-build-id'] = bin2hex(random_bytes(16));
+        }
+        $config = new Config($values, new Validator($paths, $loaded->profile), $loaded->profile);
         foreach ($loaded->diagnostics as $diagnostic) {
             $io->error($diagnostic);
         }
@@ -84,6 +113,9 @@ final class RuntimeCommand extends Command
             $io->error($key . ': ' . $error);
         }
         if ($errors !== []) {
+            if (in_array($this->operation, ['doctor', 'check'], true) && $input->getOption('json') === true) {
+                throw new InvalidArgumentException('Invalid runtime configuration.');
+            }
             return self::INVALID;
         }
         $extensionAutoload = new AutoloadRegistry();
@@ -92,6 +124,9 @@ final class RuntimeCommand extends Command
         foreach ($packages as $package) {
             (new ExtensionMetadata($paths))->steps($package);
             $extensionAutoload->metadata($package, $compatible);
+        }
+        if (in_array($this->operation, ['doctor', 'check'], true)) {
+            return (new Doctor($config, $paths, $context, $io))->run($input->getOption('json') === true);
         }
         if ($this->operation === 'validate') {
             $io->success('Runtime configuration is valid.');
@@ -142,7 +177,8 @@ final class RuntimeCommand extends Command
             $io->error($warning);
         }
         $release = $config['compatibility-profile']->is('release-3.0.1');
-        if ($this->operation === 'run' && $release) {
+        $kernelMaintenance = $selection->selected() && array_all($resolved['steps'], static fn (Definition $step): bool => in_array($step->class, [KernelCacheStep::class, KernelBootStep::class], true));
+        if ($this->operation === 'run' && $release && !$kernelMaintenance) {
             $this->checkWordPress($config);
         }
         if ($selection->list) {
@@ -153,7 +189,7 @@ final class RuntimeCommand extends Command
             return self::SUCCESS;
         }
 
-        if ($this->operation === 'run') {
+        if ($this->operation === 'run' && !$kernelMaintenance) {
             if (!$release && !($selection->selected() && $config['compatibility-profile']->is('upstream-dev'))) {
                 $this->checkWordPress($config);
             }

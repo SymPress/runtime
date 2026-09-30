@@ -32,6 +32,8 @@ use SymPress\Runtime\Generation\Salter;
 use SymPress\Runtime\Generation\SectionMerger;
 use SymPress\Runtime\Generation\WpConfigGenerator;
 use SymPress\Runtime\Generation\WpConfigSectionEditor;
+use SymPress\Runtime\Kernel\BootOwnership;
+use SymPress\Runtime\Kernel\KernelPaths;
 use SymPress\Runtime\Package\ExtensionMetadata;
 use SymPress\Runtime\Package\MuPluginList;
 use SymPress\Runtime\Package\PackageFinder;
@@ -41,6 +43,8 @@ use SymPress\Runtime\Process\SystemProcess;
 use SymPress\Runtime\Process\WpCliTool;
 use SymPress\Runtime\Services;
 use SymPress\Runtime\Step\AsRuntimeStep;
+use SymPress\Runtime\Step\Builtin\KernelBootStep;
+use SymPress\Runtime\Step\Builtin\KernelCacheStep;
 use SymPress\Runtime\Step\Definition;
 use SymPress\Runtime\Step\Registry;
 use SymPress\Runtime\Step\ScriptDispatcher;
@@ -79,6 +83,13 @@ final class ContainerFactory
         $container->register(DatabasePreflight::class)->setAutowired(true)->setPublic(true);
         $container->register(ProjectBoundary::class)->setAutowired(true);
         $container->register(ContentPublisher::class)->setAutowired(true);
+        $container->register(KernelPaths::class)->setAutowired(true)->setPublic(true);
+        $container->register(KernelCacheStep::class)->setAutowired(true)->setPublic(true);
+        $container->register(BootOwnership::class)->setAutowired(true)->setPublic(true);
+        $container->register(KernelBootStep::class)->setAutowired(true)->setPublic(true);
+        if ($config['kernel-boot']->is(true) || is_file($paths->wpContent('mu-plugins/sympress-runtime-kernel.php'))) {
+            $registry->add(new Definition('kernel-boot', KernelBootStep::class));
+        }
         foreach (Registry::IMPLEMENTATIONS as $class) {
             $container->register($class)->setAutowired(true)->setPublic(true);
         }

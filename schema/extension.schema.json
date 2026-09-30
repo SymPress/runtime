@@ -4,6 +4,7 @@
   "title": "SymPress Runtime installed-package contribution",
   "type": "object",
   "properties": {
+    "boots-kernel": { "type": "boolean" },
     "steps": {
       "anyOf": [
         { "type": "null" },

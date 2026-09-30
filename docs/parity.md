@@ -263,12 +263,12 @@ Native default order is the twelve-step sequence in the work order. Actual upstr
 
 | Feature | Upstream reference | Behavior and edge cases | Proposed implementation | Planned test ID | Status | Difference |
 | --- | --- | --- | --- | --- | --- | --- |
-| doctor/check | W; starter/bin/console | Check paths/env completeness/write permissions/symlinks/DB/kernel cache; JSON or text results with secrets redacted; explicit unknown/unavailable vs pass. | Console/DoctorCommand | `PAR-SYM-001` | planned | Parity |
+| doctor/check | W; starter/bin/console | Check paths/env completeness/write permissions/symlinks/DB/kernel cache; JSON or text results with secrets redacted; explicit unknown/unavailable vs pass. | Console/DoctorCommand | `PAR-SYM-001` | partial | Parity |
 | validate | W; kernel schema style | Draft 2020-12 root/extra/extension schemas, validation every run, standalone command; no writes or execution of PHP providers during static validation. | Console/ValidateCommand | `PAR-SYM-002` | partial | D01 |
-| Kernel cache | W; kernel KernelConfigurationResolver | Canonical env default var/cache/env/kernel, honor APP_CACHE_DIR/build overrides and discovery file; do not follow external symlinks; explicit ID generation. | Steps/KernelCacheStep | `PAR-SYM-003` | planned | ADR 0003 |
-| Boot ownership | W; consumers app-starter.php; kernel App | Installed boot-providing package suppresses generated boot; opt-in boot when absent; detect known existing entry and metadata; ambiguous ownership diagnosed; exactly one boot in copy and symlink fixtures. | Steps/KernelBootStep | `PAR-SYM-004` | planned | Parity |
-| Kernel console integration | W; kernel Console and bundle discovery | When installed, expose doctor/validate/dump-env via wp console using optional bundle and native command services; no hard kernel dependency for plain WordPress. | Bridge/Kernel/RuntimeBundle | `PAR-SYM-005` | planned | Parity |
-| Env container visibility | W; kernel EnvConfig/EnvironmentParameterLoader | Fresh files/cache/dump all hydrate safe ENV/SERVER before kernel boot; %env()% works; build ID also bridged to constant/getenv consumer. | Bridge/Kernel/Environment | `PAR-SYM-006` | planned | D22 |
+| Kernel cache | W; kernel KernelConfigurationResolver | Canonical env default var/cache/env/kernel, honor APP_CACHE_DIR/build overrides and discovery file; do not follow external symlinks; explicit ID generation. | Steps/KernelCacheStep | `PAR-SYM-003` | partial | ADR 0003 |
+| Boot ownership | W; consumers app-starter.php; kernel App | Installed boot-providing package suppresses generated boot; opt-in boot when absent; detect known existing entry and metadata; ambiguous ownership diagnosed; exactly one boot in copy and symlink fixtures. | Steps/KernelBootStep | `PAR-SYM-004` | partial | Parity |
+| Kernel console integration | W; kernel Console and bundle discovery | When installed, expose doctor/validate/dump-env via wp console using optional bundle and native command services; no hard kernel dependency for plain WordPress. | Bridge/Kernel/RuntimeBundle | `PAR-SYM-005` | partial | Parity |
+| Env container visibility | W; kernel EnvConfig/EnvironmentParameterLoader | Fresh files/cache/dump all hydrate safe ENV/SERVER before kernel boot; %env()% works; build ID also bridged to constant/getenv consumer. | Bridge/Kernel/Environment | `PAR-SYM-006` | partial | D22 |
 | Migration config | W; R/D Requirements | Read legacy inline/reference/root sources; output native file with explicit changed defaults and provenance; preserve original; collision/force/atomicity and second-run no-op. | Console/MigrateCommand | `PAR-SYM-007` | planned | Parity |
 | Migration PHP report | W; consumers orchestrate.php | Find upstream namespace/class use in custom steps/scripts/providers/templates; exact file:line and replacement; no executing user PHP during analysis; unresolved usage blocks ready-to-migrate status. | Compatibility/MigrationAnalyzer | `PAR-SYM-008` | planned | D14 |
 | Compatibility toggle | W | Reads old names/types/hooks/slugs only when enabled; each actual use warns once; no warning secrets or unsolicited HTTP output; native collision wins. | Compatibility/Policy | `PAR-SYM-009` | planned | Parity |
@@ -510,8 +510,8 @@ These are new options, not claims about WP Starter. Exact names/defaults are par
 | allow-insecure-downloads | false | Explicit HTTP exception while keeping local file sources; redirect protocol policy must follow same setting | `PAR-NATIVE-004` | planned | D08 |
 | download-checksums | empty map | URL-to-SHA256 map applies to URL sources without breaking string-valued legacy options | `PAR-NATIVE-005` | planned | D08 |
 | require-download-checksums | false | When enabled, production URL downloads without configured integrity fail; WP-CLI SHA512 verification remains mandatory independently | `PAR-NATIVE-006` | planned | D08 |
-| kernel-boot | false | Explicit generation opt-in, still suppressed by an existing boot provider; does not boot the kernel inside Composer | `PAR-NATIVE-007` | planned | W |
-| kernel-build-id | null | Preserve existing ID by default; optional explicit value or command-driven generation, never random on no-op installs | `PAR-NATIVE-008` | planned | W |
+| kernel-boot | false | Explicit generation opt-in, still suppressed by an existing boot provider; does not boot the kernel inside Composer | `PAR-NATIVE-007` | partial | W |
+| kernel-build-id | null | Preserve existing ID by default; optional explicit value or command-driven generation, never random on no-op installs | `PAR-NATIVE-008` | partial | W |
 
 ## Remaining risks at the approval gate
 

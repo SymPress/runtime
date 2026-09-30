@@ -10,6 +10,8 @@ use SymPress\Runtime\Step\Builtin\DropinsStep;
 use SymPress\Runtime\Step\Builtin\EnvExampleStep;
 use SymPress\Runtime\Step\Builtin\FlushEnvCacheStep;
 use SymPress\Runtime\Step\Builtin\IndexStep;
+use SymPress\Runtime\Step\Builtin\KernelBootStep;
+use SymPress\Runtime\Step\Builtin\KernelCacheStep;
 use SymPress\Runtime\Step\Builtin\MoveContentStep;
 use SymPress\Runtime\Step\Builtin\MuLoaderStep;
 use SymPress\Runtime\Step\Builtin\PublishContentDevStep;
@@ -50,6 +52,8 @@ final class Registry
         foreach (self::DEFAULT_ORDER as $name) {
             $this->definitions[$name] = new Definition($name, self::IMPLEMENTATIONS[$name]);
         }
+        $this->definitions['kernel-cache'] = new Definition('kernel-cache', KernelCacheStep::class, commandOnly: true);
+        $this->definitions['kernel-boot'] = new Definition('kernel-boot', KernelBootStep::class, commandOnly: true);
     }
 
     public function add(Definition $definition): void
