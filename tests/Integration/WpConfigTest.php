@@ -441,7 +441,7 @@ PHP);
         $names = array_unique([...array_column($inventory['baselines']['release']['sections'], 'name'), ...array_column($inventory['baselines']['dev']['sections'], 'name')]);
         $names[] = 'COMPOSER_MANAGED';
         foreach ($names as $name) {
-            yield 'PAR-SECTION-' . $name => [$name];
+            yield ($name === 'COMPOSER_MANAGED' ? 'native-section-' : 'PAR-SECTION-') . $name => [$name];
         }
     }
 
