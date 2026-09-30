@@ -6,6 +6,7 @@ namespace SymPress\Runtime\Download;
 
 use SymPress\Runtime\Console\Io;
 use SymPress\Runtime\Process\PhpTool;
+use SymPress\Runtime\Process\WpCliTool;
 use Symfony\Component\Filesystem\Filesystem;
 use Throwable;
 
@@ -27,13 +28,8 @@ final readonly class PharInstaller
             }
             $this->files->mkdir(dirname($path));
             $temporary = $this->files->tempnam(dirname($path), '.sympress-download-', '.phar');
-            if (!$this->downloads->save($url, $temporary)) {
+            if (!$this->downloads->save($url, $temporary, fn (string $candidate): bool => $tool->checkPhar($candidate, $this->io), $tool instanceof WpCliTool ? 'wp-cli.phar' : null)) {
                 $this->io->error($this->downloads->error());
-
-                return '';
-            }
-            if (!$tool->checkPhar($temporary, $this->io)) {
-                $this->io->error('Downloaded PHP tool failed integrity validation.');
 
                 return '';
             }

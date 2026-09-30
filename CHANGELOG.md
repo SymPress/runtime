@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Prevent environment secrets from reaching temporary-directory fallbacks; support private group-readable artifacts.
+- Add native source-aware environment cache invalidation, mounted secret files, typed requirements and names-only environment comparison.
+- Add setup drift checks, production diagnostics, explicit database health maintenance and Composer-managed update protection.
+- Pin URL downloads with a reviewed lockfile and support exact WP-CLI version/hash assertions.
+- Recover interrupted package layout changes from a durable journal and prune only verified inactive payloads and owned backups.
+- Optionally bundle environment bootstrap classes while retaining lazy parser loading.
+
 ## 0.1.0 — 2026-09-30
 
 Initial tagged release for the documented SymPress and standard WordPress package layouts.

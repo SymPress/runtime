@@ -14,17 +14,21 @@ final class UrlDownloader
 {
     private string $lastError = '';
 
-    public function __construct(private readonly HttpClientInterface $http, private readonly Filesystem $files, private readonly Config $config)
+    public function __construct(private readonly HttpClientInterface $http, private readonly Filesystem $files, private readonly Config $config, private readonly ?DownloadLock $lock = null)
     {
     }
 
-    public function fetch(string $url): string
+    public function fetch(string $url, bool $pin = true): string
     {
         $this->lastError = '';
         try {
             $body = $this->download($url);
             if (!$body) {
                 throw new DownloadException('Download response is empty.');
+            }
+
+            if ($pin) {
+                $this->accept($url, $body, static fn (): bool => true);
             }
 
             return $body;
@@ -35,14 +39,68 @@ final class UrlDownloader
         }
     }
 
-    public function save(string $url, string $filename): bool
+    /** @param (callable(string): bool)|null $verify Additional artifact verification before publication and TOFU. */
+    public function save(string $url, string $filename, ?callable $verify = null, ?string $artifact = null): bool
+    {
+        $this->lastError = '';
+        $temporary = null;
+        try {
+            $body = $this->download($url);
+            if ($verify !== null) {
+                $temporary = tempnam(sys_get_temp_dir(), 'sympress-verify-');
+                if ($temporary === false || !$this->files->save($body, $temporary) || !$verify($temporary)) {
+                    throw new DownloadException('Downloaded artifact failed integrity validation.');
+                }
+            }
+            $this->accept($url, $body, fn (): bool => $this->files->save($body, $filename), $artifact);
+
+            return true;
+        } catch (Throwable $error) {
+            $this->recordError($error);
+
+            return false;
+        } finally {
+            if (is_string($temporary) && is_file($temporary)) {
+                unlink($temporary);
+            }
+        }
+    }
+
+    /** @param callable(): bool $publish */
+    private function accept(string $url, string $body, callable $publish, ?string $artifact = null): void
+    {
+        if ($this->lock !== null && $this->config['download-lock']->is(true)) {
+            $this->lock->accept($url, hash('sha256', $body), $this->config['update-lock']->is(true), $publish, $artifact);
+
+            return;
+        }
+        if (!$publish()) {
+            throw new DownloadException('Cannot save downloaded file.');
+        }
+    }
+
+    /** Verify previously downloaded executables offline; explicit updates can adopt a local artifact. */
+    public function verifyArtifact(string $artifact, string $filename): bool
     {
         $this->lastError = '';
         try {
-            $body = $this->download($url);
-            if (!$this->files->save($body, $filename)) {
-                throw new DownloadException('Cannot save downloaded file.');
+            if ($this->lock === null || !$this->config['download-lock']->is(true)) {
+                return true;
             }
+            $expected = $this->lock->artifactDigest($artifact);
+            $update = $this->config['update-lock']->is(true);
+            if ($expected === null && !$update) {
+                // Existing project-owned PHARs remain usable until explicitly adopted.
+                return true;
+            }
+            $actual = hash_file('sha256', $filename);
+            if (!is_string($actual)) {
+                throw new DownloadException('Cannot read the local artifact for integrity verification.');
+            }
+            if ($expected !== null && hash_equals($expected, $actual)) {
+                return true;
+            }
+            $this->lock->acceptArtifact($artifact, $actual, $update);
 
             return true;
         } catch (Throwable $error) {

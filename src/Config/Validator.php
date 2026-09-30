@@ -18,7 +18,12 @@ final class Validator
     public function validate(string $key, mixed $value): Result
     {
         $validated = match ($key) {
-            'cache-env', 'install-wp-cli', 'require-wp', 'skip-db-check', 'compatibility',
+            'cache-env', 'composer-managed' => $value === 'auto' ? 'auto' : $this->boolean($value),
+            'generated-file-mode' => in_array($value, ['0600', '0640'], true) ? $value : throw new InvalidArgumentException('Generated file mode must be 0600 or 0640; world access is forbidden.'),
+            'required-env' => $this->requirements($value),
+            'wp-cli-version' => $value === null || (is_string($value) && preg_match('/^[0-9]+\.[0-9]+\.[0-9]+$/D', $value) && version_compare($value, '2.5.0', '>=')) ? $value : throw new InvalidArgumentException('WP-CLI version must be an exact release version at least 2.5.0.'),
+            'wp-cli-sha256' => $value === null ? null : (is_string($value) && preg_match('/^[0-9a-f]{64}$/iD', $value) ? strtolower($value) : throw new InvalidArgumentException('Expected a SHA-256 digest.')),
+            'download-lock', 'update-lock', 'bundle-bootstrap', 'install-wp-cli', 'require-wp', 'skip-db-check', 'compatibility',
             'env-local-overrides', 'allow-insecure-downloads', 'require-download-checksums',
             'kernel-boot', 'wp-config-autoload' => $this->boolean($value),
             'check-vcs-ignore', 'create-vcs-ignore-file', 'move-content',
@@ -58,6 +63,21 @@ final class Validator
         }
 
         return $bool;
+    }
+
+    /** @return array<string, string> */
+    private function requirements(mixed $value): array
+    {
+        if (!is_array($value)) {
+            throw new InvalidArgumentException('Expected required environment names mapped to types.');
+        }
+        foreach ($value as $name => $type) {
+            if (!is_string($name) || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/D', $name) || !in_array($type, ['string', 'int', 'bool', 'float'], true)) {
+                throw new InvalidArgumentException('Required environment entries need a variable name and string, int, bool or float type.');
+            }
+        }
+
+        return $value;
     }
 
     private function positiveInteger(mixed $value): int

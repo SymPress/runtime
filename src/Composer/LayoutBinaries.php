@@ -75,6 +75,12 @@ final class LayoutBinaries extends BinaryInstaller
         return false;
     }
 
+    /** @return list<string> */
+    public function paths(): array
+    {
+        return array_keys($this->changes);
+    }
+
     public function write(): void
     {
         $filesystem = new Filesystem();

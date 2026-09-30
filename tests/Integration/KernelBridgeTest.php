@@ -101,9 +101,23 @@ final class KernelBridgeTest extends TemporaryProject
         self::assertDirectoryExists($kernel->getCacheDir());
         // WP-CLI rewrites --json to --format=json before invoking the kernel bridge.
         $status = $application->run(new ArrayInput(['command' => 'doctor', '--format' => 'json', '--no-interaction' => true]), $output);
-        $report = json_decode($output->fetch(), true, flags: JSON_THROW_ON_ERROR);
+        $diagnosticOutput = $output->fetch();
+        self::assertJson($diagnosticOutput, $diagnosticOutput);
+        $report = json_decode($diagnosticOutput, true, flags: JSON_THROW_ON_ERROR);
         self::assertIsArray($report);
         self::assertSame($status, $report['exit']);
         self::assertArrayHasKey('checks', $report);
+        $this->write('.env', 'WP_ENVIRONMENT_TYPE=production');
+        $status = $application->run(new ArrayInput(['command' => 'doctor', '--format' => 'json', '--production' => true, '--php-user' => 'no-such-sympress-user', '--webroot' => 'public', '--no-interaction' => true]), $output);
+        $diagnosticOutput = $output->fetch();
+        self::assertJson($diagnosticOutput, $diagnosticOutput);
+        $report = json_decode($diagnosticOutput, true, flags: JSON_THROW_ON_ERROR);
+        self::assertIsArray($report);
+        self::assertIsArray($report['checks']);
+        self::assertSame($status, $report['exit']);
+        $checks = array_column($report['checks'], 'status', 'id');
+        self::assertSame('fail', $checks['production.home']);
+        self::assertSame('pass', $checks['production.env-location.0']);
+        self::assertSame('unknown', $checks['production.readable.0']);
     }
 }

@@ -35,7 +35,7 @@ def check(root=ROOT):
     defaults = source.split("public const array DEFAULTS = [", 1)[1].split("    ];", 1)[0]
     internal = source.split("public const array INTERNAL = [", 1)[1].split("    ];", 1)[0]
     expected = set(re.findall(r"'([^']+)'\s*=>", defaults)) - set(re.findall(r"'([^']+)'", internal))
-    documented = set(re.findall(r"^\| `([a-z][a-z-]+)` \|", (root / "docs/configuration.md").read_text(), re.M))
+    documented = set(re.findall(r"^\| `([a-z][a-z0-9-]+)` \|", (root / "docs/configuration.md").read_text(), re.M))
     if expected != documented:
         errors.append(f"Settings mismatch: missing={sorted(expected - documented)}, extra={sorted(documented - expected)}")
 

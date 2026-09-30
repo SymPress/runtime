@@ -1,5 +1,8 @@
 # Configuration
 
+This page describes the current development branch. The production operations
+options listed in [Unreleased](../CHANGELOG.md#unreleased) are not part of 0.1.0.
+
 Runtime settings describe setup behavior. WordPress environment values such as
 database credentials and public URLs belong in [environment configuration](environment.md).
 
@@ -63,7 +66,14 @@ Compatibility profiles can use different defaults.
 | Setting | Native default | Purpose |
 | --- | --- | --- |
 | `autoload` | `"sympress-runtime-autoload.php"` | PHP file loaded only when setup runs. |
-| `cache-env` | `true` | Allow request-time environment caching. |
+| `cache-env` | `"auto"` | Cache when the environment directory is writable; `false` disables writes. Native caches invalidate when source paths, sizes or modification times change. |
+| `generated-file-mode` | `"0600"` | Private generated PHP/cache/dump permissions; `"0640"` permits a shared deployment/PHP group. No world access is accepted. |
+| `composer-managed` | `"auto"` | Protect Composer-managed files from dashboard updates in staging/production; `true` enables it everywhere, `false` disables the section. |
+| `required-env` | `{}` | Required nonempty environment names mapped to `string`, `int`, `bool` or `float`, checked by validate, doctor and dump-env. |
+| `download-lock` | `true` | Pin URL-download SHA-256 hashes in `sympress-runtime.lock`; see [Downloads](downloads.md). |
+| `wp-cli-version` | `null` | Exact WP-CLI download release (at least 2.5.0); an installed Composer bundle takes priority. |
+| `wp-cli-sha256` | `null` | Independent SHA-256 pin for a WP-CLI PHAR; retained even during explicit lock updates. |
+| `bundle-bootstrap` | `false` | Bundle owned environment classes into one bootstrap file; Symfony parser dependencies remain lazy. |
 | `check-vcs-ignore` | `true` | Check relevant Git, Mercurial or SVN ignore rules; also accepts `ask`. |
 | `command-steps` | `null` | Class list or name-to-class map for explicitly selected custom work. |
 | `content-dev-dir` | `"content-dev"` | Directory containing project plugins/themes to publish. |
@@ -71,7 +81,7 @@ Compatibility profiles can use different defaults.
 | `create-vcs-ignore-file` | `true` | Create missing ignore files; also accepts `ask`. |
 | `custom-steps` | `null` | Class list or name-to-class map included in full runs. |
 | `steps` | `null` | Native DI step contributions. |
-| `db-check` | `true` | Run database preflight; `health` additionally requests a health check. |
+| `db-check` | `true` | Run connection/install preflight. Native `health` directs table inspection to explicit `doctor --database-health`; it does not scan tables on every install. |
 | `dropins` | `null` | Map destination filenames to local files or download URLs. |
 | `dropins-op` | `"auto"` | Local dropin operation: `auto`, `copy`, `symlink` or `none`. |
 | `early-hook-file` | `""` | Trusted PHP file executed before the main WordPress bootstrap. |

@@ -32,8 +32,8 @@ WPS_GETENV_FUNCTION : {
     $usingEnvDump = is_file($envDumpFile);
     global $sympressRuntimeEnvironment;
     $sympressRuntimeEnvironment = $usingEnvDump || {{{CACHE_ENABLED}}}
-        ? $runtimeReaderClass::buildFromCacheDump($usingEnvDump ? $envDumpFile : $envCacheFile, {{{PROFILE}}}, compatibility: {{{COMPATIBILITY}}})
-        : new $runtimeReaderClass(profile: {{{PROFILE}}}, compatibility: {{{COMPATIBILITY}}});
+        ? $runtimeReaderClass::buildFromCacheDump($usingEnvDump ? $envDumpFile : $envCacheFile, {{{PROFILE}}}, compatibility: {{{COMPATIBILITY}}}, validateSources: !$usingEnvDump && {{{PROFILE}}} === 'native', fileMode: {{{GENERATED_FILE_MODE}}})
+        : new $runtimeReaderClass(profile: {{{PROFILE}}}, compatibility: {{{COMPATIBILITY}}}, fileMode: {{{GENERATED_FILE_MODE}}});
     if (!function_exists('sympress_runtime_getenv')) {
         function sympress_runtime_getenv(?string $name): bool|int|float|string|object|null
         {
@@ -150,6 +150,18 @@ URL_CONSTANTS : {
     defined('WP_CONTENT_URL') || define('WP_CONTENT_URL', rtrim(WP_HOME, '/') . '/' . {{{CONTENT_URL_PATH}}});
 } #@@/URL_CONSTANTS
 
+COMPOSER_MANAGED : {
+    $runtimeComposerManaged = {{{COMPOSER_MANAGED}}};
+    if ($runtimeComposerManaged === true || ($runtimeComposerManaged === 'auto' && in_array(WP_ENVIRONMENT_TYPE, ['staging', 'production'], true))) {
+        defined('DISALLOW_FILE_MODS') || define('DISALLOW_FILE_MODS', true);
+        defined('AUTOMATIC_UPDATER_DISABLED') || define('AUTOMATIC_UPDATER_DISABLED', true);
+        defined('WP_AUTO_UPDATE_CORE') || define('WP_AUTO_UPDATE_CORE', false);
+    }
+    if ({{{PROFILE}}} === 'native' && WP_ENVIRONMENT_TYPE === 'production' && str_starts_with(strtolower(WP_HOME), 'https://')) {
+        defined('FORCE_SSL_ADMIN') || define('FORCE_SSL_ADMIN', true);
+    }
+} #@@/COMPOSER_MANAGED
+
 THEMES_REGISTER : {
     if ({{{REGISTER_THEMES}}}) {
         add_action('plugins_loaded', static function (): void { register_theme_directory(ABSPATH . 'wp-content/themes'); });
@@ -162,7 +174,7 @@ ADMIN_COLOR : {
 } #@@/ADMIN_COLOR
 
 ENV_CACHE : {
-    if ({{{CACHE_ENABLED}}} && !$usingEnvDump && $envLoader->isWpSetup()) {
+    if ({{{CACHE_ENABLED}}} && !$usingEnvDump && $envLoader->isWpSetup() && $envLoader->canWriteCache($envCacheFile)) {
         register_shutdown_function(static function () use ($envLoader, $envType, $envCacheFile): void {
             $skip = $envType === 'local' || (defined('WP_DEVELOPMENT_MODE') && WP_DEVELOPMENT_MODE);
             if ({{{COMPATIBILITY}}} && has_filter('wpstarter.skip-cache-env')) {
@@ -202,7 +214,7 @@ BEFORE_BOOTSTRAP : {
 } #@@/BEFORE_BOOTSTRAP
 
 CLEAN_UP : {
-    unset($debugInfo, $envType, $envLoader, $sympressRuntimeEnvironment, $envCacheFile, $envDumpFile, $usingEnvDump, $envIsCached, $runtimeReaderClass, $phpEnvFile, $hasPhpEnvFile, $earlyHookFile, $hasEarlyHook, $runtimeDefaults, $runtimeName, $runtimeValue, $runtimeSslFix, $runtimePort, $runtimeScheme, $runtimeHost, $runtimeHome);
+    unset($runtimeComposerManaged, $debugInfo, $envType, $envLoader, $sympressRuntimeEnvironment, $envCacheFile, $envDumpFile, $usingEnvDump, $envIsCached, $runtimeReaderClass, $phpEnvFile, $hasPhpEnvFile, $earlyHookFile, $hasEarlyHook, $runtimeDefaults, $runtimeName, $runtimeValue, $runtimeSslFix, $runtimePort, $runtimeScheme, $runtimeHost, $runtimeHome);
 } #@@/CLEAN_UP
 
 WP_CLI_HACK : {

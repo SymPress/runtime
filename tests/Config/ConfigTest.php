@@ -28,7 +28,8 @@ final class ConfigTest extends TemporaryProject
     {
         $config = $this->config();
         self::assertSame([], $config->errors());
-        self::assertTrue($config['cache-env']->unwrap());
+        self::assertSame('auto', $config['cache-env']->unwrap());
+        self::assertTrue($this->config([], 'release-3.0.1')['cache-env']->unwrap());
         self::assertNull($config['autoload']->unwrap());
         self::assertNull($config['content-dev-dir']->unwrap());
         self::assertSame('auto', $config['content-dev-op']->unwrap());

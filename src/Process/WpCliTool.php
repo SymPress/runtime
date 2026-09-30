@@ -46,8 +46,19 @@ final class WpCliTool implements PhpTool
         if ($this->releaseUrl !== null) {
             return $this->releaseUrl;
         }
-        $this->releaseUrl = self::RELEASE_BASE . 'v' . $this->minVersion() . '/wp-cli-' . $this->minVersion() . '.phar';
-        $data = json_decode($this->downloads->fetch(self::API_URL), true);
+        $configured = $this->config['wp-cli-version']->unwrap();
+        if (is_string($configured)) {
+            if (version_compare($configured, $this->minVersion(), '<')) {
+                $this->io->error('Configured WP-CLI release is below the minimum supported version.');
+
+                return '';
+            }
+            $this->releaseUrl = self::RELEASE_BASE . 'v' . $configured . '/wp-cli-' . $configured . '.phar';
+
+            return $this->releaseUrl;
+        }
+        // Release discovery is moving metadata; the selected artifact and sidecar are locked.
+        $data = json_decode($this->downloads->fetch(self::API_URL, false), true);
         $assets = is_array($data) ? ($data['assets'] ?? null) : null;
         if (is_array($assets)) {
             foreach ($assets as $asset) {
@@ -63,7 +74,14 @@ final class WpCliTool implements PhpTool
                 return $url;
             }
         }
+        if ($this->config['compatibility-profile']->is('native')) {
+            $this->io->error('Latest WP-CLI release lookup failed; configure wp-cli-version for an explicit release.');
+            $this->releaseUrl = '';
+
+            return '';
+        }
         $this->io->comment('Latest WP-CLI release lookup failed; using the pinned minimum version.');
+        $this->releaseUrl = self::RELEASE_BASE . 'v' . $this->minVersion() . '/wp-cli-' . $this->minVersion() . '.phar';
 
         return $this->releaseUrl;
     }
@@ -103,6 +121,9 @@ final class WpCliTool implements PhpTool
         if ($url === '' || !is_file($pharPath) || !is_readable($pharPath)) {
             return false;
         }
+        if (!$this->checkConfiguredDigest($pharPath, $io)) {
+            return false;
+        }
         $expected = trim($this->downloads->fetch($url . '.sha512'));
         if (!preg_match('/^[a-fA-F0-9]{128}$/D', $expected)) {
             $io->error('WP-CLI SHA512 checksum is unavailable or invalid.');
@@ -112,6 +133,37 @@ final class WpCliTool implements PhpTool
         $actual = hash_file('sha512', $pharPath);
         if (!is_string($actual) || !hash_equals(strtolower($expected), $actual)) {
             $io->error('WP-CLI SHA512 integrity check failed.');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /** An explicitly configured digest also applies to an existing local PHAR. */
+    public function checkLocalPhar(string $pharPath, Io $io): bool
+    {
+        if (!$this->checkConfiguredDigest($pharPath, $io)) {
+            return false;
+        }
+        if (!$this->downloads->verifyArtifact('wp-cli.phar', $pharPath)) {
+            $io->error($this->downloads->error());
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private function checkConfiguredDigest(string $pharPath, Io $io): bool
+    {
+        $expected = $this->config['wp-cli-sha256']->unwrap();
+        if (!is_string($expected)) {
+            return true;
+        }
+        $actual = hash_file('sha256', $pharPath);
+        if (!is_string($actual) || !hash_equals(strtolower($expected), $actual)) {
+            $io->error('WP-CLI SHA256 integrity check failed.');
 
             return false;
         }

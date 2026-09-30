@@ -38,8 +38,8 @@ Regular root/nested layouts remain usable. Offline recovery rejects unsupported
 root/overlapping layouts and unknown conflicts without destructive merging.
 
 Package-backup retention and hard-interruption recovery are operational responsibilities
-documented in [Deployment](../deployment.md). Exception rollback is tested; there is
-no claim of atomic recovery from SIGKILL or power loss.
+documented in [Deployment](../deployment.md). The private write-ahead journal and SIGKILL recovery tests in
+[ADR 0024](0024-layout-journal.md) supersede the original manual interruption policy.
 
 ## Warning investigation
 

@@ -47,7 +47,7 @@ Generate the environment dump and warm the application's production kernel cache
 
 Publish complete releases atomically and retain the previous configuration, its referenced payloads and matching application packages for rollback. Payload cleanup is deliberately not automatic. Before manually removing an old fingerprint, inventory references from every active and retained release, account for workers/in-flight requests and rollback windows, then remove only explicitly unreferenced directories. Do not infer safety from file age or the newest fingerprint alone; never traverse symlinks during cleanup. Keeping an old payload is preferable to breaking an active or rollback release.
 
-For in-place deployments, publish the payload before changing the configuration reference and preserve the previous pair until rollback is no longer needed. Prefer release-directory switching when application/vendor changes must be coordinated. The existing exception rollback for package recovery is not a crash-recovery journal; retain backups and inspect an interrupted recovery before rerunning it.
+For in-place deployments, publish the payload before changing the configuration reference and preserve the previous pair until rollback is no longer needed. Prefer release-directory switching when application/vendor changes must be coordinated. Package recovery persists a private write-ahead journal before mutations. The next setup invocation restores an interrupted transaction under the project locks before planning a fresh repair.
 
 ## Recovery when Composer plugins were disabled
 
@@ -79,23 +79,39 @@ window closes.
 
 ## Recover from an interrupted package repair
 
-Exception rollback is covered by tests. SIGKILL, power loss and storage failure
-cannot execute that rollback; Runtime does not promise a crash-recovery journal.
-If a recovery was interrupted:
+Runtime writes `var/runtime/package-layout.pending.json` (0600) before moving
+packages or rewriting Composer metadata. It contains original metadata, binary proxy
+snapshots and package move identities. Preserve this file together with the package
+and vendor trees. The next setup invocation acquires the maintenance/layout locks,
+rolls back an unfinished transaction, then prepares the requested layout again.
+A durable committed transaction only needs its retained-backup receipts completed.
+Rollback itself is restartable after interruption.
 
-1. Stop setup/deployment processes and keep traffic on the last healthy release.
-2. Preserve the interrupted tree, `composer.lock`, `vendor/composer/`,
-   `var/runtime/package-layout.json` and `var/runtime/package-backups/` for inspection.
-   Do not rerun recovery or delete a backup merely because a target appears present.
-3. Prefer rebuilding a clean release directory from the same reviewed lockfile with
-   normal Composer installers enabled. Restore project-owned data and private
-   configuration from the corresponding application backup, then regenerate Runtime.
-4. Verify login, application commands, diagnostics and matching package versions
-   before switching traffic. If rebuilding is unavailable, restore the entire known-good
-   release; do not mix individual metadata files from different package versions.
+The journal is flushed before mutation and directory entries are synchronized. Real
+SIGKILL tests cover preparation, move intent, completed moves, metadata, binaries,
+state publication, commit and interrupted rollback. Hardware/filesystem failures that
+violate successful fsync semantics remain outside this guarantee. A corrupt journal,
+changed package inode, unexpected directory or unsafe path fails closed: preserve the
+whole release for inspection and rebuild from the reviewed lockfile if necessary.
+Do not edit journal contents or mix metadata from different releases.
 
-For backup retention, record which release/job produced each backup and preserve it
-until that release has passed validation and its rollback window has closed.
-Archive required backups outside the active release. Remove only explicitly reviewed,
-unreferenced directories; never follow backup symlinks or prune by age alone.
-Monitor disk usage so retained package trees cannot exhaust the release volume.
+## Explicit retention
+
+```sh
+vendor/bin/sympress-runtime prune --keep=2 --dry-run
+vendor/bin/sympress-runtime prune --keep=2
+```
+
+Prune preserves all payloads referenced by the generated root, core-parent and
+configured custom `wp-config.php`, plus the newest N inactive payloads and newest N
+owned package backups (each category independently). It verifies payload manifests,
+all recorded hashes and the complete file inventory. Extra files, changed payloads,
+unknown backups and trees containing symlinks are retained. Backup ownership requires
+a Runtime receipt matching the directory inode; older unmarked backups are retained.
+An active recovery journal blocks pruning entirely. Generation, recovery and pruning
+share a nonblocking maintenance lock; concurrent operations fail without cleanup.
+
+This is local release retention. Keep complete rollback releases separately and
+account for in-flight requests before invoking prune. References from other release
+directories cannot be inferred. Configurations whose payload reference cannot be
+recognized are rejected rather than guessed. No cleanup runs automatically.

@@ -126,6 +126,10 @@ PHP);
         self::assertFileDoesNotExist($record[3]);
         self::assertFileDoesNotExist($this->root . '/injected');
         self::assertStringNotContainsString('synthetic-secret', $output->fetch());
+        self::assertTrue($checker->mysqlcheck(quick: true));
+        $quick = json_decode((string) file_get_contents($this->root . '/health.json'), true);
+        self::assertContains('--quick', $quick[0]);
+        self::assertFileDoesNotExist($quick[3]);
     }
 
     /** @return iterable<string, array{string, string, ?int, ?string}> */
@@ -173,13 +177,14 @@ PHP);
     }
 
     #[Group('PAR-DB-004')]
-    public function testFailedHealthPreflightStopsNativeExecutionButRetainsLegacyOutcome(): void
+    public function testNativeHealthIsExplicitWhileLegacyPreflightRetainsHealthOutcome(): void
     {
         [$checker, , , $output] = $this->checker([]);
         $paths = new Paths($this->root);
         $io = new Io(new ArrayInput([]), $output);
         $native = new Config(['db-check' => 'health'], new Validator($paths));
-        self::assertFalse((new DatabasePreflight($native, $checker, $io))->run(new Selection()));
+        self::assertTrue((new DatabasePreflight($native, $checker, $io))->run(new Selection()));
+        self::assertStringContainsString('doctor --database-health', $output->fetch());
         $legacy = new Config(['db-check' => 'health'], new Validator($paths, 'upstream-dev'), 'upstream-dev');
         self::assertTrue((new DatabasePreflight($legacy, $checker, $io))->run(new Selection()));
         self::assertStringContainsString('did not pass', $output->fetch());

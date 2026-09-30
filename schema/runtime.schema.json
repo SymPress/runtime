@@ -4,6 +4,7 @@
     "title": "SymPress Runtime configuration",
     "type": "object",
     "properties": {
+        "update-lock": false,
         "wp-config-autoload": {
             "$ref": "#/$defs/boolean"
         },
@@ -13,7 +14,14 @@
             "default": 16777216
         },
         "cache-env": {
-            "$ref": "#/$defs/boolean"
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/boolean"
+                },
+                {
+                    "const": "auto"
+                }
+            ]
         },
         "install-wp-cli": {
             "$ref": "#/$defs/boolean"
@@ -298,12 +306,16 @@
                         "type": "array",
                         "items": {
                             "anyOf": [
-                                { "type": "string" },
+                                {
+                                    "type": "string"
+                                },
                                 {
                                     "type": "array",
                                     "minItems": 2,
                                     "maxItems": 2,
-                                    "items": { "type": "string" }
+                                    "items": {
+                                        "type": "string"
+                                    }
                                 }
                             ]
                         }
@@ -419,6 +431,56 @@
                     }
                 }
             ]
+        },
+        "composer-managed": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/boolean"
+                },
+                {
+                    "const": "auto"
+                }
+            ]
+        },
+        "generated-file-mode": {
+            "enum": [
+                "0600",
+                "0640"
+            ]
+        },
+        "required-env": {
+            "type": "object",
+            "propertyNames": {
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "additionalProperties": {
+                "enum": [
+                    "string",
+                    "int",
+                    "bool",
+                    "float"
+                ]
+            }
+        },
+        "download-lock": {
+            "$ref": "#/$defs/boolean"
+        },
+        "wp-cli-version": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "wp-cli-sha256": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "pattern": "^[0-9a-fA-F]{64}$"
+        },
+        "bundle-bootstrap": {
+            "$ref": "#/$defs/boolean"
         }
     },
     "additionalProperties": true,

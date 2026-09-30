@@ -42,7 +42,15 @@ try {
     }
     require_once dirname(__DIR__) . '/src/Composer/LayoutBootstrap.php';
     SymPress\Runtime\Composer\LayoutBootstrap::prepare($root, $vendor, $manifestPath, array_values($arguments));
-    require $autoload;
+    $preview = in_array('--dry-run', $arguments, true) || in_array('--check', $arguments, true);
+    if ($preview && is_file($vendor . '/composer/ClassLoader.php')) {
+        require_once dirname(__DIR__) . '/src/Composer/LayoutAutoload.php';
+        SymPress\Runtime\Composer\LayoutAutoload::register($vendor);
+    } elseif ($preview && is_file(dirname(__DIR__) . '/vendor/autoload.php')) {
+        require dirname(__DIR__) . '/vendor/autoload.php';
+    } else {
+        require $autoload;
+    }
     exit(SymPress\Runtime\Console\Application::main(array_values($arguments), $root, $vendor, $context));
 } catch (Throwable $error) {
     fwrite(STDERR, 'SymPress Runtime: ' . $error->getMessage() . PHP_EOL);

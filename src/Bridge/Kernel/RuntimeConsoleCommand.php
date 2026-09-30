@@ -34,6 +34,11 @@ final class RuntimeConsoleCommand extends Command
         }
         $this->addOption('json', null, InputOption::VALUE_NONE, 'Print structured diagnostics.');
         $this->addOption('format', null, InputOption::VALUE_REQUIRED, 'Diagnostic output format: text or json.', 'text');
+        foreach (['production', 'database-health', 'quick'] as $flag) {
+            $this->addOption($flag, null, InputOption::VALUE_NONE);
+        }
+        $this->addOption('php-user', null, InputOption::VALUE_REQUIRED);
+        $this->addOption('webroot', null, InputOption::VALUE_REQUIRED);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -48,6 +53,9 @@ final class RuntimeConsoleCommand extends Command
             $options['json'] = $options['json'] === true || $format === 'json';
             $parameters = $input->getArguments();
             foreach ($options as $name => $value) {
+                if ($value === null) {
+                    continue;
+                }
                 $parameters['--' . $name] = $value;
             }
             $normalized = new ArrayInput($parameters);

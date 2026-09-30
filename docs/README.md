@@ -22,6 +22,8 @@ WordPress constants. Your WordPress plugins and application then start normally.
 4. [Steps](steps.md) and [CLI](cli.md): control setup.
 5. [Custom steps](custom-steps.md) and [WP-CLI](wp-cli.md): automate project work.
 6. [Deployment](deployment.md): build, verify, publish and roll back a release.
+7. [Operations](operations.md): drift checks, production gates and safe cleanup.
+8. [Downloads](downloads.md): maintain URL pins and verify remote artifacts.
 
 Use the [settings cheat sheet](settings-cheat-sheet.md), [constant catalog](constants.md)
 and [troubleshooting guide](troubleshooting.md) as references. Existing projects can
