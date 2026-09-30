@@ -30,12 +30,14 @@ and a Composer-managed WordPress installation. Composer resolves Runtime's Symfo
 
 PHP 8.5 is the intentional baseline for the 1.x contract. PHP 8.4 and older are
 not supported. Install a tagged release and commit the resolved lockfile. The
-repository is public; GitHub read credentials are not required.
+package is available from [Packagist](https://packagist.org/packages/sympress/runtime);
+no Runtime-specific repository or read credentials are required.
 Review the [upgrade notes](docs/releases/0.2.0.md) before updating an existing site.
 
 The 1.0 contract is being validated. See the [compatibility policy](docs/compatibility-policy.md)
 for stable extension points and the [platform table](docs/platforms.md) for
 requirements and verification scope. No completed production soak is claimed.
+For candidate evaluation, follow the [RC installation guide](docs/releases/1.0.0-rc.1.md).
 
 ## Start here
 

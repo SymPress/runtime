@@ -1,9 +1,9 @@
 # Getting started
 
 This guide creates a Composer-managed WordPress site with a `public/` document root.
-You need PHP 8.5+, Composer 2.10.3+, a database and a web server. Runtime's repository
-is public. Private project dependencies can use Composer authentication or an SSH
-agent; keep credentials out of `composer.json`.
+You need PHP 8.5+, Composer 2.10.3+, a database and a web server. Runtime is available
+from Packagist without a custom repository or access credentials. Private project
+dependencies can use their own Composer authentication or SSH agent.
 
 Commands below use `runtime`, the executable provided by the pinned 0.2.0 release.
 Existing 0.1.0 projects should follow the [upgrade notes](releases/0.2.0.md).

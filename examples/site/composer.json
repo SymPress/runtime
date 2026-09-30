@@ -10,10 +10,6 @@
     },
     "repositories": [
         {
-            "type": "vcs",
-            "url": "https://github.com/SymPress/runtime.git"
-        },
-        {
             "type": "composer",
             "url": "https://wpackagist.org"
         }

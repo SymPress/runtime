@@ -76,19 +76,26 @@ upgrade to an unreleased Composer minor.
   The implementation history through `53161d4` was rescanned: 76 commits with
   scanned diffs, zero findings, exit status 0.
 - [x] Repository public; license/notice retained.
-- [ ] Packagist registration and automatic GitHub update integration verified.
-- [ ] Signed release tags and QA-gated release/changelog/Packagist workflow.
+- [x] Packagist registered by the owner on 2026-09-30; beta 1 and beta 2 source
+  revisions match their signed tags. The active GitHub push webhook targets
+  `packagist.org/api/github` and reports HTTP 202. Verify propagation of the new
+  RC tag before starting consumer acceptance.
+- [x] Signed release tags and QA-gated release/changelog/Packagist workflow:
+  [beta 2 run 36758372673](https://github.com/SymPress/runtime/actions/runs/36758372673)
+  passed after rerunning its failed distribution job following registration.
+  All original technical gates had already passed; the rerun verified the exact
+  published source revision without changing the tag.
 - [x] Private vulnerability reporting enabled; supported-version policy prepared.
 - [x] Weekly dependency/action updates configured; PHP security analysis and
   dependency audit pass on PR #13.
 - [x] Public newcomer docs, migration guide and platform compatibility table.
 - [ ] Empty-project installation from Packagist with `^1.0@RC` succeeds.
 
-Packagist still returns HTTP 404 for `sympress/runtime`. Registration and the
-GitHub update integration require the package owner's authenticated Packagist
-account. A public repository and a signed GitHub tag do not prove Composer
-distribution. RC/stable publication and consumer upgrades remain pending this
-gate; the beta release workflow reports missing propagation as a failure.
+The initial missing-registration blocker is resolved. The RC tag supplies the
+artifact needed for the exact `^1.0@RC` empty-project acceptance command; consumer
+acceptance starts only after that public installation and tag propagation pass.
+The earlier anonymous public-Git beta 2 installation succeeded, but is not counted
+as the separate Packagist installation proof.
 
 ## Phase 5 — Release candidate
 
