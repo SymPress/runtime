@@ -41,6 +41,10 @@ For an existing site, start with [Adopting Runtime](docs/migration.md).
 
 Once Runtime is installed, run these commands from your project root:
 
+The examples use the upcoming executable name `runtime`. With the tagged 0.1.0
+release, use `sympress-runtime` as the executable name instead; see the
+[CLI upgrade note](docs/cli.md).
+
 ```sh
 vendor/bin/runtime validate
 vendor/bin/runtime --list-steps
