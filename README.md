@@ -24,13 +24,14 @@ and explicit cache maintenance to `wp console`.
 
 ## Requirements
 
-PHP **8.5 or newer**, Composer **2.8 or newer** with plugin API **2.6 or newer**,
+PHP **8.5 or newer**, Composer **2.10.3 or newer** with plugin API **2.6 or newer**,
 and a Composer-managed WordPress installation. Composer resolves Runtime's Symfony
 8.1 dependencies. WordPress and your application may require additional PHP extensions.
 
-Runtime currently has no stable release tag, and its repository is private. Use an
-authorized GitHub account or a repository-scoped read credential, install `dev-main`,
-and commit the resolved lockfile. A reviewed lockfile is the version used in deployment.
+Install the tagged release `0.1.0` and commit the resolved lockfile. The repository
+is private, so use an authorized GitHub account or a repository-scoped read credential.
+Version 0.1.0 is the initial release accepted for the documented SymPress layouts;
+review release notes before changing the pinned version.
 
 ## Start here
 

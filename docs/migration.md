@@ -14,7 +14,7 @@ web-server routes. Adding Runtime does not require a URL change.
 Install the package without running setup while preparing the configuration:
 
 ```sh
-composer require sympress/runtime:dev-main --no-plugins --no-scripts
+composer require sympress/runtime:0.1.0 --no-plugins --no-scripts
 ```
 
 The private repository must already be present in Composer's repository
@@ -28,8 +28,21 @@ Set `prevent-overwrite` for files your project must continue to own. Unmarked
 configuration is not a reason to use `--force` blindly: compare it first and move
 custom boot code into an early hook, a managed section or a custom template.
 
-Enable `wp-config-autoload` if early application code needs Composer classes.
-The parser itself does not require the project autoloader.
+### Preserve early Composer hooks
+
+**Native mode leaves `wp-config-autoload` disabled by default.** Enable it when
+your current Composer `autoload.files` registers early WordPress hooks, or
+environment PHP and `early-hook-file` need vendor classes:
+
+```json
+{"wp-config-autoload": true}
+```
+
+It loads Composer after the WordPress hook API and before those early files.
+A later MU/kernel boot does not replace this ordering. Legacy profiles default to
+true and migration records that inherited setting. Inspect any preserved
+`AUTOLOAD` section after regeneration; existing custom PHP is not silently replaced.
+The environment parser itself does not require the project autoloader.
 
 Existing projects that use older configuration names or PHP interfaces should
 follow [Compatibility](compatibility.md) before choosing the native profile.

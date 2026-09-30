@@ -20,8 +20,8 @@ An unknown doctor result is not proof that the database works.
 
 Verify the homepage, login, admin and required application commands as the deployed
 PHP identity before switching traffic. A successful package QA suite does not
-replace those site checks. Runtime currently has no stable release tag; keep the
-exact reviewed development revision in the lockfile.
+replace those site checks. Pin a reviewed tagged Runtime release and keep its exact resolved source reference
+in the lockfile.
 
 ## Required artifacts
 
@@ -49,7 +49,10 @@ Publish complete releases atomically and retain the previous configuration, its 
 
 For in-place deployments, publish the payload before changing the configuration reference and preserve the previous pair until rollback is no longer needed. Prefer release-directory switching when application/vendor changes must be coordinated. The existing exception rollback for package recovery is not a crash-recovery journal; retain backups and inspect an interrupted recovery before rerunning it.
 
-## Build with Composer plugins disabled
+## Recovery when Composer plugins were disabled
+
+Use normal Composer installation with the WordPress installers for routine builds.
+The following is a recovery path for a build that deliberately disabled plugins.
 
 ```sh
 composer install --no-dev --no-plugins --no-scripts --no-interaction
@@ -73,3 +76,26 @@ regenerate the configuration, then repeat the build and application checks above
 Switch back to the complete prior release if verification fails. Do not pair an old
 configuration with a new payload or delete retained payloads before the rollback
 window closes.
+
+## Recover from an interrupted package repair
+
+Exception rollback is covered by tests. SIGKILL, power loss and storage failure
+cannot execute that rollback; Runtime does not promise a crash-recovery journal.
+If a recovery was interrupted:
+
+1. Stop setup/deployment processes and keep traffic on the last healthy release.
+2. Preserve the interrupted tree, `composer.lock`, `vendor/composer/`,
+   `var/runtime/package-layout.json` and `var/runtime/package-backups/` for inspection.
+   Do not rerun recovery or delete a backup merely because a target appears present.
+3. Prefer rebuilding a clean release directory from the same reviewed lockfile with
+   normal Composer installers enabled. Restore project-owned data and private
+   configuration from the corresponding application backup, then regenerate Runtime.
+4. Verify login, application commands, diagnostics and matching package versions
+   before switching traffic. If rebuilding is unavailable, restore the entire known-good
+   release; do not mix individual metadata files from different package versions.
+
+For backup retention, record which release/job produced each backup and preserve it
+until that release has passed validation and its rollback window has closed.
+Archive required backups outside the active release. Remove only explicitly reviewed,
+unreferenced directories; never follow backup symlinks or prune by age alone.
+Monitor disk usage so retained package trees cannot exhaust the release volume.
