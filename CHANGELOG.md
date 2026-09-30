@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## 1.1.1 — 2026-09-30
 
 - Describe the production and database health flags in diagnostic help, including the requirement for `--quick`, and identify `check` as an alias of `doctor` in command listings.
+- Update the README, release guides and maintainer documentation.
 
 ## 1.1.0 — 2026-09-30
 
