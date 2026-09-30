@@ -15,6 +15,11 @@ are not maintained security lines. Fixes ship as reviewed, signed tags. Use
 `sympress/runtime:^1.0`, commit the resolved lockfile, and update to the latest
 1.x patch when a relevant fix is available.
 
+The `1.x` branch receives stable maintenance and security fixes; applicable fixes
+are also ported to `main`. The `main` branch is for 1.1 development and has the
+Composer alias `1.1.x-dev`. Development builds are not supported stable releases;
+use reviewed 1.x tags and the documented `^1.0` constraint for installations.
+
 The [compatibility policy](docs/compatibility-policy.md) applies to 1.x. Security
 fixes may reject unsafe inputs outside the supported contract, with a release
 note and a documented safe migration path.

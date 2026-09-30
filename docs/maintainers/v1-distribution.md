@@ -47,3 +47,25 @@ verified the RC revision. The 1.0 workflow adds a unique public query per attemp
 the tag was not rewritten to alter the historical run.
 Consumer acceptance and the final stable distribution check are separate gates
 recorded in [V1 readiness](v1-readiness.md).
+
+## Stable 1.0
+
+The signed `v1.0.0` tag resolves to
+`56b89a0958d24d6ae62944c0dca9e205d9fb63d5`. Its tree matches the final
+PR #19 head `8498986`, where all 16 checks passed. The `1.x` maintenance branch
+was created from this same commit.
+
+A separate empty project repeated the public installation procedure above with
+`composer require 'sympress/runtime:^1.0' --no-interaction`. It used no custom
+repository, Runtime source override or authentication. Composer installed the
+stable archive at exactly that revision, reported no known dependency advisories
+and exited 0. Repeating `composer install --no-interaction` changed no package
+and exited 0. The installed executable reported `SymPress Runtime 1.0.0`.
+
+The GitHub webhook populated Composer's public P2 metadata automatically. The
+stable release workflow is
+[36766001204](https://github.com/SymPress/runtime/actions/runs/36766001204);
+all its jobs passed, including the corrected metadata verification. It published
+the stable GitHub release and confirmed Packagist's exact source revision. Its
+integration artifact records **1,277 tests, 9,396 assertions, no failures or
+skips, and 407/407 proven parity rows**.

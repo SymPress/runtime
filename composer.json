@@ -38,6 +38,7 @@
     "bin": ["bin/runtime"],
     "extra": {
         "class": "SymPress\\Runtime\\Composer\\Plugin",
+        "branch-alias": {"dev-main": "1.1.x-dev"},
         "kernel": {"bundle": "SymPress\\Runtime\\Bridge\\Kernel\\RuntimeBundle", "entry": "sympress/runtime"}
     },
     "suggest": {"sympress/kernel": "Enables runtime diagnostics, validation and environment dumps through wp console."},
