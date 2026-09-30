@@ -6,7 +6,11 @@ namespace SymPress\Runtime\Composer;
 
 use Composer\Autoload\ClassLoader;
 
-/** A preparation process must never execute project or WordPress autoload files. */
+/**
+ * A preparation process must never execute project or WordPress autoload files.
+ *
+ * @internal
+ */
 final class LayoutAutoload
 {
     public static function register(string $vendor): void

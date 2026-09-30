@@ -59,6 +59,10 @@ The standalone runner uses the current project directory and its Composer vendor
 
 ## Running through Composer
 
+`composer runtime` aliases `composer sympress-runtime`; diagnostic aliases use
+the colon form, for example `composer runtime:doctor --json`. Existing names stay
+supported in 1.x.
+
 Composer exposes `composer sympress-runtime [steps] [flags]`, `composer sympress-runtime:validate`, `composer sympress-runtime:flush-env-cache` and `composer sympress-runtime:dump-env <environment>`. Install/update events run at priority 0, before asset-compiler's documented -1000 priority. The host uses Composer APIs and PHP standard-library process launching; project Symfony services are instantiated only in the child.
 
 ## Exit status
@@ -68,6 +72,15 @@ Exit status is zero for successful/no-op execution, nonzero for invalid input, c
 Legacy profiles retain their documented selection differences, including rejecting positional opt-in combined with listing. Native mode permits this combination. See [Compatibility](compatibility.md) for retained command aliases.
 
 ## Kernel console and environment dumps
+
+Native generated `wp-cli.yml` registers `wp runtime`. For example,
+`wp runtime doctor --json` and `wp runtime validate` run the same standalone
+application in a child process before WordPress loads, without needing the kernel.
+All Runtime subcommands and setup flags are forwarded; the wrapper is
+noninteractive. WP-CLI retains ownership of its global options. Its `--json`
+rewrite to `--format=json` is supported. Existing user-owned YAML is preserved:
+review and regenerate it with `vendor/bin/runtime --force wpcliconfig`, or add
+the registration described in [WP-CLI](wp-cli.md).
 
 Through the kernel console, `wp console doctor --json` and `wp console check --json` accept WP-CLI's automatic rewrite to `--format=json`. The bridge also accepts explicit `--format=text` or `--format=json`; other formats are rejected.
 

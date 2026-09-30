@@ -8,6 +8,7 @@ use RuntimeException;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Filesystem\Paths;
 
+/** @internal */
 final readonly class EnvFactory
 {
     public function __construct(private Config $config, private Paths $paths)

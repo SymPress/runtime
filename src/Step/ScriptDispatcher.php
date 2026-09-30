@@ -13,6 +13,7 @@ use SymPress\Runtime\Event\PreStepEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Throwable;
 
+/** @internal */
 final readonly class ScriptDispatcher implements EventSubscriberInterface
 {
     public function __construct(private Config $config)

@@ -7,7 +7,11 @@ namespace SymPress\Runtime\Step;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Filesystem\Paths;
 
-/** Intentionally extensible: legacy extensions use this no-op base class. */
+/**
+ * Intentionally extensible: legacy extensions use this no-op base class.
+ *
+ * @internal
+ */
 class NullStep implements StepInterface
 {
     public function name(): string

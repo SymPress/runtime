@@ -27,10 +27,12 @@ use SymPress\Runtime\Process\SystemProcess;
 use SymPress\Runtime\Process\WpCliTool;
 use Symfony\Component\Process\ExecutableFinder;
 
+/** @api */
 final class Services
 {
     private ?PhpToolProcess $wpCli = null;
 
+    /** @internal */
     public function __construct(
         private Config $configuration,
         private Paths $projectPaths,
@@ -56,116 +58,139 @@ final class Services
     ) {
     }
 
+    /** @api */
     public function config(): Config
     {
         return $this->configuration;
     }
 
+    /** @api */
     public function paths(): Paths
     {
         return $this->projectPaths;
     }
 
+    /** @api */
     public function io(): Io
     {
         return $this->consoleIo;
     }
 
+    /** @api */
     public function filesystem(): Filesystem
     {
         return $this->files;
     }
 
+    /** @internal */
     public function fileContentBuilder(): FileContentBuilder
     {
         return $this->builder;
     }
 
+    /** @internal */
     public function runContext(): RunContext
     {
         return $this->context;
     }
 
+    /** @internal */
     public function packageFinder(): PackageFinder
     {
         return $this->packages;
     }
 
+    /** @internal */
     public function muPluginsList(): MuPluginList
     {
         return $this->muPlugins;
     }
 
+    /** @api */
     public function urlDownloader(): UrlDownloader
     {
         return $this->downloads;
     }
 
+    /** @internal */
     public function pharInstaller(): PharInstaller
     {
         return $this->phars;
     }
 
+    /** @internal */
     public function phpToolProcessFactory(): PhpToolProcessFactory
     {
         return $this->tools;
     }
 
+    /** @api */
     public function wpCliProcess(): PhpToolProcess
     {
         return $this->wpCli ??= $this->tools->create($this->wpCliTool);
     }
 
+    /** @api */
     public function env(): EnvReader
     {
         return $this->environment;
     }
 
+    /** @api */
     public function dbChecker(): DbChecker
     {
         return $this->database;
     }
 
+    /** @api */
     public function systemProcess(): SystemProcess
     {
         return $this->system;
     }
 
+    /** @internal */
     public function phpProcess(): PhpProcess
     {
         return $this->php;
     }
 
+    /** @internal */
     public function executableFinder(): ExecutableFinder
     {
         return $this->executables;
     }
 
+    /** @internal */
     public function overwriteHelper(): OverwritePolicy
     {
         return $this->overwrite;
     }
 
+    /** @internal */
     public function salter(): Salter
     {
         return $this->salts;
     }
 
+    /** @api */
     public function wpConfigSectionEditor(): WpConfigSectionEditor
     {
         return $this->sections;
     }
 
+    /** @internal */
     public function composerIo(): Io
     {
         return $this->consoleIo;
     }
 
+    /** @internal */
     public function composerFilesystem(): Filesystem
     {
         return $this->files;
     }
 
+    /** @internal */
     public function composerConfig(): ComposerConfiguration
     {
         return $this->composerSettings;

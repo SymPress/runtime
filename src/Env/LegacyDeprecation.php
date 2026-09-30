@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Env;
 
-/** Reports names only, without exposing values or contaminating response bodies. */
+/**
+ * Reports names only, without exposing values or contaminating response bodies.
+ *
+ * @internal
+ */
 final class LegacyDeprecation
 {
     public static function report(string $name, string $replacement): void

@@ -8,7 +8,11 @@ use Composer\Installer\LibraryInstaller;
 use Composer\Package\PackageInterface;
 use RuntimeException;
 
-/** Read-only path provider for Composer's metadata/autoload writers. */
+/**
+ * Read-only path provider for Composer's metadata/autoload writers.
+ *
+ * @internal
+ */
 final class LayoutInstaller extends LibraryInstaller
 {
     /** @var array<string, string|null> */

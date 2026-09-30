@@ -6,6 +6,7 @@ namespace SymPress\Runtime\Composer;
 
 use Composer\Plugin\Capability\CommandProvider as CommandProviderCapability;
 
+/** @internal */
 final class CommandProvider implements CommandProviderCapability
 {
     /** @return list<Command> */

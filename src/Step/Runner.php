@@ -15,6 +15,7 @@ use SymPress\Runtime\Filesystem\OverwritePolicy;
 use SymPress\Runtime\Filesystem\Paths;
 use Throwable;
 
+/** @internal */
 final class Runner implements Countable
 {
     /** @var array<int, StepInterface> */
@@ -22,20 +23,24 @@ final class Runner implements Countable
     private bool $running = false;
     private bool $preparing = false;
 
+    /** @internal */
     public function __construct(private readonly Config $config, private readonly Paths $paths, private readonly Io $io, private readonly ContainerInterface $container, private readonly Selection $selection = new Selection())
     {
     }
 
+    /** @api */
     public function name(): string
     {
         return 'sympress-runtime';
     }
 
+    /** @api */
     public function count(): int
     {
         return count($this->steps);
     }
 
+    /** @api */
     public function addStep(StepInterface $step, StepInterface ...$steps): self
     {
         if (!$this->running || $this->preparing) {
@@ -50,6 +55,7 @@ final class Runner implements Countable
         return $this;
     }
 
+    /** @api */
     public function removeStep(StepInterface|string $step, StepInterface|string ...$steps): self
     {
         if ($this->running && !$this->preparing) {
@@ -67,7 +73,10 @@ final class Runner implements Countable
         return $this;
     }
 
-    /** @param list<Definition> $definitions */
+    /**
+     * @param list<Definition> $definitions
+     * @internal
+     */
     public function run(array $definitions): int
     {
         if ($this->running) {

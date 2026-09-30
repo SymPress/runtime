@@ -10,7 +10,11 @@ use RuntimeException;
 use SymPress\Runtime\Filesystem\ProjectBoundary;
 use Symfony\Component\Filesystem\Filesystem;
 
-/** Regenerates owned Composer proxies without chmodding path-repository sources. */
+/**
+ * Regenerates owned Composer proxies without chmodding path-repository sources.
+ *
+ * @internal
+ */
 final class LayoutBinaries extends BinaryInstaller
 {
     /** @var array<string, array{contents: string|null, link: string|null, mode: int, binary: string, package: string}> */

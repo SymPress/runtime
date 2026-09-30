@@ -9,12 +9,15 @@ use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Filesystem\Filesystem;
 use SymPress\Runtime\Filesystem\Paths;
 
+/** @internal */
 final readonly class WpConfigSectionEditor
 {
+    /** @internal */
     public function __construct(private Paths $paths, private Config $config, private Filesystem $filesystem)
     {
     }
 
+    /** @api */
     public function sectionContent(string $section): string
     {
         if (!preg_match($this->pattern($section), $this->read(), $matches)) {
@@ -24,21 +27,25 @@ final readonly class WpConfigSectionEditor
         return implode("\n", array_map(trim(...), explode("\n", trim($matches[2]))));
     }
 
+    /** @api */
     public function append(string $section, string $newContent): void
     {
         $this->edit($section, $newContent, 'A');
     }
 
+    /** @api */
     public function prepend(string $section, string $newContent): void
     {
         $this->edit($section, $newContent, 'P');
     }
 
+    /** @api */
     public function replace(string $section, string $newContent): void
     {
         $this->edit($section, $newContent, 'R');
     }
 
+    /** @api */
     public function delete(string $section): void
     {
         $this->replace($section, '');

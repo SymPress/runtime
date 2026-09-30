@@ -46,9 +46,13 @@ def check(root=ROOT):
         errors.append(f"Constants mismatch: missing={sorted(expected_constants - documented_constants)}, extra={sorted(documented_constants - expected_constants)}")
 
     for file in [root / "README.md", *list((root / "docs").glob("*.md"))]:
-        if file.name in {"README.md", "compatibility.md"}:
+        if file.name in {"README.md", "compatibility.md", "compatibility-policy.md"}:
             continue
-        if re.search(r"wp[ -]?starter|wecodemore", file.read_text(), re.I):
+        text = file.read_text()
+        if file.name == "api.md":
+            text = re.sub(r"IS_WPSTARTER_(?:SELECTED_)?COMMAND", "LEGACY_COMMAND", text)
+            text = re.sub(r'"(?:is-wpstarter-(?:selected-)?command|wp-starter)"', '"legacy-name"', text)
+        if re.search(r"wp[ -]?starter|wecodemore", text, re.I):
             errors.append(f"{file.relative_to(root)}: compatibility branding belongs in the compatibility guide")
     return errors, len(documents), len(expected), len(expected_constants)
 

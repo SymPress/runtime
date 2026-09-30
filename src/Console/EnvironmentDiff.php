@@ -7,6 +7,7 @@ namespace SymPress\Runtime\Console;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Filesystem\Paths;
 
+/** @internal */
 final readonly class EnvironmentDiff
 {
     public function __construct(private Config $config, private Paths $paths, private Io $io)

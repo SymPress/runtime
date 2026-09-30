@@ -172,6 +172,12 @@ PHP);
         $validate = $this->composer(['sympress-runtime:validate']);
         self::assertSame(0, $validate->getExitCode(), $validate->getErrorOutput());
         self::assertStringContainsString('configuration is valid', $validate->getOutput());
+        $alias = $this->composer(['runtime:validate']);
+        self::assertSame($validate->getExitCode(), $alias->getExitCode(), $alias->getErrorOutput());
+        self::assertSame($validate->getOutput(), $alias->getOutput());
+        $setupAlias = $this->composer(['runtime', 'fixture', '--skip-custom']);
+        self::assertSame(0, $setupAlias->getExitCode(), $setupAlias->getErrorOutput());
+        self::assertTrue($this->context()['selected']);
     }
 
     #[Group('PAR-CLI-014')]

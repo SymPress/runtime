@@ -10,6 +10,7 @@ use SymPress\Runtime\Process\WpCliTool;
 use Symfony\Component\Filesystem\Filesystem;
 use Throwable;
 
+/** @internal */
 final readonly class PharInstaller
 {
     public function __construct(private Io $io, private UrlDownloader $downloads, private Filesystem $files = new Filesystem())

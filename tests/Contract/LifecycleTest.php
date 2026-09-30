@@ -17,6 +17,7 @@ use SymPress\Runtime\Event\PostStepEvent;
 use SymPress\Runtime\Event\PreRunEvent;
 use SymPress\Runtime\Event\PreStepEvent;
 use SymPress\Runtime\Filesystem\Paths;
+use SymPress\Runtime\Services;
 use SymPress\Runtime\Step\Definition;
 use SymPress\Runtime\Step\Registry;
 use SymPress\Runtime\Step\Runner;
@@ -73,6 +74,18 @@ final class LifecycleTest extends TemporaryProject
         self::assertStringContainsString('script:probe:3', $text);
         self::assertStringContainsString('script:sympress-runtime:3', $text);
         self::assertSame(1, substr_count($text, 'script:probe:4'));
+    }
+
+    public function testLegacyFourthCallbackArgumentRetainsTheSharedInternalContext(): void
+    {
+        $called = false;
+        $callback = static function (int $result, Runner|StepInterface $subject, Services $services, RunContext $context) use (&$called): void {
+            self::assertSame($context, $services->runContext());
+            $called = true;
+        };
+        [$runner, $definitions] = $this->fixture(['pre-probe' => [$callback]]);
+        self::assertSame(0, $runner->run($definitions));
+        self::assertTrue($called);
     }
 
     /** @return iterable<string, array{string, bool, bool}> */

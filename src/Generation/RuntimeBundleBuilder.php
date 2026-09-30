@@ -13,7 +13,11 @@ use Symfony\Component\Dotenv\Dotenv;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 
-/** Publishes immutable, scoped parser payloads; never loads Composer at request time. */
+/**
+ * Publishes immutable, scoped parser payloads; never loads Composer at request time.
+ *
+ * @internal
+ */
 final readonly class RuntimeBundleBuilder
 {
     public function __construct(private Paths $paths, private ProjectBoundary $boundary, private bool $bundleBootstrap = false)
@@ -79,7 +83,7 @@ final readonly class RuntimeBundleBuilder
         $process = dirname((string) (new ReflectionClass(Process::class))->getFileName());
         $environment = dirname((string) (new ReflectionClass(EnvReader::class))->getFileName());
         $sources = [];
-        foreach (['EnvReader', 'Filters', 'EnvironmentName', 'ConstantCatalog', 'LegacyDeprecation', 'SecureFileWriter', 'EnvRequirements', 'EnvCacheSources', 'SecretFile'] as $class) {
+        foreach (['EnvReader', 'Filters', 'EnvironmentName', 'ConstantCatalog', 'LegacyDeprecation', 'SecureFileWriter', 'EnvRequirements', 'EnvCacheSources', 'EnvCacheFormat', 'SecretFile'] as $class) {
             $sources['Env/' . $class . '.php'] = $this->read($environment . '/' . $class . '.php');
         }
         $sources['Dotenv/Dotenv.php'] = $this->read($dotenv . '/Dotenv.php');

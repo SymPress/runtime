@@ -28,9 +28,14 @@ PHP **8.5 or newer**, Composer **2.10.3 or newer** with plugin API **2.6 or newe
 and a Composer-managed WordPress installation. Composer resolves Runtime's Symfony
 8.1 dependencies. WordPress and your application may require additional PHP extensions.
 
-Install the tagged release `0.2.0` and commit the resolved lockfile. The repository
-is private, so use an authorized GitHub account or a repository-scoped read credential.
+PHP 8.5 is the intentional baseline for the 1.x contract. PHP 8.4 and older are
+not supported. Install a tagged release and commit the resolved lockfile. The
+repository is public; GitHub read credentials are not required.
 Review the [upgrade notes](docs/releases/0.2.0.md) before updating an existing site.
+
+The 1.0 contract is being validated. See the [compatibility policy](docs/compatibility-policy.md)
+for stable extension points and the [platform table](docs/platforms.md) for
+requirements and verification scope. No completed production soak is claimed.
 
 ## Start here
 
@@ -64,6 +69,7 @@ standalone command is useful for a deliberate rerun or a build with plugins disa
 | Customize generated PHP | [wp-config and sections](docs/wp-config.md) |
 | Choose what runs during setup | [Steps](docs/steps.md) · [Command line](docs/cli.md) |
 | Add project automation | [Custom steps and services](docs/custom-steps.md) · [WP-CLI](docs/wp-cli.md) |
+| Build a supported extension | [Public API](docs/api.md) · [Compatibility policy](docs/compatibility-policy.md) |
 | Prepare a production release | [Deployment](docs/deployment.md) |
 | Diagnose a problem | [Troubleshooting](docs/troubleshooting.md) |
 

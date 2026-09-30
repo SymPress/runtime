@@ -17,6 +17,7 @@ use SymPress\Runtime\Step\OptionalStepInterface;
 use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Process\ExecutableFinder;
 
+/** @internal */
 final readonly class VcsIgnoreCheckStep implements ConditionalStepInterface, OptionalStepInterface
 {
     public function __construct(private Io $io, private SystemProcess $process, private ExecutableFinder $executables, private FileContentBuilder $templates, private Filesystem $files, private ProjectBoundary $boundary)

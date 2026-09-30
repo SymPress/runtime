@@ -6,7 +6,11 @@ namespace SymPress\Runtime\Env;
 
 use RuntimeException;
 
-/** Shared validation for CLI checks and deployment dumps; never reports values. */
+/**
+ * Shared validation for CLI checks and deployment dumps; never reports values.
+ *
+ * @internal
+ */
 final class EnvRequirements
 {
     /**

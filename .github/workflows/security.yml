@@ -1,0 +1,63 @@
+name: PHP security analysis
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  php-security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Fetch reviewed upstream PHP security rules
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: semgrep/semgrep-rules
+          ref: a84ff9cc2453ca91d581380de4b8b3f272f6f4be
+          path: build/security-rules
+          sparse-checkout: php/lang/security
+          persist-credentials: false
+      - name: Install the pinned scanner in an isolated environment
+        run: |
+          python3 -m venv "$RUNNER_TEMP/runtime-semgrep"
+          "$RUNNER_TEMP/runtime-semgrep/bin/pip" install --disable-pip-version-check 'semgrep==1.178.0'
+      - name: Scan source with upstream PHP security rules
+        run: |
+          "$RUNNER_TEMP/runtime-semgrep/bin/semgrep" scan --no-git-ignore --metrics=off --disable-version-check --strict --error \
+            --config build/security-rules/php/lang/security/injection \
+            --config build/security-rules/php/lang/security/php-ssrf.yaml \
+            --config build/security-rules/php/lang/security/curl-ssl-verifypeer-off.yaml \
+            --config build/security-rules/php/lang/security/deserialization.yaml \
+            --sarif --output build/php-security.sarif src
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: php-security-analysis
+          path: build/php-security.sarif
+          if-no-files-found: error
+  dependency-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: curl, dom, mbstring, mysqli
+          tools: composer:2
+          coverage: none
+      - name: Resolve and audit production and development dependencies
+        run: |
+          composer update --no-plugins --no-scripts --no-interaction --no-progress --prefer-dist
+          composer audit --locked

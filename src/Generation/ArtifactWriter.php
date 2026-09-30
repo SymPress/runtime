@@ -9,6 +9,7 @@ use SymPress\Runtime\Env\SecureFileWriter;
 use SymPress\Runtime\Filesystem\ProjectBoundary;
 use Symfony\Component\Filesystem\Filesystem;
 
+/** @internal */
 final readonly class ArtifactWriter
 {
     public function __construct(private ProjectBoundary $boundary, private int $mode = 0600)

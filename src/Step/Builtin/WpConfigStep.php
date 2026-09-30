@@ -11,6 +11,7 @@ use SymPress\Runtime\Generation\WpConfigGenerator;
 use SymPress\Runtime\Step\BlockingStepInterface;
 use SymPress\Runtime\Step\FileCreationStepInterface;
 
+/** @internal */
 final readonly class WpConfigStep implements BlockingStepInterface, FileCreationStepInterface
 {
     public function __construct(private WpConfigGenerator $generator, private Selection $selection)

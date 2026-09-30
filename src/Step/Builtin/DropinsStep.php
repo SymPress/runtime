@@ -19,6 +19,7 @@ use SymPress\Runtime\WordPress\DropinCatalog;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 
+/** @internal */
 final readonly class DropinsStep implements ConditionalStepInterface
 {
     public function __construct(private PackageFinder $packages, private ContentPublisher $publisher, private UrlDownloader $downloader, private OverwritePolicy $overwrite, private ProjectBoundary $boundary, private Selection $selection, private Io $io)

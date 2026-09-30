@@ -12,6 +12,7 @@ use SymPress\Runtime\Env\EnvRequirements;
 use SymPress\Runtime\Filesystem\Paths;
 use Symfony\Component\Filesystem\Filesystem;
 
+/** @internal */
 final readonly class DumpEnvironment
 {
     public function __construct(private Config $config, private Paths $paths, private Io $io)

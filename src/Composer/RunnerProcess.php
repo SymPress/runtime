@@ -7,7 +7,11 @@ namespace SymPress\Runtime\Composer;
 use RuntimeException;
 use SymPress\Runtime\Application\RunContext;
 
-/** Host boundary: only PHP standard library and immutable context data. */
+/**
+ * Host boundary: only PHP standard library and immutable context data.
+ *
+ * @internal
+ */
 final class RunnerProcess
 {
     /** @param list<string> $arguments */

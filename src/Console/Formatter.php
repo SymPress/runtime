@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Console;
 
+/** @internal */
 final class Formatter
 {
     public const int DEFAULT_LINE_LENGTH = 58;

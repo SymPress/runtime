@@ -10,7 +10,10 @@ use InvalidArgumentException;
 use OutOfRangeException;
 use Symfony\Component\Filesystem\Path;
 
-/** @implements ArrayAccess<string, string> */
+/**
+ * @implements ArrayAccess<string, string>
+ * @api
+ */
 final class Paths implements ArrayAccess
 {
     public const string ROOT = 'root';
@@ -27,6 +30,7 @@ final class Paths implements ArrayAccess
     /** @var list<string> */
     private array $templates = [];
 
+    /** @api */
     public function __construct(
         string $root,
         string $vendor = 'vendor',
@@ -63,36 +67,43 @@ final class Paths implements ArrayAccess
         ];
     }
 
+    /** @api */
     public function root(string $to = ''): string
     {
         return $this->absolute(self::ROOT, $to);
     }
 
+    /** @api */
     public function vendor(string $to = ''): string
     {
         return $this->absolute(self::VENDOR, $to);
     }
 
+    /** @api */
     public function bin(string $to = ''): string
     {
         return $this->absolute(self::BIN, $to);
     }
 
+    /** @api */
     public function wp(string $to = ''): string
     {
         return $this->absolute(self::WP, $to);
     }
 
+    /** @api */
     public function wpParent(string $to = ''): string
     {
         return $this->absolute(self::WP_PARENT, $to);
     }
 
+    /** @api */
     public function wpContent(string $to = ''): string
     {
         return $this->absolute(self::WP_CONTENT, $to);
     }
 
+    /** @api */
     public function absolute(string $pathName, string $to = ''): string
     {
         $path = Path::canonicalize($this[$pathName] . '/' . ltrim($to, '/\\'));
@@ -100,11 +111,13 @@ final class Paths implements ArrayAccess
         return $to !== '' && preg_match('~[/\\\\]$~', $to) === 1 ? rtrim($path, '/') . '/' : $path;
     }
 
+    /** @api */
     public function relativeToRoot(string $pathName, string $to = ''): string
     {
         return Path::makeRelative($this->absolute($pathName, $to), $this->root());
     }
 
+    /** @api */
     public function useCustomTemplatesDir(string $directory): void
     {
         if (!is_dir($directory)) {
@@ -114,6 +127,7 @@ final class Paths implements ArrayAccess
         $this->templates[] = $directory;
     }
 
+    /** @api */
     public function template(string $filename): string
     {
         foreach ($this->templates as $directory) {
@@ -126,6 +140,7 @@ final class Paths implements ArrayAccess
         return $this->absolute('runtime', 'templates/' . $filename);
     }
 
+    /** @api */
     public function offsetExists(mixed $offset): bool
     {
         if (!is_string($offset)) {
@@ -135,6 +150,7 @@ final class Paths implements ArrayAccess
         return array_key_exists($offset, $this->paths);
     }
 
+    /** @api */
     public function offsetGet(mixed $offset): string
     {
         if (!is_string($offset) || !$this->offsetExists($offset)) {
@@ -144,6 +160,7 @@ final class Paths implements ArrayAccess
         return $this->paths[$offset];
     }
 
+    /** @api */
     public function offsetSet(mixed $offset, mixed $value): void
     {
         if (!is_string($offset) || !is_string($value)) {
@@ -155,6 +172,7 @@ final class Paths implements ArrayAccess
         $this->paths[$offset] = $value;
     }
 
+    /** @api */
     public function offsetUnset(mixed $offset): void
     {
         throw new BadMethodCallException('Paths cannot be removed.');

@@ -6,6 +6,7 @@ namespace SymPress\Runtime\Filesystem;
 
 use RuntimeException;
 
+/** @internal */
 final class FileContentBuilder
 {
     /** @param array<string, mixed> $vars */

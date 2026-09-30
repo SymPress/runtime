@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Config;
 
+/** @internal */
 final class Options
 {
     public const array DEFAULTS = [

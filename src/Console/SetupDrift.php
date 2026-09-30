@@ -16,7 +16,11 @@ use SymPress\Runtime\Package\PackageFinder;
 use SymPress\Runtime\WordPress\DropinCatalog;
 use Symfony\Component\Filesystem\Path;
 
-/** Read-only comparison with the outputs of the last successful setup selection. */
+/**
+ * Read-only comparison with the outputs of the last successful setup selection.
+ *
+ * @internal
+ */
 final readonly class SetupDrift
 {
     public function __construct(private Config $config, private Paths $paths, private RunContext $context)

@@ -10,7 +10,11 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-/** Symfony signatures here belong to Composer's host Console API; see ADR 0004. */
+/**
+ * Symfony signatures here belong to Composer's host Console API; see ADR 0004.
+ *
+ * @internal
+ */
 final class Command extends BaseCommand
 {
     public function __construct(private readonly ?string $operation = null)
@@ -21,6 +25,7 @@ final class Command extends BaseCommand
     protected function configure(): void
     {
         $this->setDescription('Run the isolated SymPress Runtime application.');
+        $this->setAliases([$this->operation === null ? 'runtime' : 'runtime:' . $this->operation]);
         if ($this->operation === 'dump-env') {
             $this->addArgument('environment', InputArgument::REQUIRED, 'Raw environment name to resolve and dump.');
         }

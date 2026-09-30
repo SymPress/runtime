@@ -9,6 +9,7 @@ use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Filesystem\Paths;
 use UnexpectedValueException;
 
+/** @internal */
 final readonly class MuPluginList
 {
     public function __construct(private PackageFinder $packages, private Paths $paths)

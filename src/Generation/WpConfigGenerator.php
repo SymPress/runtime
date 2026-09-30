@@ -15,6 +15,7 @@ use SymPress\Runtime\Filesystem\ProjectBoundary;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final readonly class WpConfigGenerator
 {
     public function __construct(private Config $config, private Paths $paths, private Io $io, private FileContentBuilder $templates, private SaltStore $salts, private RuntimeBundleBuilder $bundleBuilder, private OverwritePolicy $overwrite, private ProjectBoundary $boundary, private ArtifactWriter $writer, private SectionMerger $sections)

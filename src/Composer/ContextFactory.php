@@ -10,6 +10,7 @@ use Composer\IO\IOInterface;
 use RuntimeException;
 use SymPress\Runtime\Application\RunContext;
 
+/** @internal */
 final class ContextFactory
 {
     /** @param list<array{name: string, version: string}> $updatedPackages */

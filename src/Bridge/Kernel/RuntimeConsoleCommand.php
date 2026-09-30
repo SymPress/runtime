@@ -16,6 +16,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final class RuntimeConsoleCommand extends Command
 {
     public function __construct(private readonly string $projectDir, private readonly string $operation)

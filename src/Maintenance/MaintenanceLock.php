@@ -9,7 +9,11 @@ use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Filesystem\ProjectBoundary;
 use Symfony\Component\Filesystem\Filesystem;
 
-/** Shared lock for generation, recovery and retention. */
+/**
+ * Shared lock for generation, recovery and retention.
+ *
+ * @internal
+ */
 final class MaintenanceLock
 {
     /** @var resource|null */

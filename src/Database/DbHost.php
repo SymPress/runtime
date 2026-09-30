@@ -6,6 +6,7 @@ namespace SymPress\Runtime\Database;
 
 use InvalidArgumentException;
 
+/** @internal */
 final readonly class DbHost
 {
     public function __construct(public string $host, public ?int $port = null, public ?string $socket = null)

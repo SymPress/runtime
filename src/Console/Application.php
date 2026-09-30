@@ -12,6 +12,7 @@ use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final class Application
 {
     /**

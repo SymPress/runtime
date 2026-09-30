@@ -6,6 +6,7 @@ namespace SymPress\Runtime\Database;
 
 use SymPress\Runtime\Env\EnvReader;
 
+/** @internal */
 final readonly class DbCredentials
 {
     public function __construct(public DbHost $endpoint, public string $name, public string $user, public string $password, public string $prefix)

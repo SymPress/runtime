@@ -19,6 +19,7 @@ use Symfony\Component\Filesystem\Path;
  * @phpstan-type JournalMove array{from: string, to: string, dev: int, ino: int, link: string|null}
  * @phpstan-type JournalSnapshot array{contents: string|null, link: string|null, mode: int}
  * @phpstan-type JournalRecord array{format: int, root: string, vendor: string, manifest: string, phase: string, cursor: int, moves: list<JournalMove>, snapshots: array<string, JournalSnapshot>}
+ * @internal
  */
 final class LayoutJournal
 {

@@ -11,6 +11,7 @@ use SymPress\Runtime\Env\EnvironmentName;
 use SymPress\Runtime\Filesystem\Paths;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final readonly class KernelPaths
 {
     public function __construct(private EnvReader $env, private Paths $paths)

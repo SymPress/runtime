@@ -20,7 +20,11 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 
-/** Offline recovery only; no install/update/download or plugin activation. */
+/**
+ * Offline recovery only; no install/update/download or plugin activation.
+ *
+ * @internal
+ */
 final class PackageLayout
 {
     public function __construct(private ?Closure $checkpoint = null)

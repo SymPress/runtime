@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Process;
 
+/** @internal */
 final readonly class PhpProcess
 {
     public function __construct(private SystemProcess $process, private string $executable = PHP_BINARY)

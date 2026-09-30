@@ -6,7 +6,11 @@ namespace SymPress\Runtime\Composer;
 
 use RuntimeException;
 
-/** PHP-only process boundary before project autoload files are executed. */
+/**
+ * PHP-only process boundary before project autoload files are executed.
+ *
+ * @internal
+ */
 final class LayoutBootstrap
 {
     /** @param list<string> $arguments */

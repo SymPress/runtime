@@ -8,7 +8,11 @@ use ParseError;
 use PhpToken;
 use RuntimeException;
 
-/** Reads literal fallbacks without executing an existing configuration. */
+/**
+ * Reads literal fallbacks without executing an existing configuration.
+ *
+ * @internal
+ */
 final readonly class SaltStore
 {
     public function __construct(private Salter $salter)

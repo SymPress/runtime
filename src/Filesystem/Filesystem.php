@@ -12,23 +12,32 @@ use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 
+/** @internal */
 final readonly class Filesystem
 {
+    /** @api */
     public const string OP_AUTO = 'auto';
+    /** @api */
     public const string OP_COPY = 'copy';
+    /** @api */
     public const string OP_SYMLINK = 'symlink';
+    /** @api */
     public const string OP_NONE = 'none';
+    /** @api */
     public const array OPERATIONS = [self::OP_AUTO, self::OP_COPY, self::OP_SYMLINK, self::OP_NONE];
 
+    /** @internal */
     public function __construct(private SymfonyFilesystem $filesystem = new SymfonyFilesystem())
     {
     }
 
+    /** @api */
     public function save(string $content, string $targetPath): bool
     {
         return $this->writeContent($content, $targetPath);
     }
 
+    /** @api */
     public function writeContent(string $content, string $targetPath): bool
     {
         if (is_dir($targetPath) || is_link($targetPath)) {
@@ -38,6 +47,7 @@ final readonly class Filesystem
         return $this->attempt(fn () => $this->filesystem->dumpFile($targetPath, $content));
     }
 
+    /** @api */
     public function copyFile(string $sourcePath, string $targetPath): bool
     {
         if (!is_file($sourcePath) || is_dir($targetPath) || is_link($targetPath)) {
@@ -50,6 +60,7 @@ final readonly class Filesystem
         return $this->attempt(fn () => $this->filesystem->copy($sourcePath, $targetPath, true));
     }
 
+    /** @api */
     public function moveFile(string $sourcePath, string $targetPath): bool
     {
         if (realpath($sourcePath) !== false && realpath($sourcePath) === realpath($targetPath)) {
@@ -59,6 +70,7 @@ final readonly class Filesystem
         return $this->copyFile($sourcePath, $targetPath) && $this->unlinkOrRemove($sourcePath);
     }
 
+    /** @api */
     public function copyDir(string $sourcePath, string $targetPath): bool
     {
         if (!is_dir($sourcePath) || is_link($targetPath) || is_file($targetPath)) {
@@ -89,6 +101,7 @@ final readonly class Filesystem
         });
     }
 
+    /** @api */
     public function moveDir(string $sourcePath, string $targetPath): bool
     {
         if (realpath($sourcePath) !== false && realpath($sourcePath) === realpath($targetPath)) {
@@ -101,26 +114,31 @@ final readonly class Filesystem
         return $this->copyDir($sourcePath, $targetPath) && $this->removeRealDir($sourcePath);
     }
 
+    /** @api */
     public function createDir(string $targetPath): bool
     {
         return $this->attempt(fn () => $this->filesystem->mkdir($targetPath));
     }
 
+    /** @api */
     public function isLink(string $path): bool
     {
         return is_link($path);
     }
 
+    /** @api */
     public function removeRealDir(string $directory): bool
     {
         return is_dir($directory) && !is_link($directory) && $this->attempt(fn () => $this->filesystem->remove($directory));
     }
 
+    /** @api */
     public function unlinkOrRemove(string $path): bool
     {
         return $this->attempt(fn () => $this->filesystem->remove($path));
     }
 
+    /** @api */
     public function symlink(string $targetPath, string $linkPath): bool
     {
         if (is_link($linkPath) && realpath($linkPath) !== false && realpath($linkPath) === realpath($targetPath)) {
@@ -134,12 +152,14 @@ final readonly class Filesystem
         return $this->attempt(fn () => $this->filesystem->symlink($relative, $linkPath));
     }
 
+    /** @api */
     public function symlinkOrCopy(string $sourcePath, string $targetPath): bool
     {
         return $this->symlink($sourcePath, $targetPath)
             || (is_dir($sourcePath) ? $this->copyDir($sourcePath, $targetPath) : $this->copyFile($sourcePath, $targetPath));
     }
 
+    /** @api */
     public function symlinkOrCopyOperation(string $source, string $target, string $operation): bool
     {
         return match ($operation) {
@@ -150,6 +170,7 @@ final readonly class Filesystem
         };
     }
 
+    /** @api */
     public function findShortestPath(string $from, string $to, bool $directories = false, bool $preferRelative = false): string
     {
         if (!Path::isAbsolute($from) || !Path::isAbsolute($to)) {

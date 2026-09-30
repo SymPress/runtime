@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\WordPress;
 
+/** @internal */
 final class DropinCatalog
 {
     /** Union of WP Starter and WordPress 7.1 _get_dropins(), including multisite entries. */

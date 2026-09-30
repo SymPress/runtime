@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Env;
 
-/** WordPress environment types; provenance is recorded in NOTICE and the maintainer inventory. */
+/**
+ * WordPress environment types; provenance is recorded in NOTICE and the maintainer inventory.
+ *
+ * @internal
+ */
 final class ConstantCatalog
 {
     public const array TYPES = [

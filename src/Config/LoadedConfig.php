@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Config;
 
+/** @internal */
 final readonly class LoadedConfig
 {
     /**

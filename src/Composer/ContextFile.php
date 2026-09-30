@@ -7,7 +7,11 @@ namespace SymPress\Runtime\Composer;
 use RuntimeException;
 use SymPress\Runtime\Application\RunContext;
 
-/** Standard-library-only codec for the private Composer-to-runner handoff. */
+/**
+ * Standard-library-only codec for the private Composer-to-runner handoff.
+ *
+ * @internal
+ */
 final class ContextFile
 {
     public static function consume(string $file): RunContext

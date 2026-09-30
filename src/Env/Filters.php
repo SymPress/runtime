@@ -6,6 +6,7 @@ namespace SymPress\Runtime\Env;
 
 use Throwable;
 
+/** @internal */
 final readonly class Filters
 {
     public const string FILTER_BOOL = 'bool';

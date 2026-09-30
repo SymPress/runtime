@@ -18,6 +18,7 @@ use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 
+/** @internal */
 final class Plugin implements PluginInterface, EventSubscriberInterface, Capable
 {
     /** @var list<array{name: string, version: string}> */

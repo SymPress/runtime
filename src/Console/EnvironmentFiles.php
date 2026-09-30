@@ -9,6 +9,7 @@ use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Env\EnvReader;
 use SymPress\Runtime\Filesystem\Paths;
 
+/** @internal */
 final readonly class EnvironmentFiles
 {
     public function __construct(private Config $config, private Paths $paths)
