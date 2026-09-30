@@ -111,7 +111,10 @@ final class PackageLayout
                 throw new RuntimeException('Installed package has no path: ' . $name);
             }
             $target = $targets[$name];
-            $this->assertLeaf($target, $root, $vendor, $boundary);
+            // A regular core installer may already have installed into the project root.
+            if ($target !== $root) {
+                $this->assertLeaf($target, $root, $vendor, $boundary);
+            }
             $identity = hash('sha256', json_encode([$package['version'] ?? null, $package['source'] ?? null, $package['dist'] ?? null], JSON_THROW_ON_ERROR));
             $previous = $state[$name] ?? null;
             $previousPath = is_array($previous) && is_string($previous['path'] ?? null) ? Path::makeAbsolute($previous['path'], $root) : null;
@@ -120,6 +123,7 @@ final class PackageLayout
                 $source = $previousPath;
             }
             if ($source !== $target) {
+                $this->assertLeaf($target, $root, $vendor, $boundary);
                 $this->assertLeaf($source, $root, $vendor, $boundary);
                 if (!$this->exists($source)) {
                     throw new RuntimeException('Downloaded package is missing: ' . $name . '. Run composer install with its installers enabled.');
@@ -139,13 +143,9 @@ final class PackageLayout
             $changed = $changed || Path::makeAbsolute((string) $installed, dirname($metadataFile)) !== $target;
             $next[$name] = ['identity' => $identity, 'path' => Path::makeRelative($target, $root)];
         }
-        $destinations = array_values($targets);
-        foreach ($destinations as $index => $destination) {
-            foreach (array_slice($destinations, $index + 1) as $other) {
-                if ($destination === $other || Path::isBasePath($destination, $other) || Path::isBasePath($other, $destination)) {
-                    throw new RuntimeException('WordPress package destinations must not overlap.');
-                }
-            }
+        if ($changed || $moves !== []) {
+            // These restrictions protect recovery; correctly installed trees are left intact.
+            $this->assertRecoveryLayout(array_values($targets), $root, $vendor, $boundary);
         }
         ksort($next);
         $encoded = json_encode($next, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
@@ -191,6 +191,19 @@ final class PackageLayout
                 $filesystem->dumpFile($file, $contents);
             }
             throw $error;
+        }
+    }
+
+    /** @param list<string> $destinations */
+    private function assertRecoveryLayout(array $destinations, string $root, string $vendor, ProjectBoundary $boundary): void
+    {
+        foreach ($destinations as $index => $destination) {
+            $this->assertLeaf($destination, $root, $vendor, $boundary);
+            foreach (array_slice($destinations, $index + 1) as $other) {
+                if ($destination === $other || Path::isBasePath($destination, $other) || Path::isBasePath($other, $destination)) {
+                    throw new RuntimeException('WordPress package destinations must not overlap.');
+                }
+            }
         }
     }
 

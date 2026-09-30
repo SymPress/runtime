@@ -11,6 +11,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 use SymPress\Runtime\Composer\PackageLayout;
 use SymPress\Runtime\Tests\Support\TemporaryProject;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 
 final class PackageLayoutTest extends TemporaryProject
@@ -77,6 +78,114 @@ final class PackageLayoutTest extends TemporaryProject
     {
         yield 'dev' => ['vendor', true];
         yield 'custom vendor no dev' => ['dependencies', false];
+    }
+
+    /** @return iterable<string, array{bool}> */
+    public static function regularInstallerLayouts(): iterable
+    {
+        yield 'project root core' => [true];
+        yield 'content nested inside core' => [false];
+    }
+
+    /** @return array<string, mixed> */
+    private function regularInstallerFixture(bool $rootCore, bool $installed): array
+    {
+        $data = $this->fixture();
+        $manifest = json_decode((string) file_get_contents($this->root . '/composer.json'), true, flags: JSON_THROW_ON_ERROR);
+        $core = $rootCore ? '.' : 'public/wp';
+        $content = $rootCore ? 'wp-content' : 'public/wp/wp-content';
+        $manifest['extra']['wordpress-install-dir'] = $core;
+        $manifest['extra']['wordpress-content-dir'] = $content;
+        $manifest['extra']['installer-paths'] = [$content . '/{$type}/{$name}/' => ['vendor:private']];
+        $this->write('composer.json', json_encode($manifest, JSON_THROW_ON_ERROR));
+        if ($installed) {
+            foreach ($data['packages'] as &$package) {
+                if (!str_starts_with($package['type'], 'wordpress-')) {
+                    continue;
+                }
+                $path = $package['type'] === 'wordpress-core' ? $core : $content . '/' . $package['type'] . '/' . ($package['extra']['installer-name'] ?? basename($package['name']));
+                $source = $this->root . '/vendor/' . $package['name'];
+                $target = $this->root . '/' . $path;
+                (new Filesystem())->mkdir(dirname($target));
+                $package['install-path'] = '../../' . $path;
+                if ($path === '.') {
+                    rename($source . '/marker', $this->root . '/marker');
+                    rmdir($source);
+                    continue;
+                }
+                rename($source, $target);
+            }
+            unset($package);
+            $this->write('vendor/composer/installed.json', json_encode($data, JSON_THROW_ON_ERROR));
+        }
+
+        return $data;
+    }
+
+    #[DataProvider('regularInstallerLayouts')]
+    public function testCorrectRegularInstallerLayoutIsPreserved(bool $rootCore): void
+    {
+        $data = $this->regularInstallerFixture($rootCore, true);
+        $metadata = file_get_contents($this->root . '/vendor/composer/installed.json');
+        $autoload = file_get_contents($this->root . '/vendor/autoload.php');
+        $this->prepare();
+        $state = file_get_contents($this->root . '/var/runtime/package-layout.json');
+        $this->prepare();
+        self::assertSame($state, file_get_contents($this->root . '/var/runtime/package-layout.json'));
+        self::assertSame($metadata, file_get_contents($this->root . '/vendor/composer/installed.json'));
+        self::assertSame($autoload, file_get_contents($this->root . '/vendor/autoload.php'));
+        foreach ($data['packages'] as $package) {
+            self::assertSame($package['name'] . ':1.0.0', file_get_contents($this->root . '/vendor/composer/' . $package['install-path'] . '/marker'));
+        }
+        self::assertFileDoesNotExist($this->root . '/autoload-ran');
+        self::assertDirectoryDoesNotExist($this->root . '/var/runtime/package-backups');
+    }
+
+    #[DataProvider('regularInstallerLayouts')]
+    public function testUnsafeFreshRecoveryStillRequiresRegularInstallers(bool $rootCore): void
+    {
+        $data = $this->regularInstallerFixture($rootCore, false);
+        $metadata = file_get_contents($this->root . '/vendor/composer/installed.json');
+        try {
+            $this->prepare();
+            self::fail('Expected unsupported recovery layout.');
+        } catch (RuntimeException $error) {
+            self::assertStringContainsString($rootCore ? 'Unsafe package installation path' : 'must not overlap', $error->getMessage());
+        }
+        self::assertSame($metadata, file_get_contents($this->root . '/vendor/composer/installed.json'));
+        foreach ($data['packages'] as $package) {
+            self::assertSame($package['name'] . ':1.0.0', file_get_contents($this->root . '/vendor/' . $package['name'] . '/marker'));
+        }
+        self::assertFileDoesNotExist($this->root . '/var/runtime/package-layout.json');
+        self::assertFileDoesNotExist($this->root . '/public/wp/marker');
+        self::assertDirectoryDoesNotExist($this->root . '/var/runtime/package-backups');
+    }
+
+    #[DataProvider('regularInstallerLayouts')]
+    public function testUnsupportedMetadataRecoveryPreservesRegularInstallerTrees(bool $rootCore): void
+    {
+        $data = $this->regularInstallerFixture($rootCore, true);
+        $this->prepare();
+        $state = file_get_contents($this->root . '/var/runtime/package-layout.json');
+        $drifted = $data;
+        foreach ($drifted['packages'] as &$package) {
+            $package['install-path'] = '../' . $package['name'];
+        }
+        unset($package);
+        $this->write('vendor/composer/installed.json', json_encode($drifted, JSON_THROW_ON_ERROR));
+        $metadata = file_get_contents($this->root . '/vendor/composer/installed.json');
+        try {
+            $this->prepare();
+            self::fail('Expected unsupported metadata recovery layout.');
+        } catch (RuntimeException $error) {
+            self::assertStringContainsString($rootCore ? 'Unsafe package installation path' : 'must not overlap', $error->getMessage());
+        }
+        self::assertSame($metadata, file_get_contents($this->root . '/vendor/composer/installed.json'));
+        self::assertSame($state, file_get_contents($this->root . '/var/runtime/package-layout.json'));
+        foreach ($data['packages'] as $package) {
+            self::assertSame($package['name'] . ':1.0.0', file_get_contents($this->root . '/vendor/composer/' . $package['install-path'] . '/marker'));
+        }
+        self::assertDirectoryDoesNotExist($this->root . '/var/runtime/package-backups');
     }
 
     #[DataProvider('layouts')]
