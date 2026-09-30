@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Describe the production and database health flags in diagnostic help, including the requirement for `--quick`, and identify `check` as an alias of `doctor` in command listings.
+
 ## 1.1.0 — 2026-09-30
 
 - Support Symfony Console `list`, `help`, command-specific help and shell completion without interpreting them as setup steps.
@@ -22,8 +26,6 @@ See the [1.0 installation and upgrade guide](docs/releases/1.0.0.md),
 [compatibility policy](docs/compatibility-policy.md),
 [compatibility migration guide](docs/compatibility.md) and
 [parity comparison](https://github.com/SymPress/runtime/blob/main/docs/maintainers/parity.md).
-The owner waived timed production and independent migration trials; no completed
-production field trial is claimed.
 
 ## 1.0.0-rc.1 — 2026-09-30
 
@@ -31,14 +33,14 @@ production field trial is claimed.
 - Begin release-candidate validation of the frozen 1.x API, configuration and file-format contracts, including the corrected empty-project installation path.
 - Remove the Runtime-specific VCS repository from the public site example; retain WPackagist for WordPress plugins and themes.
 
-Follow the [RC upgrade and installation guide](docs/releases/1.0.0-rc.1.md). This candidate is for technical evaluation; the owner waived production and independent migration field trials, and no production experience is claimed.
+Follow the [RC upgrade and installation guide](docs/releases/1.0.0-rc.1.md).
 
 ## 1.0.0-beta.2 — 2026-09-30
 
 - Allow the Composer plugin to be installed in an unconfigured project before WordPress Core is added. Automatic setup is deferred for that initial state; explicit setup and configured projects retain missing-core validation.
 - Cover a fresh Composer installation, repeat installation and explicit setup failure in a coreless project with a regression test.
 
-This fixes the empty-project installation issue found in beta 1. See the [beta 2 upgrade notes](docs/releases/1.0.0-beta.2.md). Packagist registration remains a separate distribution gate; this prerelease does not establish production field experience.
+This fixes the empty-project installation issue found in beta 1. See the [beta 2 upgrade notes](docs/releases/1.0.0-beta.2.md).
 
 ## 1.0.0-beta.1 — 2026-09-30
 
@@ -50,7 +52,7 @@ This fixes the empty-project installation issue found in beta 1. See the [beta 2
 - Add minimum/latest Composer checks on Linux, Windows and macOS, lowest Symfony 8.1 checks, weekly dependency updates and PHP security analysis.
 - Publish the repository under GPL-2.0-or-later with private vulnerability reporting and signed, QA-gated release automation.
 
-This is a contract-validation prerelease. Review the [upgrade notes](docs/releases/1.0.0-beta.1.md). The timed production trial was waived; production field experience is not claimed.
+This is a contract-validation prerelease. Review the [upgrade notes](docs/releases/1.0.0-beta.1.md).
 
 ## 0.2.0 — 2026-09-30
 

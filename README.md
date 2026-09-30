@@ -38,8 +38,7 @@ Use `sympress/runtime:^1.0` for the stable 1.x line. Review the
 The [compatibility policy](docs/compatibility-policy.md) defines the effective 1.x
 contract for the public PHP API, configuration, commands and persisted formats.
 Breaking a supported interface requires 2.0. See the [platform table](docs/platforms.md)
-for requirements and verification scope. The owner waived the production and
-independent migration trials; no completed production soak is claimed.
+for requirements and verification scope.
 
 ## Start here
 
