@@ -73,6 +73,13 @@ final class Plugin implements PluginInterface, EventSubscriberInterface, Capable
         if (in_array($event->getComposer()->getPackage()->getType(), ['sympress-runtime-extension', 'wpstarter-extension'], true)) {
             return;
         }
+        $root = getcwd();
+        if ($root !== false && !(new AutomaticSetup())->required($event->getComposer(), $root)) {
+            $this->updatedPackages = [];
+            $event->getIO()->writeError('Runtime setup deferred: no WordPress core or Runtime configuration found. Configure the project, then run vendor/bin/runtime.');
+
+            return;
+        }
         $mode = $event->getName() === ScriptEvents::POST_INSTALL_CMD ? 'install' : 'update';
         $context = (new ContextFactory())->create($event->getComposer(), $event->getIO(), $mode, $event->isDevMode(), $this->updatedPackages);
         $status = (new RunnerProcess())->run($context);

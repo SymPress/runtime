@@ -4,6 +4,13 @@
 
 No changes yet.
 
+## 1.0.0-beta.2 — 2026-09-30
+
+- Allow the Composer plugin to be installed in an unconfigured project before WordPress Core is added. Automatic setup is deferred for that initial state; explicit setup and configured projects retain missing-core validation.
+- Cover a fresh Composer installation, repeat installation and explicit setup failure in a coreless project with a regression test.
+
+This fixes the empty-project installation issue found in beta 1. See the [beta 2 upgrade notes](docs/releases/1.0.0-beta.2.md). Packagist registration remains a separate distribution gate; this prerelease does not establish production field experience.
+
 ## 1.0.0-beta.1 — 2026-09-30
 
 - Freeze the documented 1.x configuration and extension API; classify implementation details and enforce public examples in architecture tests.

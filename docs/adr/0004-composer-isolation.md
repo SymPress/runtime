@@ -21,3 +21,17 @@ Composer BaseCommand's public API itself uses Symfony Console input/output types
 Legacy PHP scripts can type-hint a live Composer object as their fourth argument, and custom steps can accept it as their second constructor argument. A JSON descriptor is not type-compatible. Configuration compatibility cannot honestly promise arbitrary binary PHP compatibility under strict process isolation. Migration reports these call sites and supplies native RunContext/PackageFinder/Services replacements. Straightforward upstream Config/Result/Env/Step APIs receive run-only adapters; scripts requiring live Composer mutation need explicit rewrites before that script can run. This architectural constraint is presented for Phase 0 approval, not hidden behind a class alias or removed feature.
 
 No existing asset-compiler code changes are needed for Phase 0. Pin its version in the coexistence fixture and test a Composer host with an older Symfony Console/Process than the project.
+
+## Empty native consumer installation
+
+From 1.0.0-beta.2, automatic Composer events defer setup only when no installed
+WordPress core, native/legacy configuration, extension opt-in or existing site
+marker is present. This native installation convenience allows Composer to install
+Runtime before the project is configured. It does not change the `require-wp`
+default or explicit command validation. Empty, null, invalid and referenced
+configuration sources all retain validation, as do existing generated sites.
+The guard uses Composer package metadata and filesystem presence only; it never
+loads configuration, environment files or application services into Composer.
+`ComposerTest::testBareComposerRequireDefersOnlyAutomaticSetup` exercises require,
+repeat install and both explicit entrypoints; configured/legacy failures are
+covered by `testConfiguredAndExistingProjectsStillFailForMissingCore`.
