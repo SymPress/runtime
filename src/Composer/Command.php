@@ -26,6 +26,19 @@ final class Command extends BaseCommand
         }
         if (in_array($this->operation, ['doctor', 'check'], true)) {
             $this->addOption('json', null, InputOption::VALUE_NONE);
+            foreach (['production', 'database-health', 'quick'] as $flag) {
+                $this->addOption($flag, null, InputOption::VALUE_NONE);
+            }
+            $this->addOption('php-user', null, InputOption::VALUE_REQUIRED);
+            $this->addOption('webroot', null, InputOption::VALUE_REQUIRED);
+        }
+        if ($this->operation === 'env:diff') {
+            $this->addOption('json', null, InputOption::VALUE_NONE);
+        }
+        if ($this->operation === 'prune') {
+            $this->addOption('keep', null, InputOption::VALUE_REQUIRED, 'Inactive builds to retain.', '2');
+            $this->addOption('dry-run', null, InputOption::VALUE_NONE);
+            $this->addOption('json', null, InputOption::VALUE_NONE);
         }
         if ($this->operation === 'migrate') {
             $this->addOption('output', null, InputOption::VALUE_REQUIRED, 'New configuration path.', 'sympress-runtime.json');
@@ -37,7 +50,7 @@ final class Command extends BaseCommand
             return;
         }
         $this->addArgument('steps', InputArgument::IS_ARRAY, 'Step names to include, or exclude with --skip.');
-        foreach (['skip', 'skip-custom', 'ignore-skip-config', 'list-steps', 'force', 'generate-build-id'] as $flag) {
+        foreach (['skip', 'skip-custom', 'ignore-skip-config', 'list-steps', 'force', 'generate-build-id', 'dry-run', 'check', 'json', 'update-lock'] as $flag) {
             $this->addOption($flag, null, InputOption::VALUE_NONE);
         }
     }
@@ -71,14 +84,27 @@ final class Command extends BaseCommand
         }
         if ($this->operation !== null) {
             $environment = $this->operation === 'dump-env' ? $input->getArgument('environment') : null;
-            if (in_array($this->operation, ['doctor', 'check'], true) && $input->getOption('json') === true) {
-                return [$this->operation, '--json'];
+            $arguments = is_string($environment) ? [$this->operation, $environment] : [$this->operation];
+            foreach (['json', 'production', 'database-health', 'quick', 'dry-run'] as $flag) {
+                if (!$input->hasOption($flag) || $input->getOption($flag) !== true) {
+                    continue;
+                }
+
+                $arguments[] = '--' . $flag;
+            }
+            foreach (['php-user', 'webroot', 'keep'] as $name) {
+                $value = $input->hasOption($name) ? $input->getOption($name) : null;
+                if (!is_string($value)) {
+                    continue;
+                }
+
+                $arguments[] = '--' . $name . '=' . $value;
             }
 
-            return is_string($environment) ? [$this->operation, $environment] : [$this->operation];
+            return $arguments;
         }
         $arguments = [];
-        foreach (['skip', 'skip-custom', 'ignore-skip-config', 'list-steps', 'force', 'generate-build-id'] as $flag) {
+        foreach (['skip', 'skip-custom', 'ignore-skip-config', 'list-steps', 'force', 'generate-build-id', 'dry-run', 'check', 'json', 'update-lock'] as $flag) {
             if ($input->getOption($flag) !== true) {
                 continue;
             }

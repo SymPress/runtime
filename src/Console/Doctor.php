@@ -11,6 +11,7 @@ use SymPress\Runtime\Database\DbChecker;
 use SymPress\Runtime\Database\MysqliProbe;
 use SymPress\Runtime\Env\EnvFactory;
 use SymPress\Runtime\Env\EnvReader;
+use SymPress\Runtime\Env\EnvRequirements;
 use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Filesystem\ProjectBoundary;
 use SymPress\Runtime\Kernel\BootOwnership;
@@ -30,7 +31,7 @@ final readonly class Doctor
     }
 
     /** @return array{environment: ?string, checks: list<array{id: string, status: string, detail: string}>, exit: int} */
-    public function inspect(): array
+    public function inspect(bool $production = false, bool $databaseHealth = false, bool $quick = false, ?string $phpUser = null, ?string $webroot = null): array
     {
         $checks = [];
         $record = static function (string $id, string $status, string $detail) use (&$checks): void {
@@ -53,6 +54,11 @@ final readonly class Doctor
         try {
             $environmentDirectory = $this->config['env-dir']->unwrapOrFallback($this->paths->root());
             $dump = is_string($environmentDirectory) && is_readable($environmentDirectory . '/.env.dump.php');
+            $commands = (new EnvironmentFiles($this->config, $this->paths))->containsCommands();
+            if ($commands && !$dump) {
+                $record('environment.commands', $production ? 'fail' : 'unknown', 'Shell substitutions require a deployment dump; diagnostics do not execute them.');
+                throw new RuntimeException('Cannot safely inspect shell substitutions without a dump.');
+            }
             $profile = $this->config['compatibility-profile']->unwrap();
             if (!is_string($profile)) {
                 throw new RuntimeException('Invalid compatibility profile.');
@@ -62,6 +68,19 @@ final readonly class Doctor
                 : (new EnvFactory($this->config, $this->paths))->create();
             $kernel = new KernelPaths($env, $this->paths);
             $canonical = $kernel->environment();
+            if ($production || in_array($canonical, ['staging', 'production'], true)) {
+                $home = $env->rawValue('WP_HOME');
+                $record('environment.home', is_string($home) && filter_var($home, FILTER_VALIDATE_URL) !== false ? 'pass' : 'fail', 'Staging and production require an explicit WP_HOME.');
+            }
+            $required = $this->config['required-env']->unwrapOrFallback([]);
+            $requirementErrors = (new EnvRequirements())->validate($env, is_array($required) ? $required : []);
+            $record('environment.required', $requirementErrors === [] ? 'pass' : 'fail', $requirementErrors === [] ? 'Declared environment requirements are satisfied.' : implode(' ', $requirementErrors));
+            if ($production) {
+                array_push($checks, ...(new ProductionChecks($this->config, $this->paths))->inspect($env, $dump, $phpUser, $webroot));
+            }
+            if (!$dump && is_string($environmentDirectory) && !is_writable($environmentDirectory)) {
+                $record('environment.cache', 'warning', 'The environment directory is read-only; automatic cache writes are disabled. Build a deployment dump.');
+            }
             $missing = [];
             foreach (['DB_NAME', 'DB_USER', 'DB_HOST', 'DB_PASSWORD'] as $name) {
                 $value = $env->rawValue($name);
@@ -72,15 +91,18 @@ final readonly class Doctor
             }
             $record('environment', $missing === [] ? 'pass' : 'fail', $missing === [] ? 'Required database environment keys are present.' : 'Missing keys: ' . implode(', ', $missing));
             $skipDatabase = $this->config['skip-db-check']->is(true) || $this->config['db-check']->is(false);
-            if ($skipDatabase) {
+            if ($skipDatabase && !$databaseHealth) {
                 $record('database', 'unknown', 'Database inspection is disabled by configuration.');
             }
-            if (!$skipDatabase) {
+            if (!$skipDatabase || $databaseHealth) {
                 $quiet = new Io(new ArrayInput([]), new NullOutput());
                 $database = new DbChecker($env, $quiet, new SystemProcess($this->paths, $quiet), new ExecutableFinder(), new MysqliProbe());
                 $status = $database->status();
                 $state = !$status->envValid || $status->exists === false || $status->installed === false ? 'fail' : ($status->exists === null || $status->installed === null ? 'unknown' : 'pass');
                 $record('database', $state, 'Database status: ' . $status->reason . '.');
+                if ($databaseHealth) {
+                    $record('database.health', $database->mysqlcheck($quick) ? 'pass' : 'fail', $quick ? 'Explicit quick table inspection.' : 'Explicit complete table inspection.');
+                }
             }
             $packages = new PackageFinder($this->context);
             $hasKernel = $packages->findByName('sympress/kernel') !== null;
@@ -122,9 +144,9 @@ final readonly class Doctor
         return ['environment' => $canonical, 'checks' => $checks, 'exit' => $failed ? 1 : ($unknown ? 2 : 0)];
     }
 
-    public function run(bool $json = false): int
+    public function run(bool $json = false, bool $production = false, bool $databaseHealth = false, bool $quick = false, ?string $phpUser = null, ?string $webroot = null): int
     {
-        $report = $this->inspect();
+        $report = $this->inspect($production, $databaseHealth, $quick, $phpUser, $webroot);
         if ($json) {
             $this->io->write(json_encode($report, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
 

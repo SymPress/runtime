@@ -15,7 +15,7 @@ final class SchemaValidator
     /** @param array<string, mixed> $values */
     public function validate(array $values): void
     {
-        foreach (['scripts', 'download-checksums'] as $map) {
+        foreach (['scripts', 'download-checksums', 'required-env'] as $map) {
             if (!isset($values[$map]) || $values[$map] !== []) {
                 continue;
             }

@@ -2,6 +2,9 @@
 
 - [0021: Native MU-plugin loading](0021-native-mu-plugin-loading.md)
 - [0022: Tagged releases and Composer recovery compatibility](0022-release-and-composer-recovery-policy.md)
+- [0023: Private environment writes and production payloads](0023-env-production.md)
+- [0024: Crash recovery journal and owned artifact pruning](0024-layout-journal.md)
+- [0025: Read-only operations and native deployment defaults](0025-production-operations.md)
 
 The project owner accepted these ADRs with explicit Phase 0 approval on 2026-09-29. The package name is `sympress/runtime`.
 

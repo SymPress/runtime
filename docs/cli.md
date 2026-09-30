@@ -40,6 +40,14 @@ The standalone runner uses the current project directory and its Composer vendor
 | `migrate --force` | Replace a differing regular target; originals, directories and symlinks stay protected |
 | `-n`, `--no-interaction` | Use documented question defaults |
 | `-q`, `-v`, `-vv`, `-vvv`, `--ansi`, `--no-ansi` | Standard Symfony Console output controls |
+| `--check [steps]` | Compare managed outputs and setup inputs with the last successful run of this selection; exit 1 for drift, 2 for missing evidence or uninspectable custom behavior. |
+| `--dry-run [steps]` | Print the same read-only drift report, without failing solely for drift. Never executes setup providers, database operations or downloads. |
+| `--update-lock [steps]` | Refresh download pins for URLs used by the selected steps; explicit configured checksums still apply. Cannot combine with read-only flags. |
+| `doctor --production --json` | Strict deployment gate for explicit HTTPS home, debug display, private environment files, dump, file-modification policy, salts and PHP-readable artifacts. |
+| `doctor --production --webroot=public --php-user=www-data` | Declare the actual document root and check POSIX permissions for a specific PHP identity. Prefer running the command as that identity to include ACLs. |
+| `doctor --database-health [--quick]` | Explicit table health inspection; `--quick` reduces work but does not promise a lock-free check. |
+| `prune --keep=2 [--dry-run] [--json]` | Retain active payloads plus the newest N inactive payloads and owned package backups; refuse unsafe or pending recovery state. |
+| `env:diff [--json]` | Compare environment example names with the selected file chain/process; never print values or execute substitutions. Exit 1 for missing names. |
 
 ## Selecting steps
 

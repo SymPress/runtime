@@ -131,8 +131,15 @@ def compare_generated(work, baseline, autoload, args, report):
         if expected["composer_loaded"] is not True or actual["composer_loaded"] is not False:
             raise RuntimeError("D13 must demonstrate the oracle Composer dependency and candidate independence.")
         expected["composer_loaded"] = False
-        compare(expected, actual, baseline + "/generated/" + environment)
-        report["cases"].append({"id": baseline + "/generated/" + environment, "constants": len(actual) - 3, "differences": [{"id": "D13", "field": "composer_loaded", "oracle": True, "candidate": False}]})
+        native_expected = json.loads(json.dumps(expected))
+        generated_differences = [{"id": "D13", "field": "composer_loaded", "oracle": True, "candidate": False}]
+        if environment in ["staging", "production"]:
+            for name in ["AUTOMATIC_UPDATER_DISABLED", "DISALLOW_FILE_MODS"]:
+                hardened = {"defined": True, "type": "bool", "value": True}
+                generated_differences.append({"id": "D27", "field": name, "oracle": expected[name], "candidate": hardened})
+                native_expected[name] = hardened
+        compare(native_expected, actual, baseline + "/generated/" + environment)
+        report["cases"].append({"id": baseline + "/generated/" + environment, "constants": len(actual) - 3, "differences": generated_differences})
         print(f"PASS {baseline}/generated/{environment}: index, wp-config runtime and D13 independence", flush=True)
         for project in [oracle, candidate]:
             cached = (project / ".env.cached.php").is_file()
@@ -141,8 +148,6 @@ def compare_generated(work, baseline, autoload, args, report):
         if environment != "production":
             (oracle / ".env.cached.php").unlink(missing_ok=True)
             continue
-        for project in [oracle, candidate]:
-            (project / ".env").write_text("malformed fixture: cache must bypass parsing")
         for mode in ["warm", "real-override"]:
             boot_env = dict(os.environ)
             if mode == "real-override":
@@ -151,8 +156,8 @@ def compare_generated(work, baseline, autoload, args, report):
             cached = json.loads(run([args.candidate_php, str(ROOT / "tools/differential/boot.php"), str(candidate)], candidate, boot_env))
             expected_warm = dict(expected, composer_loaded=True)
             compare(expected_warm, upstream, baseline + "/cache/" + mode + "/oracle")
-            expected_candidate = json.loads(json.dumps(expected))
-            differences = [{"id": "D13", "field": "composer_loaded", "oracle": True, "candidate": False}]
+            expected_candidate = json.loads(json.dumps(native_expected))
+            differences = list(generated_differences)
             if mode == "real-override":
                 before = expected_candidate["DB_PASSWORD"]["value"]
                 expected_candidate["DB_PASSWORD"]["value"] = "external-fixture"
@@ -160,6 +165,17 @@ def compare_generated(work, baseline, autoload, args, report):
             compare(expected_candidate, cached, baseline + "/cache/" + mode + "/candidate")
             report["cases"].append({"id": baseline + "/cache/" + mode, "constants": len(cached) - 3, "differences": differences})
             print(f"PASS {baseline}/cache/{mode}: exact runtime reports", flush=True)
+        for project in [oracle, candidate]:
+            source = project / ".env"
+            source.write_text(source.read_text().replace('DB_NAME="fixture"', 'DB_NAME="changed-source-fixture"'))
+        upstream = json.loads(run([args.oracle_php, str(ROOT / "tools/differential/boot.php"), str(oracle)], oracle))
+        refreshed = json.loads(run([args.candidate_php, str(ROOT / "tools/differential/boot.php"), str(candidate)], candidate))
+        compare(dict(expected, composer_loaded=True), upstream, baseline + "/cache/source-change/oracle")
+        refreshed_expected = json.loads(json.dumps(native_expected))
+        refreshed_expected["DB_NAME"]["value"] = "changed-source-fixture"
+        compare(refreshed_expected, refreshed, baseline + "/cache/source-change/candidate")
+        report["cases"].append({"id": baseline + "/cache/source-change", "differences": generated_differences + [{"id": "D26", "field": "DB_NAME.value", "oracle": "fixture", "candidate": "changed-source-fixture"}]})
+        print(f"PASS {baseline}/cache/source-change: D26 native invalidation and unchanged oracle cache", flush=True)
 
 
 def compare_project_autoload(work, baseline, autoload, args, report):

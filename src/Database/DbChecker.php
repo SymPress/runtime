@@ -79,7 +79,7 @@ final class DbChecker
         $this->io->verbose('Database status: ' . $this->status->reason . '.');
     }
 
-    public function mysqlcheck(): bool
+    public function mysqlcheck(bool $quick = false): bool
     {
         if (!$this->dbExists()) {
             return false;
@@ -113,7 +113,11 @@ final class DbChecker
             if (file_put_contents($file, $content) === false) {
                 return false;
             }
-            return $this->process->executeSilently([$executable, '--defaults-file=' . $file, '--check', '--default-character-set=utf8', '--', $credentials->name]);
+            $arguments = [$executable, '--defaults-file=' . $file, '--check'];
+            if ($quick) {
+                $arguments[] = '--quick';
+            }
+            return $this->process->executeSilently([...$arguments, '--default-character-set=utf8', '--', $credentials->name]);
         } catch (Throwable) {
             $this->io->error('Database health check failed.');
 

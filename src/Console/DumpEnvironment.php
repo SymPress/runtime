@@ -8,6 +8,7 @@ use RuntimeException;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Env\EnvFactory;
 use SymPress\Runtime\Env\EnvReader;
+use SymPress\Runtime\Env\EnvRequirements;
 use SymPress\Runtime\Filesystem\Paths;
 use Symfony\Component\Filesystem\Filesystem;
 
@@ -20,6 +21,15 @@ final readonly class DumpEnvironment
     public function run(string $environment): int
     {
         $reader = (new EnvFactory($this->config, $this->paths))->createForEnvironment($environment);
+        $requirements = $this->config['required-env']->unwrapOrFallback([]);
+        $errors = (new EnvRequirements())->validate($reader, is_array($requirements) ? $requirements : []);
+        if ($errors !== []) {
+            foreach ($errors as $error) {
+                $this->io->error($error);
+            }
+
+            return 1;
+        }
         $reader->setupConstants();
         $directory = $this->config['env-dir']->unwrapOrFallback($this->paths->root());
         if (!is_string($directory)) {
@@ -27,7 +37,7 @@ final readonly class DumpEnvironment
         }
         (new Filesystem())->mkdir($directory);
         $file = rtrim($directory, '/\\') . EnvReader::BUILD_DUMP_FILE;
-        if (!$reader->dumpCached($file)) {
+        if (!$reader->dumpCached($file, immutable: true)) {
             $this->io->error('Cannot publish the environment dump; check target ownership and permissions.');
 
             return 1;

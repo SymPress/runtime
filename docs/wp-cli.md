@@ -7,6 +7,39 @@ is ready. The `wpcliconfig` step separately writes `wp-cli.yml`.
 
 Runtime first resolves an installed WP-CLI Composer package, then the project's PHAR. `install-wp-cli` controls whether a missing PHAR can be downloaded. The built-in tool requires its release SHA-512 checksum and fails closed on verification errors. A checksum fetched from the same release origin verifies bytes against that origin; it is not an independent authenticity guarantee.
 
+Installing `wp-cli/wp-cli-bundle` with Composer provides the standard command
+packages and its `wp-cli/wp-cli` dependency. Runtime uses that dependency's
+`php/boot-fs.php` before considering a local PHAR or network access. This is the
+entry point used by the [official WP-CLI wrapper](https://github.com/wp-cli/wp-cli/blob/main/bin/wp);
+the [bundle manifest](https://github.com/wp-cli/wp-cli-bundle/blob/main/composer.json)
+declares the command dependencies. `install-wp-cli: false` continues to allow
+installed Composer packages and local PHARs while disabling downloads.
+
+For a reproducible PHAR installation, configure an exact release and optionally an
+independently verified SHA-256 digest:
+
+```json
+{
+  "wp-cli-version": "2.12.0"
+}
+```
+
+`wp-cli-sha256` accepts a 64-character hexadecimal digest and also checks an existing
+local PHAR. The release SHA-512 sidecar remains mandatory for a downloaded PHAR;
+`--update-lock` never overrides either explicit digest assertion. With no version
+configured, Runtime looks up the latest official release. Native projects fail if
+that lookup cannot identify a supported artifact; legacy profiles retain their
+minimum-version fallback. A configured version avoids discovery entirely.
+
+Native downloads also use the project [download lock](downloads.md). Its first
+successful, verified download records the PHAR SHA-256; later changes at the same
+URL or across WP-CLI release URLs require an explicit reviewed lock update. A
+previously pinned local PHAR is also checked before execution. Existing project-owned
+PHARs without a pin remain usable; select `wpcli` with `--update-lock` to adopt
+reviewed local bytes. Already installed Composer packages remain governed by Composer,
+and an existing local PHAR does not trigger a download. Move it aside before
+requesting a new release download.
+
 The shared `download-max-bytes` limit also bounds the PHAR, release metadata and checksum sidecar downloads. Its default is 16 MiB; set an explicit larger positive byte count if a trusted release requires it. Oversized responses fail before replacing an existing artifact.
 
 ## Run files and commands

@@ -25,7 +25,11 @@ final readonly class PhpToolProcessFactory
         $path = $this->packageBootstrap($tool);
         if ($path === '') {
             $target = $tool->pharTarget($this->paths);
-            $path = is_file($target) && is_readable($target) ? $target : $this->installer->install($tool, $target);
+            $local = is_file($target) && is_readable($target);
+            if ($local && $tool instanceof WpCliTool && !$tool->checkLocalPhar($target, $this->io)) {
+                throw new RuntimeException('Local WP-CLI PHAR failed integrity validation.');
+            }
+            $path = $local ? $target : $this->installer->install($tool, $target);
         }
         if ($path === '') {
             throw new RuntimeException('PHP tool is unavailable; package, local phar and permitted download could not resolve it.');

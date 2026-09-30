@@ -27,7 +27,7 @@ final class Registry
         'dropins', 'movecontent', 'publishcontentdev', 'vcsignorecheck', 'wpcliconfig', 'wpcli',
     ];
 
-    public const array RESERVED = ['validate', 'doctor', 'check', 'dump-env', 'migrate', 'flush-env-cache'];
+    public const array RESERVED = ['validate', 'doctor', 'check', 'dump-env', 'migrate', 'flush-env-cache', 'prune', 'env:diff'];
 
     public const array IMPLEMENTATIONS = [
         'checkpaths' => CheckPathsStep::class,

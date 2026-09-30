@@ -26,13 +26,16 @@ final readonly class DatabasePreflight
         if ($this->config['db-check']->is(false)) {
             return true;
         }
-        if ($this->config['db-check']->is(DbChecker::HEALTH_CHECK)) {
+        if ($this->config['db-check']->is(DbChecker::HEALTH_CHECK) && $this->config['compatibility-profile']->not('native')) {
             $healthy = $this->database->mysqlcheck();
             if (!$healthy) {
                 $this->io->error('Database health check did not pass.');
             }
 
-            return $healthy || $this->config['compatibility-profile']->not('native');
+            return true;
+        }
+        if ($this->config['db-check']->is(DbChecker::HEALTH_CHECK)) {
+            $this->io->comment('Table health inspection is explicit: run doctor --database-health (optionally --quick).');
         }
         $status = $this->database->status();
         if ($status->exists === null || $status->installed === null) {

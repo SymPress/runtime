@@ -13,7 +13,11 @@ use SymPress\Runtime\Compatibility\Migration;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Config\ConfigLoader;
 use SymPress\Runtime\Config\Validator;
+use SymPress\Runtime\Env\EnvFactory;
+use SymPress\Runtime\Env\EnvRequirements;
 use SymPress\Runtime\Filesystem\Paths;
+use SymPress\Runtime\Maintenance\MaintenanceLock;
+use SymPress\Runtime\Maintenance\Pruner;
 use SymPress\Runtime\Package\AutoloadRegistry;
 use SymPress\Runtime\Package\ExtensionMetadata;
 use SymPress\Runtime\Package\PackageFinder;
@@ -48,6 +52,19 @@ final class RuntimeCommand extends Command
         }
         if (in_array($this->operation, ['doctor', 'check'], true)) {
             $this->addOption('json', null, InputOption::VALUE_NONE, 'Print structured diagnostics without environment values.');
+            foreach (['production', 'database-health', 'quick'] as $flag) {
+                $this->addOption($flag, null, InputOption::VALUE_NONE);
+            }
+            $this->addOption('php-user', null, InputOption::VALUE_REQUIRED, 'PHP-FPM user for POSIX access checks.');
+            $this->addOption('webroot', null, InputOption::VALUE_REQUIRED, 'Actual web server document root.');
+        }
+        if ($this->operation === 'env:diff') {
+            $this->addOption('json', null, InputOption::VALUE_NONE);
+        }
+        if ($this->operation === 'prune') {
+            $this->addOption('keep', null, InputOption::VALUE_REQUIRED, 'Inactive payloads and backups to retain.', '2');
+            $this->addOption('dry-run', null, InputOption::VALUE_NONE);
+            $this->addOption('json', null, InputOption::VALUE_NONE);
         }
         if ($this->operation === 'migrate') {
             $this->addOption('output', null, InputOption::VALUE_REQUIRED, 'New configuration path relative to the project root.', 'sympress-runtime.json');
@@ -65,6 +82,9 @@ final class RuntimeCommand extends Command
         $this->addOption('list-steps', null, InputOption::VALUE_NONE, 'List selected steps without executing them.');
         $this->addOption('force', null, InputOption::VALUE_NONE, 'Explicitly allow overwriting protected files.');
         $this->addOption('generate-build-id', null, InputOption::VALUE_NONE, 'Generate a kernel build ID when explicitly selecting kernel-cache.');
+        foreach (['dry-run', 'check', 'json', 'update-lock'] as $flag) {
+            $this->addOption($flag, null, InputOption::VALUE_NONE);
+        }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -90,7 +110,7 @@ final class RuntimeCommand extends Command
     {
         $io = new Io($input, $output);
         $context = $this->context->withConsole($input->isInteractive(), $output->isDecorated(), $output->getVerbosity());
-        if (!in_array($this->operation, ['run', 'validate', 'flush-env-cache', 'dump-env', 'doctor', 'check', 'migrate'], true)) {
+        if (!in_array($this->operation, ['run', 'validate', 'flush-env-cache', 'dump-env', 'doctor', 'check', 'migrate', 'env:diff', 'prune'], true)) {
             $io->error('Command ' . $this->operation . ' is scheduled for a later implementation phase.');
 
             return self::INVALID;
@@ -133,6 +153,12 @@ final class RuntimeCommand extends Command
         }
         $loaded = $loader->load($paths->root(), $extra);
         $values = array_replace($loaded->values, $this->context->configuration($selection->selected()));
+        if ($this->operation === 'run') {
+            $values['update-lock'] = $input->getOption('update-lock') === true;
+            if ($values['update-lock'] && ($input->getOption('dry-run') || $input->getOption('check'))) {
+                throw new InvalidArgumentException('--update-lock cannot be combined with read-only setup inspection.');
+            }
+        }
         if ($this->operation === 'run' && $input->getOption('generate-build-id')) {
             if (!$selection->selected() || !in_array('kernel-cache', $selection->names, true)) {
                 throw new InvalidArgumentException('--generate-build-id requires explicit kernel-cache selection.');
@@ -166,9 +192,37 @@ final class RuntimeCommand extends Command
             $io->error('Deprecated WP Starter extension: ' . $package->getName() . '; use sympress-runtime-extension and sympress-runtime-autoload.');
         }
         if (in_array($this->operation, ['doctor', 'check'], true)) {
-            return (new Doctor($config, $paths, $context, $io))->run($input->getOption('json') === true);
+            if ($input->getOption('quick') && !$input->getOption('database-health')) {
+                throw new InvalidArgumentException('--quick requires --database-health.');
+            }
+            $user = $input->getOption('php-user');
+            $webroot = $input->getOption('webroot');
+            return (new Doctor($config, $paths, $context, $io))->run($input->getOption('json') === true, $input->getOption('production') === true, $input->getOption('database-health') === true, $input->getOption('quick') === true, is_string($user) ? $user : null, is_string($webroot) ? $webroot : null);
+        }
+        if ($this->operation === 'env:diff') {
+            return (new EnvironmentDiff($config, $paths, $io))->run($input->getOption('json') === true);
+        }
+        if ($this->operation === 'prune') {
+            $keep = $input->getOption('keep');
+            if (!is_string($keep) || !preg_match('/^[0-9]{1,6}$/D', $keep)) {
+                throw new InvalidArgumentException('--keep requires a non-negative integer.');
+            }
+            $target = $config['wp-config-php-path']->unwrap();
+            $report = (new Pruner())->prune($paths, (int) $keep, $input->getOption('dry-run') === true, is_string($target) ? $target : null);
+            $io->write(json_encode($report, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            return self::SUCCESS;
         }
         if ($this->operation === 'validate') {
+            $requirements = $config['required-env']->unwrapOrFallback([]);
+            if (is_array($requirements) && $requirements !== []) {
+                $errors = (new EnvRequirements())->validate((new EnvFactory($config, $paths))->create(), $requirements);
+                foreach ($errors as $error) {
+                    $io->error($error);
+                }
+                if ($errors !== []) {
+                    return self::FAILURE;
+                }
+            }
             $io->success('Runtime configuration is valid.');
 
             return self::SUCCESS;
@@ -189,6 +243,15 @@ final class RuntimeCommand extends Command
         $templates = $config['templates-dir']->unwrap();
         if (is_string($templates)) {
             $paths->useCustomTemplatesDir($templates);
+        }
+        if ($this->operation === 'run' && ($input->getOption('dry-run') || $input->getOption('check'))) {
+            $registry = new Registry();
+            $skips = $config['skip-steps']->unwrapOrFallback([]);
+            $resolved = $selection->resolve($registry, is_array($skips) ? array_values(array_filter($skips, is_string(...))) : [], $loaded->profile, $compatible);
+            $names = array_map(static fn (Definition $step): string => $step->name, $resolved['steps']);
+            $report = (new SetupDrift($config, $paths, $context))->inspect($names);
+            $io->write(json_encode($report, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            return $input->getOption('check') ? $report['exit'] : ($report['exit'] === 2 ? 2 : 0);
         }
         $autoload = $config['autoload']->unwrap();
         if ($compatible) {
@@ -240,7 +303,16 @@ final class RuntimeCommand extends Command
             }
         }
 
-        return (new Runner($config, $paths, $io, $container, $selection))->run($resolved['steps']);
+        $lock = MaintenanceLock::acquire($paths);
+        try {
+            $exit = (new Runner($config, $paths, $io, $container, $selection))->run($resolved['steps']);
+            if ($exit === self::SUCCESS && $this->operation === 'run' && !$kernelMaintenance && $config['compatibility-profile']->is('native')) {
+                (new SetupDrift($config, $paths, $context))->record(array_map(static fn (Definition $step): string => $step->name, $resolved['steps']));
+            }
+            return $exit;
+        } finally {
+            $lock->release();
+        }
     }
 
     private function checkWordPress(Config $config): void

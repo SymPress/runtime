@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Composer;
 
+use Closure;
 use Composer\Factory;
 use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
@@ -14,6 +15,7 @@ use SymPress\Runtime\Config\ConfigLoader;
 use SymPress\Runtime\Config\Validator;
 use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Filesystem\ProjectBoundary;
+use SymPress\Runtime\Maintenance\MaintenanceLock;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
@@ -21,10 +23,18 @@ use Throwable;
 /** Offline recovery only; no install/update/download or plugin activation. */
 final class PackageLayout
 {
+    public function __construct(private ?Closure $checkpoint = null)
+    {
+    }
+
     public function prepare(string $root, string $vendor, string $manifestFile): void
     {
+        $maintenance = MaintenanceLock::acquire(new Paths($root, $vendor));
         $lockFile = $vendor . '/composer/.sympress-layout.lock';
         (new ProjectBoundary(new Paths($root, $vendor)))->assertWritablePath($lockFile);
+        if (is_link($lockFile)) {
+            throw new RuntimeException('Package layout lock must not be a symlink.');
+        }
         $lock = fopen($lockFile, 'c');
         if ($lock === false) {
             throw new RuntimeException('Cannot open the package layout lock.');
@@ -33,10 +43,12 @@ final class PackageLayout
             if (!flock($lock, LOCK_EX | LOCK_NB)) {
                 throw new RuntimeException('Another package layout preparation is running.');
             }
+            (new LayoutJournal($root, $vendor, $this->checkpoint, $manifestFile))->recover();
             $this->prepareLocked($root, $vendor, $manifestFile);
         } finally {
             flock($lock, LOCK_UN);
             fclose($lock);
+            $maintenance->release();
         }
     }
 
@@ -86,6 +98,9 @@ final class PackageLayout
         $boundary->assertWritablePath($vendor . '/composer');
         foreach (array_keys($this->generatedFiles($vendor)) as $file) {
             $boundary->assertWritablePath($file);
+            if (is_link($file)) {
+                throw new RuntimeException('Composer metadata must not be a symlink.');
+            }
         }
         $loaded = $loader->load($root, $extra);
         $config = new Config($loaded->values, new Validator($paths, $loaded->profile), $loaded->profile);
@@ -94,6 +109,9 @@ final class PackageLayout
         }
         $stateFile = $root . '/var/runtime/package-layout.json';
         $boundary->assertWritablePath($stateFile);
+        if (is_link($stateFile)) {
+            throw new RuntimeException('Layout state must not be a symlink.');
+        }
         $state = is_file($stateFile) ? $loader->readObject($stateFile) : [];
         $next = [];
         $moves = [];
@@ -128,7 +146,7 @@ final class PackageLayout
                 if (!$this->exists($source)) {
                     throw new RuntimeException('Downloaded package is missing: ' . $name . '. Run composer install with its installers enabled.');
                 }
-                $backup = $this->destinationBackup($target, $previousPath, $root, $boundary);
+                $backup = $this->destinationBackup($target, $previousPath, $root, $vendor, $boundary);
                 if ($backup !== null) {
                     $moves[] = [$target, $backup];
                 }
@@ -166,32 +184,36 @@ final class PackageLayout
 
             $binaries->plan($package, $targets[$package->getName()], $affected[$package->getName()], $boundary);
         }
-        $saved = $this->generatedFiles($vendor);
-        $completed = [];
+        $journal = new LayoutJournal($root, $vendor, $this->checkpoint, $manifestFile);
+        $journal->begin($moves, [...$this->metadataFiles($vendor), $stateFile, ...$binaries->paths()]);
         try {
-            foreach ($moves as [$from, $to]) {
-                $this->transfer($from, $to, $filesystem);
-                $completed[] = [$from, $to];
-            }
+            $journal->moveAll();
             if ($changed || $moves !== []) {
                 $this->regenerate($manifestFile, $vendor, $installPaths, ($data['dev'] ?? true) !== false);
+                $journal->point('metadata');
                 $binaries->write();
+                $journal->point('binaries');
             }
             $filesystem->dumpFile($stateFile, $encoded);
             $filesystem->chmod($stateFile, 0600);
+            $journal->point('state');
+            $journal->commit();
         } catch (Throwable $error) {
-            $binaries->restore();
-            foreach (array_reverse($completed) as [$from, $to]) {
-                $this->transfer($to, $from, $filesystem);
-            }
-            foreach (array_diff_key($this->generatedFiles($vendor), $saved) as $file => $contents) {
-                $filesystem->remove($file);
-            }
-            foreach ($saved as $file => $contents) {
-                $filesystem->dumpFile($file, $contents);
-            }
+            $journal->recover();
             throw $error;
         }
+    }
+
+    /** @return list<string> */
+    private function metadataFiles(string $vendor): array
+    {
+        return [
+        $vendor . '/autoload.php', ...array_map(static fn (string $name): string => $vendor . '/composer/' . $name, [
+            'installed.json', 'installed.php', 'InstalledVersions.php', 'ClassLoader.php', 'LICENSE',
+            'autoload_namespaces.php', 'autoload_psr4.php', 'autoload_classmap.php', 'autoload_files.php',
+            'autoload_static.php', 'autoload_real.php', 'platform_check.php',
+        ]),
+        ];
     }
 
     /** @param list<string> $destinations */
@@ -221,7 +243,7 @@ final class PackageLayout
         return file_exists($path) || is_link($path);
     }
 
-    private function destinationBackup(string $target, ?string $previous, string $root, ProjectBoundary $boundary): ?string
+    private function destinationBackup(string $target, ?string $previous, string $root, string $vendor, ProjectBoundary $boundary): ?string
     {
         if (!$this->exists($target)) {
             return null;
@@ -231,31 +253,16 @@ final class PackageLayout
         }
         $backup = $root . '/var/runtime/package-backups/' . bin2hex(random_bytes(12));
         $boundary->assertWritablePath($backup);
+        (new LayoutJournal($root, $vendor))->protectBackups();
 
         return $backup;
-    }
-
-    private function transfer(string $from, string $to, Filesystem $filesystem): void
-    {
-        $filesystem->mkdir(dirname($to));
-        if (is_link($from)) {
-            $link = readlink($from);
-            if ($link === false) {
-                throw new RuntimeException('Cannot read package link.');
-            }
-            $resolved = Path::makeAbsolute($link, dirname($from));
-            $filesystem->symlink(Path::makeRelative($resolved, dirname($to)), $to);
-            $filesystem->remove($from);
-            return;
-        }
-        $filesystem->rename($from, $to);
     }
 
     /** @return array<string, string> */
     private function generatedFiles(string $vendor): array
     {
         $files = [];
-        foreach ([$vendor . '/autoload.php', ...(glob($vendor . '/composer/*') ?: [])] as $file) {
+        foreach ($this->metadataFiles($vendor) as $file) {
             if (!is_file($file)) {
                 continue;
             }

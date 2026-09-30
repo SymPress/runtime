@@ -14,6 +14,7 @@ use SymPress\Runtime\Console\Selection;
 use SymPress\Runtime\Database\DatabaseProbe;
 use SymPress\Runtime\Database\DbChecker;
 use SymPress\Runtime\Database\MysqliProbe;
+use SymPress\Runtime\Download\DownloadLock;
 use SymPress\Runtime\Download\PharInstaller;
 use SymPress\Runtime\Download\UrlDownloader;
 use SymPress\Runtime\Env\EnvFactory;
@@ -107,6 +108,10 @@ final class ContainerFactory
         foreach ([SaltStore::class, ArtifactWriter::class, RuntimeBundleBuilder::class, SectionMerger::class, WpConfigGenerator::class] as $class) {
             $container->register($class)->setAutowired(true)->setPublic(true);
         }
+        $container->register(DownloadLock::class)->setAutowired(true);
+        $mode = $config['generated-file-mode']->unwrap();
+        $container->getDefinition(ArtifactWriter::class)->setArgument('$mode', is_string($mode) ? octdec($mode) : 0600);
+        $container->getDefinition(RuntimeBundleBuilder::class)->setArgument('$bundleBootstrap', $config['bundle-bootstrap']->is(true));
         if (!$config['compatibility']->is(false)) {
             LegacyApi::configure($container);
         }

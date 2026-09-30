@@ -44,6 +44,8 @@ jobs:
           for seed in 1 2 3 4 5; do
             php vendor/bin/phpunit --no-logging --display-all-issues --fail-on-warning --fail-on-phpunit-deprecation --order-by=random --random-order-seed="$seed" --filter 'PackageLayoutTest|PackageDestinationTest'
           done
+      - name: Verify shared-group access using distinct PHP identities
+        run: sudo "$(command -v php)" vendor/bin/phpunit --no-logging --fail-on-skipped tools/tests/SharedGroupTest.php
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

@@ -34,9 +34,9 @@ final class WpCliToolTest extends TemporaryProject
         return new Io($input, new BufferedOutput());
     }
 
-    private function tool(MockHttpClient $http, bool $enabled = true): WpCliTool
+    private function tool(MockHttpClient $http, bool $enabled = true, string $profile = 'native', ?string $version = null): WpCliTool
     {
-        $config = new Config(['install-wp-cli' => $enabled], new Validator(new Paths($this->root)));
+        $config = new Config(['install-wp-cli' => $enabled, 'wp-cli-version' => $version], new Validator(new Paths($this->root)), $profile);
 
         return new WpCliTool($config, new UrlDownloader($http, new Filesystem(), $config), $this->io());
     }
@@ -75,7 +75,9 @@ final class WpCliToolTest extends TemporaryProject
         self::assertSame($release, $tool->pharUrl());
         self::assertSame(1, $http->getRequestsCount());
         $fallback = $this->tool(new MockHttpClient(new MockResponse('invalid response')));
-        self::assertSame('https://github.com/wp-cli/wp-cli/releases/download/v2.5.0/wp-cli-2.5.0.phar', $fallback->pharUrl());
+        self::assertSame('', $fallback->pharUrl());
+        $legacy = $this->tool(new MockHttpClient(new MockResponse('invalid response')), profile: 'release-3.0.1');
+        self::assertSame('https://github.com/wp-cli/wp-cli/releases/download/v2.5.0/wp-cli-2.5.0.phar', $legacy->pharUrl());
     }
 
     #[Group('PAR-SVC-021')]
@@ -84,16 +86,15 @@ final class WpCliToolTest extends TemporaryProject
     {
         $this->write('download.phar', 'synthetic artifact');
         $http = new MockHttpClient([
-            new MockResponse('{}'),
             new MockResponse(str_repeat('0', 128)),
             new MockResponse('not a sha512 checksum'),
             new MockResponse(strtoupper(hash('sha512', 'synthetic artifact')) . "\n"),
         ]);
-        $tool = $this->tool($http);
+        $tool = $this->tool($http, version: '2.5.0');
         self::assertFalse($tool->checkPhar($this->root . '/download.phar', $this->io()));
         self::assertFalse($tool->checkPhar($this->root . '/download.phar', $this->io()));
         self::assertTrue($tool->checkPhar($this->root . '/download.phar', $this->io()));
-        self::assertSame(4, $http->getRequestsCount());
+        self::assertSame(3, $http->getRequestsCount());
     }
 
     #[Group('PAR-SVC-021')]
@@ -115,6 +116,8 @@ final class WpCliToolTest extends TemporaryProject
         self::assertSame($process, $services->wpCliProcess());
         self::assertTrue($process->withEnvironment(['WP_TOOL_FIXTURE' => 'synthetic'])->executeSilently(['option', 'get', 'name with spaces']));
         $record = json_decode((string) file_get_contents($this->root . '/wp-cli-arguments.json'), true);
+        self::assertIsArray($record);
+        self::assertIsArray($record[0]);
         self::assertSame(['option', 'get', 'name with spaces', '--path=' . $paths->wp()], array_slice($record[0], 1));
         self::assertSame('synthetic', $record[1]);
         self::assertSame(0, $http->getRequestsCount());

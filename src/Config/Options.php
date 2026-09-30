@@ -8,7 +8,15 @@ final class Options
 {
     public const array DEFAULTS = [
         'autoload' => 'sympress-runtime-autoload.php',
-        'cache-env' => true,
+        'cache-env' => 'auto',
+        'generated-file-mode' => '0600',
+        'composer-managed' => 'auto',
+        'required-env' => [],
+        'download-lock' => true,
+        'update-lock' => false,
+        'wp-cli-version' => null,
+        'wp-cli-sha256' => null,
+        'bundle-bootstrap' => false,
         'check-vcs-ignore' => true,
         'command-steps' => null,
         'composer-updated-packages' => [],
@@ -59,7 +67,7 @@ final class Options
     public const array INTERNAL = [
         'composer-updated-packages', 'is-composer-install', 'is-composer-update',
         'is-wpstarter-command', 'is-wpstarter-selected-command',
-        'is-runtime-command', 'is-runtime-selected-command', 'wp-config-php-path',
+        'is-runtime-command', 'is-runtime-selected-command', 'wp-config-php-path', 'update-lock',
     ];
 
     /** @return array<string, mixed> */
@@ -68,6 +76,9 @@ final class Options
         $defaults = self::DEFAULTS;
         $defaults['compatibility-profile'] = $profile;
         if ($profile !== 'native') {
+            $defaults['cache-env'] = true;
+            $defaults['composer-managed'] = false;
+            $defaults['download-lock'] = false;
             $defaults['autoload'] = 'wpstarter-autoload.php';
             $defaults['env-local-overrides'] = false;
             $defaults['wp-config-autoload'] = true;

@@ -17,7 +17,7 @@ final class DoctorTest extends TemporaryProject
         $this->write('setup-only.php', '<?php file_put_contents(__DIR__ . "/executed", "wrong");');
         $this->write('wordpress/wp-load.php', '<?php // inspected, never executed');
         $this->write('wp-content/keep.txt', 'existing content');
-        $this->write('.env', "WP_ENVIRONMENT_TYPE=production\nDB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=private-test-credential\nDB_HOST=localhost\nWPDB_ENV_VALID=true\nWPDB_EXISTS=true\nWP_INSTALLED=true\n");
+        $this->write('.env', "WP_ENVIRONMENT_TYPE=production\nWP_HOME=https://fixture.test\nDB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=private-test-credential\nDB_HOST=localhost\nWPDB_ENV_VALID=true\nWPDB_EXISTS=true\nWP_INSTALLED=true\n");
     }
 
     private function diagnose(string $command = 'doctor'): Process

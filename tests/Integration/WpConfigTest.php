@@ -249,7 +249,7 @@ PHP);
         $blocked = $this->generate();
         self::assertNotSame(0, $blocked->getExitCode());
         self::assertFileDoesNotExist($this->root . '/wp-config.php');
-        self::assertDirectoryDoesNotExist($this->root . '/var/runtime');
+        self::assertSame(['.', '..', '.maintenance.lock'], scandir($this->root . '/var/runtime'), 'A rejected generation may create only its maintenance lock, never salts or runtime payloads.');
         self::assertSame('<?php // user-owned', file_get_contents($this->root . '/public/wp-config.php'));
         $this->write('wp-config.php', '<?php define("AUTH_KEY", "keep-through-force");');
         $forced = $this->generate(['wpconfig', '--force']);
@@ -312,19 +312,28 @@ PHP);
         self::assertSame(['https://example.test', 'coffee', 'visible-to-getter', 'visible-to-getter', ['wpstarter_getenv', 'getenv filter'], 1, false], $actual);
     }
 
+    /** @return iterable<string, array{string, bool}> */
+    public static function cacheProfiles(): iterable
+    {
+        yield 'native detects source edits' => ['native', false];
+        yield 'legacy retains explicit flush semantics' => ['upstream-dev', true];
+    }
+
+    #[DataProvider('cacheProfiles')]
     #[Group('PAR-ENV-018')]
     #[Group('PAR-ENV-019')]
     #[Group('PAR-ENV-020')]
-    public function testShutdownCacheRestoresInFreshRequestAndActualEnvironmentWins(): void
+    public function testShutdownCacheRestoresInFreshRequestAndActualEnvironmentWins(string $profile, bool $staleCache): void
     {
-        $this->fixture(['cache-env' => true]);
+        $this->fixture(['cache-env' => true, 'compatibility-profile' => $profile]);
         $this->write('.env', "WP_ENV=production\nDB_NAME=fixture\nDB_USER=fixture\nRTV_CACHE=from-file\n");
         self::assertSame(0, $this->generate()->getExitCode());
         self::assertSame(['from-file'], $this->boot('echo json_encode([sympress_runtime_getenv("RTV_CACHE")]);'));
         self::assertFileExists($this->root . '/.env.cached.php');
         self::assertSame(0600, fileperms($this->root . '/.env.cached.php') & 0777);
-        $this->write('.env', 'malformed and bypassed');
-        self::assertSame(['actual', 'Yes'], $this->boot('echo json_encode([sympress_runtime_getenv("RTV_CACHE"), apply_filters("debug_information", [])["sympress-runtime"]["fields"]["cached-env"]["value"]]);', environment: ['RTV_CACHE' => 'actual']));
+        // ADR 0023 preserves stale legacy caches while native caches track source edits.
+        $this->write('.env', $staleCache ? 'malformed and bypassed' : "WP_ENV=production\nDB_NAME=fixture\nDB_USER=fixture\nRTV_CACHE=updated-file-value\n");
+        self::assertSame(['actual', $staleCache ? 'Yes' : 'No'], $this->boot('echo json_encode([sympress_runtime_getenv("RTV_CACHE"), apply_filters("debug_information", [])["sympress-runtime"]["fields"]["cached-env"]["value"]]);', environment: ['RTV_CACHE' => 'actual']));
     }
 
     #[Group('PAR-WP-017')]
@@ -410,7 +419,7 @@ PHP);
         self::assertStringContainsString('nonliteral salt definition: AUTH_KEY', $generated->getErrorOutput());
         self::assertSame($source, file_get_contents($this->root . '/wp-config.php'));
         self::assertFileDoesNotExist($this->root . '/public/wp-config.php');
-        self::assertDirectoryDoesNotExist($this->root . '/var/runtime');
+        self::assertSame(['.', '..', '.maintenance.lock'], scandir($this->root . '/var/runtime'), 'A rejected generation may create only its maintenance lock, never salts or runtime payloads.');
     }
 
     public function testGeneratedFileContainsEveryInventoriedSection(): void
@@ -420,7 +429,8 @@ PHP);
         $sections = (new SectionMerger())->sections((string) file_get_contents($this->root . '/wp-config.php'));
         $inventory = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/docs/maintainers/upstream-inventory.json'), true, flags: JSON_THROW_ON_ERROR);
         $names = array_unique([...array_column($inventory['baselines']['release']['sections'], 'name'), ...array_column($inventory['baselines']['dev']['sections'], 'name')]);
-        self::assertCount(19, $sections);
+        $names[] = 'COMPOSER_MANAGED';
+        self::assertCount(20, $sections);
         self::assertEqualsCanonicalizing(array_values($names), array_keys($sections));
     }
 
@@ -429,6 +439,7 @@ PHP);
     {
         $inventory = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/docs/maintainers/upstream-inventory.json'), true, flags: JSON_THROW_ON_ERROR);
         $names = array_unique([...array_column($inventory['baselines']['release']['sections'], 'name'), ...array_column($inventory['baselines']['dev']['sections'], 'name')]);
+        $names[] = 'COMPOSER_MANAGED';
         foreach ($names as $name) {
             yield 'PAR-SECTION-' . $name => [$name];
         }

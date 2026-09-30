@@ -55,13 +55,14 @@ final class EnvReader
     private bool $constantsSet = false;
     private bool $wordPressSetup = false;
     private ?string $environment = null;
-    private readonly Dotenv $dotenv;
-    private readonly Filters $filters;
+    private ?Filters $filters = null;
+    /** @var array<string, array{int, int}|null> */
+    private array $sources = [];
+    /** @var array<string, true> */
+    private array $secretNames = [];
 
-    public function __construct(?Dotenv $dotenv = null, private readonly string $profile = 'native', private readonly bool $compatibility = true)
+    public function __construct(private ?Dotenv $dotenv = null, private readonly string $profile = 'native', private readonly bool $compatibility = true, private readonly int $fileMode = 0600)
     {
-        $this->dotenv = $dotenv ?? new Dotenv($profile === 'native' ? 'WP_ENVIRONMENT_TYPE' : 'WP_ENV', 'WP_DEBUG');
-        $this->filters = new Filters($profile);
         $owned = self::loadedVars();
         $process = getenv();
         $process = is_array($process) ? $process : [];
@@ -208,11 +209,14 @@ final class EnvReader
         if ($raw === null) {
             return null;
         }
+        if (isset($this->cache[$name]) && $this->cache[$name][0] === $raw) {
+            return $this->cache[$name][1];
+        }
         $type = self::WP_CONSTANTS[$name] ?? self::WP_STARTER_VARS[$name] ?? $this->customTypes[$name] ?? null;
         if (in_array($name, self::WP_STARTER_ENV_VARS, true)) {
             $type = 'string';
         }
-        $value = $type === null ? $raw : $this->filters->filter($type, $raw);
+        $value = $type === null ? $raw : ($this->filters ??= new Filters($this->profile))->filter($type, $raw);
         $this->cache[$name] = [$raw, $value];
 
         return $value;
@@ -220,7 +224,17 @@ final class EnvReader
 
     public function rawValue(string $name): ?string
     {
-        return $this->externalValue($name) ?? $this->raw[$name] ?? null;
+        $value = $this->externalValue($name) ?? $this->raw[$name] ?? null;
+        if ($value !== null || $this->profile !== 'native' || str_ends_with($name, '_FILE')) {
+            return $value;
+        }
+        $file = $this->read($name . '_FILE');
+        if (!is_string($file) || $file === '') {
+            return null;
+        }
+        $this->secretNames[$name] = true;
+
+        return SecretFile::read($name, $file);
     }
 
     /** @return array<string, bool|int|float|string|null> */
@@ -251,9 +265,8 @@ final class EnvReader
             putenv($name . '=' . $value);
             $this->ownedProcess[$name] = $value;
         }
-        $names = array_keys($this->raw);
-        $_ENV['SYMFONY_DOTENV_VARS'] = implode(',', $names);
-        $_SERVER['SYMFONY_DOTENV_VARS'] = implode(',', $names);
+        $_ENV['SYMFONY_DOTENV_VARS'] = implode(',', array_keys($this->raw));
+        $_SERVER['SYMFONY_DOTENV_VARS'] = $_ENV['SYMFONY_DOTENV_VARS'];
         $this->read($name);
     }
 
@@ -262,9 +275,9 @@ final class EnvReader
         return $this->fromCache && $this->cache !== [];
     }
 
-    public static function buildFromCacheDump(string $file, string $profile = 'native', ?string $environment = null, bool $compatibility = true): self
+    public static function buildFromCacheDump(string $file, string $profile = 'native', ?string $environment = null, bool $compatibility = true, bool $validateSources = false, int $fileMode = 0600): self
     {
-        $reader = new self(profile: $profile, compatibility: $compatibility);
+        $reader = new self(profile: $profile, compatibility: $compatibility, fileMode: $fileMode);
         if (!is_file($file) || !is_readable($file)) {
             return $reader;
         }
@@ -277,14 +290,17 @@ final class EnvReader
         } catch (Throwable) {
             throw new RuntimeException('Cannot read environment cache.');
         }
+        if ($validateSources && $profile === 'native' && !EnvCacheSources::matches($data)) {
+            return $reader;
+        }
         $reader->restoreCache($data, $environment);
 
         return $reader;
     }
 
-    public function dumpCached(string $file): bool
+    public function dumpCached(string $file, bool $immutable = false): bool
     {
-        if ($this->fromCache || is_link($file) || is_dir($file)) {
+        if ($this->fromCache || !SecureFileWriter::canWrite($file)) {
             return false;
         }
         foreach (array_keys($this->raw) as $name) {
@@ -298,8 +314,9 @@ final class EnvReader
             'profile' => $this->profile,
             'compatibility' => $this->compatibility,
             'environment' => $this->determineEnvType(),
-            'values' => $this->cache,
-            'loaded' => array_keys($this->raw),
+            'values' => array_diff_key($this->cache, $this->secretNames),
+            'sources' => $immutable ? null : $this->sources,
+            'loaded' => array_keys(array_diff_key($this->raw, $this->secretNames)),
             'types' => $this->customTypes,
             'constants' => array_values(array_unique([...$this->definedConstants, ...array_keys(array_intersect_key($this->cache, self::WP_CONSTANTS))])),
         ];
@@ -310,24 +327,14 @@ final class EnvReader
             if (!is_string($current) || !str_starts_with($current, $header)) {
                 return false;
             }
-            if ($content === $current) {
-                return chmod($file, 0600);
-            }
         }
-        if (!is_dir(dirname($file))) {
-            return false;
-        }
-        $temporary = @tempnam(dirname($file), '.sympress-env-');
-        if ($temporary === false) {
-            return false;
-        }
-        try {
-            return chmod($temporary, 0600) && file_put_contents($temporary, $content) !== false && rename($temporary, $file);
-        } finally {
-            if (is_file($temporary)) {
-                unlink($temporary);
-            }
-        }
+
+        return SecureFileWriter::write($file, $content, $this->fileMode);
+    }
+
+    public function canWriteCache(string $file): bool
+    {
+        return !$this->fromCache && SecureFileWriter::canWrite($file);
     }
 
     private function restoreCache(mixed $data, ?string $environment): void
@@ -396,9 +403,6 @@ final class EnvReader
             $_SERVER[$name] = $external;
         }
         foreach ($data['constants'] as $name) {
-            if (!is_string($name)) {
-                throw new RuntimeException('Environment cache name is invalid.');
-            }
             if (in_array($name, ['WP_ENV', 'WP_ENVIRONMENT_TYPE'], true)) {
                 $this->setupEnvConstants();
                 continue;
@@ -460,6 +464,7 @@ final class EnvReader
                 $resolved = Filters::resolveFilterName($type, $this->profile);
                 if ($resolved !== '') {
                     $this->customTypes[$name] = $resolved;
+                    unset($this->cache[$name]);
                 }
                 $this->define($name);
             }
@@ -536,6 +541,8 @@ final class EnvReader
 
     private function parseFile(string $path): void
     {
+        $absolute = str_starts_with($path, '/') ? $path : (getcwd() ?: '.') . '/' . $path;
+        $this->sources[$absolute] = EnvCacheSources::signature($absolute);
         if (!is_file($path) || !is_readable($path)) {
             return;
         }
@@ -548,6 +555,7 @@ final class EnvReader
             $_ENV[$name] = $this->externalValue($name) ?? $value;
         }
         try {
+            $this->dotenv ??= new Dotenv($this->profile === 'native' ? 'WP_ENVIRONMENT_TYPE' : 'WP_ENV', 'WP_DEBUG');
             $values = $this->dotenv->parse($content, $path);
         } catch (Throwable) {
             throw new RuntimeException('Cannot parse environment file: ' . $path);
