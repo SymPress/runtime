@@ -25,6 +25,7 @@ def main():
     parser.add_argument("--mode", choices=["normal", "no-plugins", "all"], default="all")
     args = parser.parse_args()
     cli_version = subprocess.check_output([args.php, args.composer, '--version', '--no-ansi'], text=True).strip()
+    print(f"Composer CLI: {cli_version}; requested recovery library: {args.composer_library or 'resolved'}", flush=True)
     report = []
     for mode in (["normal", "no-plugins"] if args.mode == "all" else [args.mode]):
         with tempfile.TemporaryDirectory(prefix="runtime-wpackagist-") as directory:
