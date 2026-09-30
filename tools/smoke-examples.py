@@ -19,10 +19,11 @@ def main():
         project = Path(temporary)
         manifest = json.loads((ROOT / "examples/site/composer.json").read_text())
         # Exercise this checkout while leaving the documented project settings intact.
-        manifest["repositories"][0] = {
+        # A path package needs a concrete fixture version, not the site's ^1.0 constraint.
+        manifest["repositories"].insert(0, {
             "type": "path", "url": str(ROOT),
-            "options": {"symlink": False, "versions": {"sympress/runtime": manifest["require"]["sympress/runtime"]}},
-        }
+            "options": {"symlink": False, "versions": {"sympress/runtime": "1.0.0"}},
+        })
         (project / "composer.json").write_text(json.dumps(manifest, indent=2))
         def run(command):
             subprocess.run(command, cwd=project, check=True)

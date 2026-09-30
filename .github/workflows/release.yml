@@ -121,7 +121,7 @@ jobs:
           EXPECTED_COMMIT: ${{ needs.signature.outputs.commit }}
         run: |
           python3 - <<'PYTHON'
-          import json, os, time, urllib.error, urllib.request
+          import json, os, time, urllib.error, urllib.parse, urllib.request
           username = os.environ.get('PACKAGIST_USERNAME', '')
           token = os.environ.get('PACKAGIST_API_TOKEN', '')
           headers = {'User-Agent': 'SymPress-runtime-release (https://github.com/SymPress/runtime)'}
@@ -143,7 +143,9 @@ jobs:
           version = os.environ['TAG'].lstrip('v')
           for attempt in range(20):
               try:
-                  request = urllib.request.Request('https://packagist.org/packages/sympress/runtime.json', headers=headers)
+                  # Package metadata may otherwise remain cached for twelve hours.
+                  query = urllib.parse.urlencode({'release': os.environ['TAG'], 'reference': os.environ['EXPECTED_COMMIT'], 'check': time.time_ns()})
+                  request = urllib.request.Request('https://packagist.org/packages/sympress/runtime.json?' + query, headers=headers)
                   with urllib.request.urlopen(request, timeout=15) as response:
                       versions = json.load(response)['package']['versions']
                   published = next((value for key, value in versions.items() if key.lstrip('v') == version), None)

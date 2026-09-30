@@ -89,7 +89,10 @@ upgrade to an unreleased Composer minor.
 - [x] Weekly dependency/action updates configured; PHP security analysis and
   dependency audit pass on PR #13.
 - [x] Public newcomer docs, migration guide and platform compatibility table.
-- [ ] Empty-project installation from Packagist with `^1.0@RC` succeeds.
+- [x] Empty-project installation from Packagist with `^1.0@RC` succeeds, without
+  custom repositories or access credentials. Fresh RC archive, exact source SHA,
+  repeated installation and explicit missing-Core behavior are recorded in
+  [public distribution acceptance](v1-distribution.md).
 
 The initial missing-registration blocker is resolved. The RC tag supplies the
 artifact needed for the exact `^1.0@RC` empty-project acceptance command; consumer
@@ -99,10 +102,16 @@ as the separate Packagist installation proof.
 
 ## Phase 5 — Release candidate
 
-- [ ] Publish signed `v1.0.0-rc.1` after phases 2–4 pass.
+- [x] Publish signed `v1.0.0-rc.1` at `b532fdc` after every technical release
+  gate passed. The final distribution job then hit a stale Packagist response;
+  public Composer installation and a fresh metadata query independently verified
+  the exact tag. The 1.0 workflow fixes this cache issue; the signed RC is unchanged.
 - [ ] Starter and Demo consume the RC with green CI and smoke tests.
-- [ ] Verify payload rollback, journal recovery, Composer upgrade and environment
-  switching/cache invalidation scenarios.
+- [x] Verify payload rollback, journal recovery and environment switching/cache
+  invalidation on the RC tag: 68 tests / 462 assertions plus 2 Composer replay
+  tests / 34 assertions passed. See [recovery evidence](rc-recovery.md) for the
+  explicit limit: minimum/latest Composer both resolve to 2.10.3, so no transition
+  to a newer stable Composer library can yet be tested.
 - [ ] RC fixes are bug fixes only; high/critical issues are resolved.
 - Production/non-SymPress field trials and minimum elapsed soak time: explicitly
   waived by the owner. Technical fixtures do not constitute production experience.
