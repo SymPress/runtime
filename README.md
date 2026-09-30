@@ -42,10 +42,10 @@ For an existing site, start with [Adopting Runtime](docs/migration.md).
 Once Runtime is installed, run these commands from your project root:
 
 ```sh
-vendor/bin/sympress-runtime validate
-vendor/bin/sympress-runtime --list-steps
-vendor/bin/sympress-runtime --no-interaction
-vendor/bin/sympress-runtime doctor
+vendor/bin/runtime validate
+vendor/bin/runtime --list-steps
+vendor/bin/runtime --no-interaction
+vendor/bin/runtime doctor
 ```
 
 Composer install and update already run setup when the plugin is enabled. The

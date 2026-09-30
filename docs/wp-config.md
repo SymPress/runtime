@@ -3,7 +3,7 @@
 The `wpconfig` step generates `wp-config.php` at the project root. Run it with:
 
 ```sh
-vendor/bin/sympress-runtime --no-interaction wpconfig
+vendor/bin/runtime --no-interaction wpconfig
 ```
 
 Older compatibility profiles can use a different location; see [Compatibility](compatibility.md). A proxy in the core parent is generated when required. Both files are parsed before publication. Native unmarked files require overwrite approval; protected paths, symlinks and directories retain their documented guards. Existing salts and edited managed sections are preserved during regeneration.

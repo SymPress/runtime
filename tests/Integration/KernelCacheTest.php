@@ -104,7 +104,7 @@ final class KernelCacheTest extends TemporaryProject
         $this->write('vendor/autoload.php', '<?php return require ' . var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true) . ';');
         $this->write('composer.json', '{"extra":{"sympress-runtime":{}}}');
         $environment = ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false, 'WP_ENVIRONMENT_TYPE' => 'production'];
-        $command = [PHP_BINARY, dirname(__DIR__, 2) . '/bin/sympress-runtime', '-n', '--generate-build-id'];
+        $command = [PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', '-n', '--generate-build-id'];
         $invalid = new Process($command, $this->root, $environment);
         $invalid->run();
         self::assertNotSame(0, $invalid->getExitCode());

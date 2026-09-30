@@ -2,6 +2,8 @@
 
 Status: accepted by the project owner on 2026-09-29 with Phase 0 approval.
 
+The project owner renamed the standalone executable to `runtime` on 2026-09-30.
+
 | Surface | Name | Reason |
 | --- | --- | --- |
 | Composer package | `sympress/runtime` | Owner decision. Composer type remains `composer-plugin`. |
@@ -10,7 +12,7 @@ Status: accepted by the project owner on 2026-09-29 with Phase 0 approval.
 | Root configuration file | `sympress-runtime.json` | Discoverable next to composer.json. |
 | Run-only autoload file | `sympress-runtime-autoload.php` | Loaded only by the runner. |
 | Composer run command | `composer sympress-runtime [steps...]` | Positional names keep the upstream step-selection contract. |
-| Standalone binary | `vendor/bin/sympress-runtime [steps...]` | Same selection parser and exit behavior. |
+| Standalone binary | `vendor/bin/runtime [steps...]` | Same selection parser and exit behavior. |
 | Administrative commands | `sympress-runtime:validate`, `:doctor`, `:check`, `:dump-env`, `:migrate`, `:flush-env-cache` | Use colon commands at Composer boundary; standalone accepts the corresponding subcommands via a separate command parser before step selection. Reject a contributed step whose name collides with a reserved subcommand. |
 | Kernel console commands | `wp console runtime:doctor`, `runtime:validate`, `runtime:dump-env` | Register through an optional bundle, keeping bootstrap independent of the kernel. |
 | Runtime env prefix | `SYMPRESS_RUNTIME_` | `SYMPRESS_RUNTIME_ENV_LOADED`, `SYMPRESS_RUNTIME_ENV_TO_CONST`; keep WordPress/DB standard variable names. |

@@ -38,7 +38,7 @@ function has_filter($name) { return !empty($GLOBALS['filters'][$name]); }
 function apply_filters($name, $value, ...$args) { $items = $GLOBALS['filters'][$name] ?? []; ksort($items); foreach ($items as $callbacks) { foreach ($callbacks as [$callback, $accepted]) { $value = $callback(...array_slice([$value, ...$args], 0, $accepted)); } } return $value; }
 PHP);
         $package = dirname(__DIR__, 2);
-        $generate = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', '-n', 'wpconfig'], $this->root, array_replace($this->environment(), ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]));
+        $generate = new Process([PHP_BINARY, $package . '/bin/runtime', '-n', 'wpconfig'], $this->root, array_replace($this->environment(), ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]));
         $generate->run();
         self::assertSame(0, $generate->getExitCode(), $generate->getOutput() . $generate->getErrorOutput());
     }
@@ -148,7 +148,7 @@ PHP;
             ], JSON_THROW_ON_ERROR));
             $this->write('.env', "WP_ENVIRONMENT_TYPE=production\nRTV_VALUE=real-wordpress\n");
             $package = dirname(__DIR__, 2);
-            $generate = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', '-n', 'wpconfig'], $this->root, array_replace($this->environment(), ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]));
+            $generate = new Process([PHP_BINARY, $package . '/bin/runtime', '-n', 'wpconfig'], $this->root, array_replace($this->environment(), ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]));
             $generate->mustRun();
             $this->write('real-probe.php', <<<'PHP'
 <?php

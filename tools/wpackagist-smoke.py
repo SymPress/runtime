@@ -58,7 +58,7 @@ def main():
             run(command, project)
             hooks = (project / "hook-count").read_text()
             if mode == "no-plugins":
-                run([args.php, str(project / "vendor/bin/sympress-runtime"), "--no-interaction"], project)
+                run([args.php, str(project / "vendor/bin/runtime"), "--no-interaction"], project)
             paths = {"core": "public/wp/wp-settings.php", "plugin": "public/content/plugins/classic-editor/classic-editor.php", "theme": "public/content/themes/twentytwentyfive/style.css", "configuration": "wp-config.php"}
             hashes = {name: hashlib.sha256((project / path).read_bytes()).hexdigest() for name, path in paths.items()}
             installed = json.loads((project / "vendor/composer/installed.json").read_text())["packages"]
@@ -73,7 +73,7 @@ def main():
             assert len(packages) == 2
             assert not any(package["name"].startswith("wecodemore/") for package in installed)
             count = (project / "autoload-count").read_text()
-            run([args.php, str(project / "vendor/bin/sympress-runtime"), "--no-interaction"], project)
+            run([args.php, str(project / "vendor/bin/runtime"), "--no-interaction"], project)
             assert (project / "autoload-count").read_text() == count + "1"
             assert (project / "hook-count").read_text() == hooks
             assert hashes == {name: hashlib.sha256((project / path).read_bytes()).hexdigest() for name, path in paths.items()}

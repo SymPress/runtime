@@ -85,9 +85,9 @@ option to true. Review preserved `AUTOLOAD` sections when adopting existing file
 ## 4. Verify setup and install WordPress
 
 ```sh
-vendor/bin/sympress-runtime validate
-vendor/bin/sympress-runtime --no-interaction
-vendor/bin/sympress-runtime doctor
+vendor/bin/runtime validate
+vendor/bin/runtime --no-interaction
+vendor/bin/runtime doctor
 ```
 
 The example disables database preflight, so doctor can report an **unknown** database
@@ -99,7 +99,7 @@ WordPress installer in your browser, or enable `install-wp-cli` and set
 `wp-cli-commands` to `["wp cli version"]` to request the tool during setup:
 
 ```sh
-vendor/bin/sympress-runtime --no-interaction wpcli
+vendor/bin/runtime --no-interaction wpcli
 php wp-cli.phar core install --url=https://my-site.test --title='My site' --admin_user=site-admin --admin_email=admin@example.test --prompt=admin_password
 ```
 

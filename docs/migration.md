@@ -50,7 +50,7 @@ The migration command can translate configuration and report PHP changes without
 executing the inspected files:
 
 ```sh
-vendor/bin/sympress-runtime migrate --dry-run --json
+vendor/bin/runtime migrate --dry-run --json
 ```
 
 It never changes your Composer manifest or lockfile for you. Review the reported
@@ -59,10 +59,10 @@ profile, paths and PHP findings before writing migrated configuration.
 ## Validate the complete site
 
 ```sh
-vendor/bin/sympress-runtime validate
-vendor/bin/sympress-runtime --list-steps
-vendor/bin/sympress-runtime --no-interaction
-vendor/bin/sympress-runtime doctor --json
+vendor/bin/runtime validate
+vendor/bin/runtime --list-steps
+vendor/bin/runtime --no-interaction
+vendor/bin/runtime doctor --json
 ```
 
 Check the homepage, login, admin dashboard, scheduled work and project-specific

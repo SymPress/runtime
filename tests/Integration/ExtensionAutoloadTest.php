@@ -14,7 +14,7 @@ final class ExtensionAutoloadTest extends TemporaryProject
     /** @param list<string> $arguments */
     private function execute(array $arguments): Process
     {
-        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/sympress-runtime', '-n', ...$arguments], $this->root, ['COMPOSER_VENDOR_DIR' => false, 'COMPOSER' => false]);
+        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', '-n', ...$arguments], $this->root, ['COMPOSER_VENDOR_DIR' => false, 'COMPOSER' => false]);
         $process->run();
 
         return $process;

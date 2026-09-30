@@ -30,7 +30,7 @@ final class DefaultArtifactStepsTest extends TemporaryProject
     private function generate(array $steps): Process
     {
         $package = dirname(__DIR__, 2);
-        $process = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', '-n', ...$steps], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
+        $process = new Process([PHP_BINARY, $package . '/bin/runtime', '-n', ...$steps], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
         $process->run();
 
         return $process;

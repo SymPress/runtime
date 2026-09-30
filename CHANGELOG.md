@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Rename the standalone executable to `bin/runtime`, installed by Composer as `vendor/bin/runtime`; update existing shell and CI scripts when upgrading.
 - Prevent environment secrets from reaching temporary-directory fallbacks; support private group-readable artifacts.
 - Add native source-aware environment cache invalidation, mounted secret files, typed requirements and names-only environment comparison.
 - Add setup drift checks, production diagnostics, explicit database health maintenance and Composer-managed update protection.

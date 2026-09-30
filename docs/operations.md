@@ -14,9 +14,9 @@ outputs in private `var/runtime/setup-*.json` files. Keep these records with the
 release when using drift checks:
 
 ```sh
-vendor/bin/sympress-runtime index wpconfig muloader wpcliconfig
-vendor/bin/sympress-runtime --check index wpconfig muloader wpcliconfig
-vendor/bin/sympress-runtime --dry-run index wpconfig muloader wpcliconfig
+vendor/bin/runtime index wpconfig muloader wpcliconfig
+vendor/bin/runtime --check index wpconfig muloader wpcliconfig
+vendor/bin/runtime --dry-run index wpconfig muloader wpcliconfig
 ```
 
 Use the same selection for setup and checking. The check reports changed/missing
@@ -35,8 +35,8 @@ still returns 2 for unknown evidence. It never establishes a new baseline.
 ## Check production readiness
 
 ```sh
-vendor/bin/sympress-runtime dump-env production
-vendor/bin/sympress-runtime doctor --production --webroot=public --json
+vendor/bin/runtime dump-env production
+vendor/bin/runtime doctor --production --webroot=public --json
 ```
 
 The production gate checks explicit HTTPS `WP_HOME`, debugging, the deployment
@@ -70,7 +70,7 @@ Native setup only checks connection/install status. Even `db-check: "health"`
 does not run a table scan automatically:
 
 ```sh
-vendor/bin/sympress-runtime doctor --database-health --quick
+vendor/bin/runtime doctor --database-health --quick
 ```
 
 Omit `--quick` for the full table check. Schedule this as maintenance:
@@ -80,7 +80,7 @@ Existing compatibility profiles retain their explicit health-setting behavior.
 ## Compare required environment names
 
 ```sh
-vendor/bin/sympress-runtime env:diff --json
+vendor/bin/runtime env:diff --json
 ```
 
 The report compares `.env.example` with the selected environment file chain
@@ -105,8 +105,8 @@ without printing them. Mounted `*_FILE` values work with these requirements.
 ## Keep disk usage bounded
 
 ```sh
-vendor/bin/sympress-runtime prune --keep=2 --dry-run --json
-vendor/bin/sympress-runtime prune --keep=2 --json
+vendor/bin/runtime prune --keep=2 --dry-run --json
+vendor/bin/runtime prune --keep=2 --json
 ```
 
 Pruning retains every active payload referenced by generated configuration and

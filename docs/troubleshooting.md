@@ -1,7 +1,7 @@
 # Troubleshooting
 
-Start with `vendor/bin/sympress-runtime validate`, then
-`vendor/bin/sympress-runtime doctor --json`. Run them from the project root with
+Start with `vendor/bin/runtime validate`, then
+`vendor/bin/runtime doctor --json`. Run them from the project root with
 the same environment and PHP version as your application. Share redacted results,
 not your `.env`, dump, authentication files or generated salts.
 
@@ -18,7 +18,7 @@ Check `config.allow-plugins` and whether installation used `--no-plugins`.
 The standalone binary can run explicitly:
 
 ```sh
-vendor/bin/sympress-runtime --no-interaction
+vendor/bin/runtime --no-interaction
 ```
 
 For standard WordPress installer layouts it restores package placement after a
@@ -38,7 +38,7 @@ Check actual process variables first; they override files. Then check whether
 a dump is deployed. `flush-env-cache` only removes the runtime cache.
 
 ```sh
-vendor/bin/sympress-runtime flush-env-cache
+vendor/bin/runtime flush-env-cache
 ```
 
 Rebuild or deliberately retire a stale dump. Confirm the public URL and routes;

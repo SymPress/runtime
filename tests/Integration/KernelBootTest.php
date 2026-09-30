@@ -33,7 +33,7 @@ PHP);
 
     private function runStep(): Process
     {
-        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/sympress-runtime', '-n', 'kernel-boot'], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false]);
+        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', '-n', 'kernel-boot'], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false]);
         $process->run();
 
         return $process;

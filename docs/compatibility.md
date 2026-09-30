@@ -10,8 +10,8 @@ During setup, `muloader` recognizes the exact stock WP Starter loader template a
 Install the runtime with Composer scripts/plugins disabled while preparing the switch. Keep the existing lockfile and generated files until the migration has been reviewed.
 
 ```sh
-vendor/bin/sympress-runtime migrate --dry-run --json
-vendor/bin/sympress-runtime migrate
+vendor/bin/runtime migrate --dry-run --json
+vendor/bin/runtime migrate
 ```
 
 The command reads inline `extra.wpstarter`, referenced JSON and root `wpstarter.json`, followed by native sources. Native values win and root files win within each family. It writes `sympress-runtime.json`, preserving the resolved compatibility profile and explicitly recording changed defaults. `skip-db-check=true` becomes `db-check=false`. Option paths remain relative to the project root.
@@ -47,7 +47,7 @@ Regenerate the runtime files, validate, run doctor, and verify WordPress login, 
 
 With `compatibility=false`, `WPSTARTER_ENV_LOADED` and `WP_STARTER_ENV_TO_CONST` no longer control parsing or constant creation. Replace them with `SYMPRESS_RUNTIME_ENV_LOADED` and `SYMPRESS_RUNTIME_ENV_TO_CONST` if those capabilities are needed. Enabled legacy controls emit name-only deprecation diagnostics, without exposing values or writing into HTTP responses. WordPress environment aliases such as `WP_ENV` remain supported.
 
-Caches and build dumps record the compatibility mode. Earlier formats without that field are treated as compatibility-enabled. After disabling compatibility, run `vendor/bin/sympress-runtime flush-env-cache` and regenerate any build dump with `vendor/bin/sympress-runtime dump-env <environment>` before deploying the new generated configuration. A mode mismatch fails explicitly instead of restoring constants derived through legacy controls.
+Caches and build dumps record the compatibility mode. Earlier formats without that field are treated as compatibility-enabled. After disabling compatibility, run `vendor/bin/runtime flush-env-cache` and regenerate any build dump with `vendor/bin/runtime dump-env <environment>` before deploying the new generated configuration. A mode mismatch fails explicitly instead of restoring constants derived through legacy controls.
 
 ## Existing extension packages and PHP APIs
 

@@ -27,7 +27,7 @@ final class MuLoaderRuntimeTest extends TemporaryProject
         $this->write('wp-content/mu-plugins/z-last/main.php', "<?php\n/* Plugin Name: Last */\n" . '$GLOBALS["boots"][] = "last"; $file = "changed";');
         $this->write('wp-content/mu-plugins/a-first/main.php', "<?php\n/* Plugin Name: First */\n" . '$GLOBALS["boots"][] = "first"; $GLOBALS["scope_read"] = $table_prefix; $fixtureGlobal = "plugin-global";');
         $package = dirname(__DIR__, 2);
-        $setup = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', '-n', 'muloader'], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
+        $setup = new Process([PHP_BINARY, $package . '/bin/runtime', '-n', 'muloader'], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
         $setup->mustRun();
         $loader = $this->root . '/wp-content/mu-plugins/sympress-runtime-mu-loader.php';
         self::assertFileExists($loader, $setup->getOutput() . $setup->getErrorOutput());

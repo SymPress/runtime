@@ -7,10 +7,10 @@ environment credentials through your deployment's private secret mechanism.
 
 ```sh
 composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
-vendor/bin/sympress-runtime validate
-vendor/bin/sympress-runtime --no-interaction
-vendor/bin/sympress-runtime dump-env production
-vendor/bin/sympress-runtime doctor --json
+vendor/bin/runtime validate
+vendor/bin/runtime --no-interaction
+vendor/bin/runtime dump-env production
+vendor/bin/runtime doctor --json
 ```
 
 Composer already runs setup when plugins are enabled; the explicit invocation
@@ -56,7 +56,7 @@ The following is a recovery path for a build that deliberately disabled plugins.
 
 ```sh
 composer install --no-dev --no-plugins --no-scripts --no-interaction
-vendor/bin/sympress-runtime --no-interaction
+vendor/bin/runtime --no-interaction
 ```
 
 The standalone runner can restore standard WordPress core/plugin/theme/MU-package
@@ -98,8 +98,8 @@ Do not edit journal contents or mix metadata from different releases.
 ## Explicit retention
 
 ```sh
-vendor/bin/sympress-runtime prune --keep=2 --dry-run
-vendor/bin/sympress-runtime prune --keep=2
+vendor/bin/runtime prune --keep=2 --dry-run
+vendor/bin/runtime prune --keep=2
 ```
 
 Prune preserves all payloads referenced by the generated root, core-parent and

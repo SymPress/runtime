@@ -20,7 +20,7 @@ Commit `sympress-runtime.lock` alongside the project configuration. For a review
 source change, select the affected steps explicitly:
 
 ```sh
-vendor/bin/sympress-runtime -n --update-lock --force dropins envexample
+vendor/bin/runtime -n --update-lock --force dropins envexample
 ```
 
 Only URLs actually downloaded by those steps are refreshed; untouched entries

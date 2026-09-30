@@ -41,7 +41,7 @@ def main():
         commands = [
             ["ddev", "composer", "install", "--no-interaction", "--no-progress"],
             ["ddev", "composer", "install", "--no-interaction", "--no-progress"],
-            ["ddev", "exec", "php", "vendor/bin/sympress-runtime", "--no-interaction"],
+            ["ddev", "exec", "php", "vendor/bin/runtime", "--no-interaction"],
         ]
         if args.disable_all_plugins:
             commands.insert(2, ["ddev", "composer", "install", "--no-plugins", "--no-interaction", "--no-progress"])

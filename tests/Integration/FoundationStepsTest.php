@@ -123,7 +123,7 @@ final class FoundationStepsTest extends TemporaryProject
         $this->write('keep', 'user data');
         self::assertTrue(symlink($this->root . '/keep', $this->root . '/.env.cached.php'));
         $package = dirname(__DIR__, 2);
-        $process = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', 'flush-env-cache'], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor']);
+        $process = new Process([PHP_BINARY, $package . '/bin/runtime', 'flush-env-cache'], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor']);
         $process->run();
         self::assertSame(0, $process->getExitCode(), $process->getErrorOutput());
         self::assertFalse(is_link($this->root . '/.env.cached.php'));

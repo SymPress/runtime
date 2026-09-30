@@ -19,7 +19,7 @@ final class OperationsCommandTest extends TemporaryProject
 
     private function command(string ...$arguments): Process
     {
-        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/sympress-runtime', '-n', ...$arguments], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false]);
+        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', '-n', ...$arguments], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false]);
         $process->run();
 
         return $process;

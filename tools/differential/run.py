@@ -107,7 +107,7 @@ def compare_generated(work, baseline, autoload, args, report):
         write_json(candidate / "composer.json", {"extra": {"wordpress-install-dir": "public/wp", "wordpress-content-dir": "public/content", "sympress-runtime": manifest["extra"]["wpstarter"]}})
         runtime_env = dict(os.environ, COMPOSER_VENDOR_DIR=str(ROOT / "vendor"))
         runtime_env.pop("COMPOSER", None)
-        run([args.candidate_php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", "wpconfig", "index"], candidate, runtime_env, expected_file=candidate / "public/index.php")
+        run([args.candidate_php, str(ROOT / "bin/runtime"), "--no-interaction", "wpconfig", "index"], candidate, runtime_env, expected_file=candidate / "public/index.php")
         result = json.loads(run([args.candidate_php, str(ROOT / "tools/differential/boot.php"), str(candidate)], candidate))
         if result["boots"] != 1 or result["DB_NAME"]["value"] != "fixture":
             raise RuntimeError("Candidate default env-dir must resolve to a working root environment.")
@@ -125,7 +125,7 @@ def compare_generated(work, baseline, autoload, args, report):
         write_json(candidate / "composer.json", {"extra": {"wordpress-install-dir": "public/wp", "wordpress-content-dir": "public/content", "sympress-runtime": options}})
         runtime_env = dict(os.environ, COMPOSER_VENDOR_DIR=str(ROOT / "vendor"))
         runtime_env.pop("COMPOSER", None)
-        run([args.candidate_php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", "wpconfig", "index"], candidate, runtime_env)
+        run([args.candidate_php, str(ROOT / "bin/runtime"), "--no-interaction", "wpconfig", "index"], candidate, runtime_env)
         expected = json.loads(run([args.oracle_php, str(ROOT / "tools/differential/boot.php"), str(oracle)], oracle))
         actual = json.loads(run([args.candidate_php, str(ROOT / "tools/differential/boot.php"), str(candidate)], candidate))
         if expected["composer_loaded"] is not True or actual["composer_loaded"] is not False:
@@ -210,7 +210,7 @@ def compare_project_autoload(work, baseline, autoload, args, report):
             environment = dict(os.environ)
             environment.pop("COMPOSER", None)
             environment.pop("COMPOSER_VENDOR_DIR", None)
-            run([php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", "wpconfig", "index"], project, environment)
+            run([php, str(ROOT / "bin/runtime"), "--no-interaction", "wpconfig", "index"], project, environment)
     probe = 'require $argv[1] . "/public/index.php"; require_once $argv[1] . "/vendor/autoload.php"; echo json_encode($GLOBALS["autoload_trace"]);'
     traces = [json.loads(run([php, "-r", probe, str(project)], project)) for php, project in [(args.oracle_php, oracle), (args.candidate_php, candidate)]]
     expected = [["composer", True, "available"], ["env", "available"], ["early", "available"]]
@@ -245,7 +245,7 @@ def compare_steps(work, baseline, autoload, args, report):
 
     def execute(candidate, old_steps, new_steps):
         run([args.oracle_php, args.composer, "--no-interaction", "wpstarter", *old_steps], oracle)
-        run([args.candidate_php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", *new_steps], candidate, runtime_env)
+        run([args.candidate_php, str(ROOT / "bin/runtime"), "--no-interaction", *new_steps], candidate, runtime_env)
 
     def snapshot(project):
         result = {}
@@ -285,7 +285,7 @@ def compare_steps(work, baseline, autoload, args, report):
             configuration = json.loads((candidate / "composer.json").read_text())
             configuration["extra"]["sympress-runtime"]["compatibility-profile"] = "release-3.0.1"
             write_json(candidate / "composer.json", configuration)
-            run([args.candidate_php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", "publishcontentdev"], candidate, runtime_env)
+            run([args.candidate_php, str(ROOT / "bin/runtime"), "--no-interaction", "publishcontentdev"], candidate, runtime_env)
             compatible = snapshot(candidate)
             if compatible != dict(expected, **{"plugins/.hidden": hidden}):
                 raise RuntimeError("Release compatibility must preserve whole-directory copy including hidden files.")
@@ -328,7 +328,7 @@ def compare_steps(work, baseline, autoload, args, report):
     (candidate / "vendor/autoload.php").write_text("<?php return require " + json.dumps(str(ROOT / "vendor/autoload.php")) + ";\n")
     run([args.oracle_php, args.composer, "--no-interaction", "wpstarter", "dropins"], oracle)
     candidate_env = dict(runtime_env, COMPOSER_VENDOR_DIR=str(candidate / "vendor"))
-    run([args.candidate_php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", "dropins"], candidate, candidate_env)
+    run([args.candidate_php, str(ROOT / "bin/runtime"), "--no-interaction", "dropins"], candidate, candidate_env)
     def package_state(project):
         target = project / "public/content/object-cache.php"
         return {"source": (project / "vendor/fixture/dropins/object-cache.php").is_file(), "license": (project / "vendor/fixture/dropins/LICENSE").is_file(), "target_exists": target.is_file(), "target_link": target.is_symlink(), "target_hash": hashlib.sha256(target.read_bytes()).hexdigest() if target.is_file() else None}
@@ -345,7 +345,7 @@ def compare_steps(work, baseline, autoload, args, report):
         for project in [oracle, candidate]:
             run(["git", "init", "-q"], project)
         upstream = run([args.oracle_php, args.composer, "--no-interaction", "wpstarter", "vcsignorecheck"], oracle)
-        actual = subprocess.run([args.candidate_php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", "vcsignorecheck"], cwd=candidate, env=runtime_env, text=True, capture_output=True)
+        actual = subprocess.run([args.candidate_php, str(ROOT / "bin/runtime"), "--no-interaction", "vcsignorecheck"], cwd=candidate, env=runtime_env, text=True, capture_output=True)
         if "Found a WP-Starter generated .gitignore file." not in upstream or actual.returncode != 1 or "VCS ignore protection could not be verified" not in actual.stdout + actual.stderr:
             raise RuntimeError("VCS generated-marker fixture did not match exact D18 behavior.")
         report["cases"].append({"id": "dev/steps/vcs-marker", "differences": [{"id": "D18", "oracle": {"exit": 0, "trusted_marker": True}, "candidate": {"exit": 1, "protection_verified": False}}]})
@@ -439,7 +439,7 @@ echo json_encode(array_map(static fn($step) => $step->name, $selection['steps'])
     run([args.oracle_php, "-d", "max_execution_time=10", args.composer, "--no-interaction", "wpstarter", *old_names], oracle)
     runtime_env = dict(os.environ, COMPOSER_VENDOR_DIR=str(candidate / "vendor"))
     runtime_env.pop("COMPOSER", None)
-    run([args.candidate_php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", "muloader", "envexample", "wpcliconfig"], candidate, runtime_env)
+    run([args.candidate_php, str(ROOT / "bin/runtime"), "--no-interaction", "muloader", "envexample", "wpcliconfig"], candidate, runtime_env)
     def mu_probe(project, binary, filename):
         loader = project / "public/content/mu-plugins" / filename
         source = 'function wp_normalize_path($path) { return str_replace("\\\\", "/", $path); } $GLOBALS["mu_trace"] = []; require $argv[1]; require $argv[1]; echo json_encode($GLOBALS["mu_trace"]);'
@@ -507,7 +507,7 @@ def compare_lifecycle(work, baseline, autoload, args, report):
             command = [php, args.composer, "--no-interaction", "wpstarter", "fixture"]
             if project == candidate:
                 environment.pop("COMPOSER_VENDOR_DIR", None)
-                command = [php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", "fixture"]
+                command = [php, str(ROOT / "bin/runtime"), "--no-interaction", "fixture"]
             completed = subprocess.run(command, cwd=project, env=environment, text=True, capture_output=True)
             if not trace.is_file():
                 raise RuntimeError(f"Lifecycle fixture did not execute: {completed.stdout[-1500:]} {completed.stderr[-1500:]}")

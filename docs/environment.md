@@ -92,8 +92,8 @@ its second argument is the raw environment name. Process values always win over
 cached or dumped values.
 
 ```sh
-vendor/bin/sympress-runtime dump-env production
-vendor/bin/sympress-runtime flush-env-cache
+vendor/bin/runtime dump-env production
+vendor/bin/runtime flush-env-cache
 ```
 
 A dump takes precedence over the runtime cache. The explicit dump environment
