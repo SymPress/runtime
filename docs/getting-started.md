@@ -10,6 +10,14 @@ Existing 0.1.0 projects should follow the [upgrade notes](releases/0.2.0.md).
 
 ## 1. Describe the project
 
+From 1.0.0-beta.2, installing Runtime alone in an unconfigured project defers
+automatic setup when no WordPress core is installed. Composer still installs the
+package and `vendor/bin/runtime`; it reports that setup was deferred. Add the
+project configuration and WordPress dependencies before running setup. Explicit
+setup commands still require core unless you deliberately configure
+`require-wp: false`. Existing sites and projects with native or legacy setup
+configuration retain automatic setup and validation.
+
 Start in an empty project directory with the complete manifest in
 [examples/site/composer.json](../examples/site/composer.json). The example includes
 Runtime, the WordPress core installer, the plugin/theme installer and WPackagist.
