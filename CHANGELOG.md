@@ -4,6 +4,14 @@
 
 No changes yet.
 
+## 1.0.0-rc.1 — 2026-09-30
+
+- Make Runtime available directly from Packagist, with automatic GitHub updates and verification of the published source revision in the release workflow.
+- Begin release-candidate validation of the frozen 1.x API, configuration and file-format contracts, including the corrected empty-project installation path.
+- Remove the Runtime-specific VCS repository from the public site example; retain WPackagist for WordPress plugins and themes.
+
+Follow the [RC upgrade and installation guide](docs/releases/1.0.0-rc.1.md). This candidate is for technical evaluation; the owner waived production and independent migration field trials, and no production experience is claimed.
+
 ## 1.0.0-beta.2 — 2026-09-30
 
 - Allow the Composer plugin to be installed in an unconfigured project before WordPress Core is added. Automatic setup is deferred for that initial state; explicit setup and configured projects retain missing-core validation.
