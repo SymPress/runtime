@@ -61,8 +61,18 @@ jobs:
       - name: Detach the macOS fixture volume
         if: ${{ always() && runner.os == 'macOS' }}
         run: |
-          echo "TMPDIR=$RUNNER_TEMP" >> "$GITHUB_ENV"
+          # GITHUB_ENV only changes subsequent steps; hdiutil must also use the host temp directory now.
+          export TMPDIR="$RUNNER_TEMP"
+          echo "TMPDIR=$TMPDIR" >> "$GITHUB_ENV"
           if [[ -d "$RUNNER_TEMP/runtime-case" ]]; then
+            # Allow transient handles on this disposable fixture volume to close.
+            for delay in 2 5; do
+              if hdiutil detach "$RUNNER_TEMP/runtime-case"; then
+                exit 0
+              fi
+              sleep "$delay"
+            done
+            # Preserve a real cleanup failure after the bounded retries.
             hdiutil detach "$RUNNER_TEMP/runtime-case"
           fi
       - name: Record exact toolchain and dependency versions
