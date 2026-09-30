@@ -37,11 +37,15 @@ jobs:
           [[ -n "$tag_object" ]]
           git -c gpg.format=ssh -c gpg.ssh.allowedSignersFile=.github/release-signers verify-tag "$TAG"
           gh api "repos/$GH_REPO/git/tags/$tag_object" > tag.json
+          EXPECTED_TAG_COMMIT=$(git rev-parse HEAD)
+          export EXPECTED_TAG_COMMIT
           python3 - <<'PYTHON'
           import json, os
           tag = json.load(open('tag.json', encoding='utf-8'))
           if not tag['verification']['verified'] or tag['object']['type'] != 'commit':
               raise SystemExit('Release requires a GitHub-verified signed tag pointing directly to a commit.')
+          if tag['object']['sha'] != os.environ['EXPECTED_TAG_COMMIT']:
+              raise SystemExit('The release tag moved after this workflow was triggered.')
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
               output.write('commit=' + tag['object']['sha'] + '\n')
           PYTHON
@@ -87,10 +91,12 @@ jobs:
           PYTHON
       - name: Publish the verified tag after every technical gate passes
         env:
+          EXPECTED_COMMIT: ${{ needs.signature.outputs.commit }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
         run: |
+          [[ "$(gh api "repos/$GH_REPO/commits/$TAG" --jq .sha)" == "$EXPECTED_COMMIT" ]]
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo 'Release already exists; continue with distribution verification.'
           elif [[ "$TAG" == *-* ]]; then

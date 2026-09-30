@@ -23,6 +23,7 @@ final class PublicApiUsage
 {
     private array $errors = [];
     private array $locals = [];
+    private array $functions = [];
 
     public static function isRuntime(string $name): bool
     {
@@ -68,6 +69,7 @@ final class PublicApiUsage
     {
         $this->errors = [];
         $this->locals = [];
+        $this->functions = [];
         $nodes = (new ParserFactory())->createForNewestSupportedVersion()->parse($source) ?? [];
         $nodes = (new NodeTraverser(new NameResolver()))->traverse($nodes);
         $finder = new NodeFinder();
@@ -77,6 +79,9 @@ final class PublicApiUsage
             }
 
             $this->locals[$class->namespacedName->toString()] = $class;
+        }
+        foreach ($finder->findInstanceOf($nodes, Stmt\Function_::class) as $function) {
+            $this->functions[strtolower($function->namespacedName->toString())] = $function;
         }
         foreach ($finder->findInstanceOf($nodes, Name::class) as $name) {
             $class = $name->toString();
@@ -126,8 +131,8 @@ final class PublicApiUsage
         if ($node instanceof Expr\Array_ && count($node->items) === 2) {
             $receiver = $node->items[0]?->value;
             $member = $node->items[1]?->value;
-            if ($receiver instanceof Expr && $member instanceof Node\Scalar\String_) {
-                $this->methodTypes($this->expressionTypes($receiver, $variables, $class), $member->value);
+            if ($receiver instanceof Expr) {
+                $this->methodTypes($this->expressionTypes($receiver, $variables, $class), $member instanceof Node\Scalar\String_ ? $member->value : null);
             }
         }
         if ($node instanceof Expr\Assign && $node->var instanceof Expr\Variable && is_string($node->var->name)) {
@@ -161,6 +166,24 @@ final class PublicApiUsage
     {
         if ($expression instanceof Expr\Variable) {
             return $expression->name === 'this' ? ($class === null ? [] : [$class]) : ($variables[$expression->name] ?? []);
+        }
+        if ($expression instanceof Expr\FuncCall && $expression->name instanceof Name) {
+            $name = $expression->name->getAttribute('resolvedName') ?? $expression->name->getAttribute('namespacedName') ?? $expression->name;
+            $function = $this->functions[strtolower($name->toString())] ?? null;
+
+            return $function === null ? [] : $this->nodeTypes($function->returnType, $class);
+        }
+        if ($expression instanceof Expr\BinaryOp\Coalesce) {
+            return array_values(array_unique([
+                ...$this->expressionTypes($expression->left, $variables, $class),
+                ...$this->expressionTypes($expression->right, $variables, $class),
+            ]));
+        }
+        if ($expression instanceof Expr\Ternary) {
+            return array_values(array_unique([
+                ...$this->expressionTypes($expression->if ?? $expression->cond, $variables, $class),
+                ...$this->expressionTypes($expression->else, $variables, $class),
+            ]));
         }
         if ($expression instanceof Expr\New_) {
             $types = $this->nodeTypes($expression->class, $class);

@@ -53,7 +53,7 @@ final readonly class Filesystem
         if (!is_file($sourcePath) || is_dir($targetPath) || is_link($targetPath)) {
             return false;
         }
-        if (realpath($sourcePath) === realpath($targetPath)) {
+        if ($this->sameEntry($sourcePath, $targetPath)) {
             return true;
         }
 
@@ -63,7 +63,7 @@ final readonly class Filesystem
     /** @api */
     public function moveFile(string $sourcePath, string $targetPath): bool
     {
-        if (realpath($sourcePath) !== false && realpath($sourcePath) === realpath($targetPath)) {
+        if ($this->sameEntry($sourcePath, $targetPath)) {
             return true;
         }
 
@@ -78,10 +78,10 @@ final readonly class Filesystem
         }
         $source = $this->physicalPath($sourcePath);
         $target = $this->physicalPath($targetPath);
-        if ($source === $target) {
+        if ($this->sameEntry($source, $target)) {
             return true;
         }
-        if (str_starts_with($target . '/', rtrim($source, '/') . '/') || str_starts_with($source . '/', rtrim($target, '/') . '/')) {
+        if ($this->containsEntry($target, $source) || $this->containsEntry($source, $target)) {
             return false;
         }
 
@@ -104,7 +104,7 @@ final readonly class Filesystem
     /** @api */
     public function moveDir(string $sourcePath, string $targetPath): bool
     {
-        if (realpath($sourcePath) !== false && realpath($sourcePath) === realpath($targetPath)) {
+        if ($this->sameEntry($sourcePath, $targetPath)) {
             return true;
         }
         if (is_link($sourcePath)) {
@@ -201,6 +201,39 @@ final readonly class Filesystem
             return true;
         } catch (Throwable) {
             return false;
+        }
+    }
+
+    private function sameEntry(string $left, string $right): bool
+    {
+        $leftReal = realpath($left);
+        $rightReal = realpath($right);
+        if ($leftReal === false || $rightReal === false) {
+            return false;
+        }
+        if ($leftReal === $rightReal) {
+            return true;
+        }
+        // realpath can preserve the caller's casing on case-insensitive volumes.
+        $leftStat = @stat($leftReal);
+        $rightStat = @stat($rightReal);
+
+        return $leftStat !== false && $rightStat !== false
+            && $leftStat['ino'] !== 0 && $leftStat['ino'] === $rightStat['ino']
+            && $leftStat['dev'] === $rightStat['dev'];
+    }
+
+    private function containsEntry(string $path, string $ancestor): bool
+    {
+        while (true) {
+            if ($this->sameEntry($path, $ancestor)) {
+                return true;
+            }
+            $parent = dirname($path);
+            if ($parent === $path) {
+                return false;
+            }
+            $path = $parent;
         }
     }
 

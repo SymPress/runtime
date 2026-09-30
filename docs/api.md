@@ -30,7 +30,11 @@ removal in 2.0; see [Compatibility](compatibility.md).
 script propagation and pre-step halting. `Config` provides append-only settings
 and custom validators; `Result` preserves lazy values, strict comparisons and
 error/fallback behavior. `Paths` resolves project paths and template overrides.
-`PhpTool` describes executable PHP tools without exposing tool installation.
+`PhpTool` describes executable PHP tools. Obtain `phpToolProcessFactory()` from
+`Services` and call `create($descriptor, $phpPath = null)` to resolve a tool from
+its installed package, local PHAR or verified download and execute it through the
+returned `PhpToolProcess`. Factory construction and resolution internals remain
+internal.
 
 Lifecycle subscribers receive `PreRunEvent`, `PostRunEvent`, `PreStepEvent` or
 `PostStepEvent` through `LifecycleEvent`. Readonly `result`, `subject` and
@@ -59,12 +63,13 @@ state. Obtain it through `dbChecker()->status()`.
 | `env` | `EnvReader`: reading/writing values and determining environment/setup state |
 | `urlDownloader` | `UrlDownloader`: verified fetch/save, artifact verification and error text |
 | `systemProcess` | `SystemProcess`: execution, capture and environment overrides |
+| `phpToolProcessFactory` | `PhpToolProcessFactory`: create an executable process from a custom `PhpTool` |
 | `wpCliProcess` | `PhpToolProcess`: execution and environment overrides |
 | `dbChecker` | `DbChecker`: status predicates, status value, check and explicit mysqlcheck |
 | `wpConfigSectionEditor` | `WpConfigSectionEditor`: read, append, prepend, replace and delete sections |
 
 The exact methods are listed below. All other `Services` accessors are internal,
-including legacy `composer*` aliases and implementation factories. Constructors
+including legacy `composer*` aliases. Constructors
 on service handles are internal, except `Question`, whose constructor and
 `newWithValidator` factory create values for `Io::ask`. Its rendering and answer
 filtering methods remain internal.
@@ -82,7 +87,8 @@ for legacy compatibility, but is internal and not part of the stable extension A
 classification, transitive parameter/return/property types, and this inventory.
 It parses all PHP examples, `tests/Extension/`, and the existing executable step,
 tool and lifecycle fixtures. The audit follows typed parameters, properties,
-local aliases, return chains, constants, constructors and dynamic member names.
+local aliases, typed helper-function returns, coalesced/conditional receivers,
+return chains, constants, constructors and dynamic method/callable names.
 Regression probes verify that internal methods remain rejected even on public
 service handles. Keep extension consumer tests in `tests/Extension/`; internal
 runner/setup test harnesses stay in `tests/Contract/`.
@@ -297,6 +303,8 @@ SymPress\Runtime\Process\PhpToolProcess [service handle]
 SymPress\Runtime\Process\PhpToolProcess::execute(array|string $command): bool
 SymPress\Runtime\Process\PhpToolProcess::executeSilently(array|string $command, ?string $cwd = NULL): bool
 SymPress\Runtime\Process\PhpToolProcess::withEnvironment(array $environment): SymPress\Runtime\Process\PhpToolProcess
+SymPress\Runtime\Process\PhpToolProcessFactory [service handle]
+SymPress\Runtime\Process\PhpToolProcessFactory::create(SymPress\Runtime\Process\PhpTool $tool, ?string $phpPath = NULL): SymPress\Runtime\Process\PhpToolProcess
 SymPress\Runtime\Process\SystemProcess [service handle]
 SymPress\Runtime\Process\SystemProcess::execute(array|string $command, ?string $cwd = NULL, int $verbosity = 32): bool
 SymPress\Runtime\Process\SystemProcess::executeCapturing(array|string $command, ?string $cwd = NULL): array
@@ -309,6 +317,7 @@ SymPress\Runtime\Services::env(): SymPress\Runtime\Env\EnvReader
 SymPress\Runtime\Services::filesystem(): SymPress\Runtime\Filesystem\Filesystem
 SymPress\Runtime\Services::io(): SymPress\Runtime\Console\Io
 SymPress\Runtime\Services::paths(): SymPress\Runtime\Filesystem\Paths
+SymPress\Runtime\Services::phpToolProcessFactory(): SymPress\Runtime\Process\PhpToolProcessFactory
 SymPress\Runtime\Services::systemProcess(): SymPress\Runtime\Process\SystemProcess
 SymPress\Runtime\Services::urlDownloader(): SymPress\Runtime\Download\UrlDownloader
 SymPress\Runtime\Services::wpCliProcess(): SymPress\Runtime\Process\PhpToolProcess

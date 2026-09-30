@@ -72,6 +72,31 @@ final class PlatformContractTest extends TemporaryProject
         self::assertSame('case-safe content', file_get_contents($this->root . '/CaseProbe.txt'));
         self::assertSame('case-safe content', file_get_contents($variant));
         self::assertCount($sameFile ? 1 : 2, glob($this->root . '/*.txt') ?: []);
+        if (!$sameFile) {
+            return;
+        }
+        self::assertTrue((new Filesystem())->moveFile($this->root . '/CaseProbe.txt', $variant));
+        self::assertSame('case-safe content', file_get_contents($variant));
+        self::assertSame('case-safe content', file_get_contents($this->root . '/CaseProbe.txt'));
+    }
+
+    public function testDirectoryCaseAliasesCannotDeleteTheirOwnTree(): void
+    {
+        $this->write('CaseDirectory/keep.txt', 'case-safe tree');
+        $source = $this->root . '/CaseDirectory';
+        $alias = $this->root . '/casedirectory';
+        $sameDirectory = is_dir($alias);
+        $files = new Filesystem();
+        self::assertTrue($files->copyDir($source, $alias));
+        self::assertSame('case-safe tree', file_get_contents($source . '/keep.txt'));
+        self::assertSame('case-safe tree', file_get_contents($alias . '/keep.txt'));
+        if (!$sameDirectory) {
+            return;
+        }
+        self::assertTrue($files->moveDir($source, $alias));
+        self::assertFalse($files->copyDir($source, $alias . '/nested'));
+        self::assertFalse($files->moveDir($source, $alias . '/nested'));
+        self::assertSame('case-safe tree', file_get_contents($source . '/keep.txt'));
     }
 
     public function testPrivateWritesRespectPlatformPermissionSemantics(): void
@@ -135,9 +160,9 @@ final class PlatformContractTest extends TemporaryProject
 
     public function testPrivateContextRoundTripUsesSystemTemporaryDirectoryAndDeletesInput(): void
     {
-        $file = tempnam(sys_get_temp_dir(), 'sympress-context-');
-        self::assertIsString($file);
         $context = new RunContext($this->root, $this->root . '/vendor', $this->root . '/vendor/bin', 'update');
+        $file = ContextFile::create($context);
+        self::assertStringStartsWith('sympress-context-', basename($file));
         try {
             self::assertTrue(chmod($file, 0600));
             file_put_contents($file, json_encode($context->toArray(), JSON_THROW_ON_ERROR));
@@ -163,9 +188,8 @@ final class PlatformContractTest extends TemporaryProject
 
     public function testContextPermissionAndLinkGuardsPreserveRejectedInput(): void
     {
-        $file = tempnam(sys_get_temp_dir(), 'sympress-context-');
-        self::assertIsString($file);
         $context = new RunContext($this->root, $this->root . '/vendor', $this->root . '/vendor/bin');
+        $file = ContextFile::create($context);
         try {
             file_put_contents($file, json_encode($context->toArray(), JSON_THROW_ON_ERROR));
             if (PHP_OS_FAMILY !== 'Windows') {

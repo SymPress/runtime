@@ -6,6 +6,7 @@
 | Composer host | 2.10.3 or newer within 2.x, plugin API `^2.6` |
 | Composer library | `^2.10.3`, including offline layout recovery |
 | Symfony components | `^8.1`; the lower supported dependency set has its own CI job |
+| Event dispatcher contracts | 3.4.2 or newer within Symfony's allowed range; older implicit-nullable signatures produce PHP 8.5 diagnostics |
 | WordPress | Composer-installed core; version discovery and actual bootstrap are tested by integration CI |
 | Linux | Full fixtures, differential suite, package installation and platform contracts |
 | Windows | Platform contracts for normalized paths, copy fallback, `.bat` proxies and permission behavior |

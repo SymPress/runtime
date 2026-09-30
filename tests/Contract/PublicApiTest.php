@@ -116,6 +116,12 @@ final class PublicApiTest extends TestCase
         yield 'dynamic method' => ['function extension(\\SymPress\\Runtime\\Services $services, string $method) { $services->$method(); }', '(dynamic)'];
         yield 'lifecycle chain' => ['function extension(\\SymPress\\Runtime\\Event\\PreRunEvent $event) { $event->services->packageFinder(); }', 'Services::packageFinder'];
         yield 'callable method alias' => ['function extension(\\SymPress\\Runtime\\Services $services) { $callback = [$services, \'runContext\']; $callback(); }', 'Services::runContext'];
+        yield 'typed helper function return' => ['function env(\SymPress\Runtime\Services $services): \SymPress\Runtime\Env\EnvReader { return $services->env(); } function extension(\SymPress\Runtime\Services $services) { env($services)->loadChain(); }', 'EnvReader::loadChain'];
+        yield 'namespaced helper return' => ['namespace Fixture; function env(\SymPress\Runtime\Services $services): \SymPress\Runtime\Env\EnvReader { return $services->env(); } function extension(\SymPress\Runtime\Services $services) { env($services)->loadChain(); }', 'EnvReader::loadChain'];
+        yield 'coalesced service alias' => ['function extension(\SymPress\Runtime\Services $services, ?\SymPress\Runtime\Env\EnvReader $env) { $reader = $env ?? $services->env(); $reader->loadChain(); }', 'EnvReader::loadChain'];
+        yield 'ternary service alias' => ['function extension(\SymPress\Runtime\Services $services, bool $enabled) { $reader = $enabled ? $services->env() : null; $reader->loadChain(); }', 'EnvReader::loadChain'];
+        yield 'dynamic callable array' => ['function extension(\SymPress\Runtime\Services $services, string $method) { $callback = [$services, $method]; $callback(); }', '(dynamic)'];
+        yield 'factory constructor is internal' => ['new \SymPress\Runtime\Process\PhpToolProcessFactory();', 'PhpToolProcessFactory::__construct'];
         yield 'typed property' => ['class Extension { public function __construct(private \\SymPress\\Runtime\\Services $services) {} public function run() { $this->services->env()->loadChain(); } }', 'EnvReader::loadChain'];
     }
 

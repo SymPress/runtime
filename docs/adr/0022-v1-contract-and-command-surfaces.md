@@ -34,5 +34,10 @@ including invocation from a project subdirectory and a missing WordPress install
 The public package uses stable Kernel/QA versions and no local path repository.
 Composer's library constraint is `^2.10.3`, covered by minimum/latest integration
 checks. Platform contracts distinguish portable behavior from Linux-only fixtures.
+The lowest-dependency run exposed PHP 8.5 deprecations in older event-dispatcher
+contracts, contaminating command/JSON output. We set the supported contracts
+floor to 3.4.2, whose interface uses explicit nullable types, instead of suppressing
+those diagnostics. Lowest-version testing holds QA tools at current stable
+versions while lowering production dependencies and Symfony components.
 The owner waived a timed production trial before 1.0; release evidence must state
 that limitation rather than claiming deployment experience.

@@ -17,7 +17,7 @@ Install the package without running setup while preparing the configuration:
 composer require sympress/runtime:0.2.0 --no-plugins --no-scripts
 ```
 
-The private repository must already be present in Composer's repository
+If using the Git source directly, add its public HTTPS repository to Composer's
 configuration. See [Getting started](getting-started.md) for an example manifest.
 Once reviewed, allow the Runtime Composer plugin explicitly.
 

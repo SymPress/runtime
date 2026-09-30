@@ -30,6 +30,9 @@
         "sympress/kernel": "^1.1.0",
         "sympress/qa": "^0.1.0"
     },
+    "conflict": {
+        "symfony/event-dispatcher-contracts": "<3.4.2"
+    },
     "autoload": {"psr-4": {"SymPress\\Runtime\\": "src/"}},
     "autoload-dev": {"psr-4": {"SymPress\\Runtime\\Tests\\": "tests/"}},
     "bin": ["bin/runtime"],

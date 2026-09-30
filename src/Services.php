@@ -118,7 +118,7 @@ final class Services
         return $this->phars;
     }
 
-    /** @internal */
+    /** @api */
     public function phpToolProcessFactory(): PhpToolProcessFactory
     {
         return $this->tools;

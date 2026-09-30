@@ -33,6 +33,9 @@ final class PackageLayout
 
     public function prepare(string $root, string $vendor, string $manifestFile): void
     {
+        $root = Path::canonicalize($root);
+        $vendor = Path::canonicalize($vendor);
+        $manifestFile = Path::canonicalize($manifestFile);
         $maintenance = MaintenanceLock::acquire(new Paths($root, $vendor));
         $lockFile = $vendor . '/composer/.sympress-layout.lock';
         (new ProjectBoundary(new Paths($root, $vendor)))->assertWritablePath($lockFile);

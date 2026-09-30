@@ -31,9 +31,11 @@ final class LayoutJournal
 
     public function __construct(private string $root, private string $vendor, private ?Closure $checkpoint = null, ?string $manifestFile = null)
     {
-        $this->manifestFile = Path::makeAbsolute($manifestFile ?? 'composer.json', $root);
-        $this->file = $root . '/var/runtime/package-layout.pending.json';
-        $this->boundary = new ProjectBoundary(new Paths($root, $vendor));
+        $this->root = Path::canonicalize($root);
+        $this->vendor = Path::canonicalize($vendor);
+        $this->manifestFile = Path::makeAbsolute($manifestFile ?? 'composer.json', $this->root);
+        $this->file = $this->root . '/var/runtime/package-layout.pending.json';
+        $this->boundary = new ProjectBoundary(new Paths($this->root, $this->vendor));
     }
 
     /**
