@@ -99,7 +99,7 @@ final class LayoutJournal
                 continue;
             }
 
-            $handle = fopen($file, 'r');
+            $handle = fopen($file, PHP_OS_FAMILY === 'Windows' ? 'r+b' : 'r');
             if ($handle === false) {
                 throw new RuntimeException('Cannot synchronize generated metadata.');
             }
@@ -426,6 +426,11 @@ final class LayoutJournal
 
     private function syncDirectory(string $directory): void
     {
+        // PHP's Windows file wrapper cannot open directories for fsync.
+        // File contents are still flushed; directory durability is OS-managed.
+        if (PHP_OS_FAMILY === 'Windows') {
+            return;
+        }
         $handle = fopen($directory, 'r');
         if ($handle === false) {
             throw new RuntimeException('Cannot open journal directory for synchronization.');

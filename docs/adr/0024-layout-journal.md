@@ -8,7 +8,8 @@ Supersede the hard-interruption limitation in ADR 0019 and ADR 0022 with a priva
 write-ahead journal at `var/runtime/package-layout.pending.json`. Before mutation,
 store original Composer metadata, layout state and binary proxy snapshots plus each
 planned move's source inode/device or symlink text. Persist an intent cursor before
-each move. Flush file contents and synchronize containing directories before acting.
+each move. Flush file contents and, on Linux/macOS, synchronize containing directories
+before acting.
 
 On the next invocation, recover under the maintenance and package-layout locks before
 reading installed metadata. Roll back attempted moves in reverse order, recognizing
@@ -46,3 +47,16 @@ and lock contention. See [Deployment](../deployment.md) for operational use.
 Successful fsync calls are the durability boundary. Faulty storage, unsupported
 filesystem durability or concurrent writes bypassing Runtime locks are not promised
 atomic recovery. On detected ambiguity, preserve the release and fail closed.
+
+On Windows, journal and generated metadata file flushes remain mandatory, but
+containing directories cannot be synchronized through PHP's file wrapper. PHP
+8.5's [Windows open implementation](https://github.com/php/php-src/blob/PHP-8.5/win32/ioutil.c)
+intentionally omits directory-open support; its
+[plain stream implementation](https://github.com/php/php-src/blob/PHP-8.5/main/streams/plain_wrapper.c)
+maps `fsync` to Windows `_commit`. Generated metadata is opened with write access
+for this flush, as required by
+[FlushFileBuffers](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-flushfilebuffers).
+Windows recovery therefore does not promise directory-entry durability across an
+OS crash or power loss. Ordinary exceptions retain rollback behavior; the Linux
+SIGKILL suite does not establish a Windows power-loss guarantee. File flush errors
+remain fatal on every platform.

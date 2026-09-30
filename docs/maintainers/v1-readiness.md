@@ -47,8 +47,9 @@ testing or an independent migration deployment has already happened.
 
 - [ ] Linux, Windows and macOS with minimum and latest stable Composer.
 - [ ] Windows copy fallback, binary proxies, paths and permission semantics tested.
-- [ ] macOS case-insensitive paths and BSD tooling tested.
-- [ ] Lowest supported Symfony 8.1 dependency set tested.
+- [x] macOS case-insensitive paths and BSD tooling tested on both Composer jobs.
+- [x] Lowest supported Symfony 8.1 dependency set tested; the complete QA suite
+  passes with stable development tools and the lowest production dependencies.
 - [x] Kernel 1.1.0 and QA 0.1.0 resolve stable tags; no dev constraints.
 - [x] Package manifest contains no local path repository.
 - [ ] Composer `^2.10.3` and scheduled compatibility reporting verified.
@@ -62,8 +63,9 @@ testing or an independent migration deployment has already happened.
 - [ ] Packagist registration and automatic GitHub update integration verified.
 - [ ] Signed release tags and QA-gated release/changelog/Packagist workflow.
 - [x] Private vulnerability reporting enabled; supported-version policy prepared.
-- [ ] Weekly dependency/action updates and PHP security analysis.
-- [ ] Public newcomer docs, migration guide and platform compatibility table.
+- [x] Weekly dependency/action updates configured; PHP security analysis and
+  dependency audit pass on PR #13.
+- [x] Public newcomer docs, migration guide and platform compatibility table.
 - [ ] Empty-project installation from Packagist with `^1.0@RC` succeeds.
 
 ## Phase 5 — Release candidate

@@ -19,6 +19,13 @@ claim every Linux integration fixture ran on Windows or macOS. POSIX identity
 and permission checks cannot infer Windows ACL access; run deployment diagnostics
 as the actual PHP identity.
 
+Package recovery flushes journal and generated metadata files on every platform.
+Linux and macOS also synchronize affected directory entries. PHP's Windows file
+wrapper does not expose directory handles for `fsync`, so Windows directory-entry
+persistence depends on the operating system: recovery after sudden power loss or
+an OS crash is not guaranteed. File flush failures still stop the transaction.
+See [ADR 0024](adr/0024-layout-journal.md) for the durability boundary.
+
 Runtime does not bundle WordPress or impose a web server. Your chosen core,
 plugins, themes, database and PHP extensions must support PHP 8.5 independently.
 Read-only deployments use a built environment dump and retained payloads as
