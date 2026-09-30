@@ -10,6 +10,7 @@ use SymPress\Runtime\Step\StepInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Throwable;
 
+/** @internal */
 final readonly class Lifecycle
 {
     public function __construct(private EventDispatcherInterface $dispatcher, private Services $services)

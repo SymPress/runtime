@@ -7,6 +7,7 @@ namespace SymPress\Runtime\WordPress;
 use RuntimeException;
 use SymPress\Runtime\Package\PackageFinder;
 
+/** @internal */
 final readonly class VersionDiscovery
 {
     public function __construct(private PackageFinder $packages)

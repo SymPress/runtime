@@ -12,6 +12,7 @@ use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Generation\SectionMerger;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final readonly class ProductionChecks
 {
     public function __construct(private Config $config, private Paths $paths)

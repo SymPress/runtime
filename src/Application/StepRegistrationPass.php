@@ -11,6 +11,7 @@ use SymPress\Runtime\Step\StepInterface;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
+/** @internal */
 final readonly class StepRegistrationPass implements CompilerPassInterface
 {
     public function __construct(private Registry $registry)

@@ -15,6 +15,7 @@ use SymPress\Runtime\Step\FileCreationStepInterface;
 use SymPress\Runtime\Step\OptionalStepInterface;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final class EnvExampleStep implements FileCreationStepInterface, OptionalStepInterface, ConditionalStepInterface
 {
     private string $failure = 'Cannot save the environment example.';

@@ -4,6 +4,18 @@
 
 No changes yet.
 
+## 1.0.0-beta.1 — 2026-09-30
+
+- Freeze the documented 1.x configuration and extension API; classify implementation details and enforce public examples in architecture tests.
+- Add `wp runtime` before WordPress bootstrap, backed by the standalone command, and `composer runtime` aliases.
+- Version download-lock files explicitly and reject unknown future cache, dump and payload formats safely.
+- Use stable Kernel and QA releases without a local path repository; widen the Composer library requirement to `^2.10.3`.
+- Deprecate legacy compatibility adapters before 1.0: supported throughout 1.x, scheduled for removal in 2.0. See the [compatibility policy](docs/compatibility-policy.md).
+- Add minimum/latest Composer checks on Linux, Windows and macOS, lowest Symfony 8.1 checks, weekly dependency updates and PHP security analysis.
+- Publish the repository under GPL-2.0-or-later with private vulnerability reporting and signed, QA-gated release automation.
+
+This is a contract-validation prerelease. Review the [upgrade notes](docs/releases/1.0.0-beta.1.md). The timed production trial was waived; production field experience is not claimed.
+
 ## 0.2.0 — 2026-09-30
 
 - Rename the standalone executable to `bin/runtime`, installed by Composer as `vendor/bin/runtime`; update existing shell and CI scripts when upgrading.

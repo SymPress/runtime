@@ -6,7 +6,11 @@ namespace SymPress\Runtime\Download;
 
 use RuntimeException;
 
-/** Contains only diagnostics safe to show without exposing a URL or response body. */
+/**
+ * Contains only diagnostics safe to show without exposing a URL or response body.
+ *
+ * @internal
+ */
 final class DownloadException extends RuntimeException
 {
 }

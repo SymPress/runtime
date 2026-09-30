@@ -12,6 +12,7 @@ use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final class Application
 {
     /**
@@ -44,7 +45,7 @@ final class Application
             }
             break;
         }
-        $application = new ConsoleApplication('SymPress Runtime', '0.2.0');
+        $application = new ConsoleApplication('SymPress Runtime', '1.0.0-beta.1');
         $application->setAutoExit(false);
         $application->addCommand(new RuntimeCommand($context, $operation));
         $application->setDefaultCommand($operation, true);

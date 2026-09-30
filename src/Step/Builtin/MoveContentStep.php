@@ -13,6 +13,7 @@ use SymPress\Runtime\Filesystem\ProjectBoundary;
 use SymPress\Runtime\Step\ConditionalStepInterface;
 use SymPress\Runtime\Step\OptionalStepInterface;
 
+/** @internal */
 final readonly class MoveContentStep implements ConditionalStepInterface, OptionalStepInterface
 {
     public function __construct(private Filesystem $files, private ContentPublisher $publisher, private ProjectBoundary $boundary)

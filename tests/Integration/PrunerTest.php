@@ -58,6 +58,21 @@ final class PrunerTest extends TemporaryProject
         self::assertDirectoryExists($unknown);
     }
 
+    public function testUnknownPayloadManifestVersionIsNeverPruned(): void
+    {
+        $active = $this->payload('active', 1);
+        $future = $this->payload('future', 2);
+        $this->config($active);
+        $file = $future . '/manifest.json';
+        $manifest = json_decode((string) file_get_contents($file), true, flags: JSON_THROW_ON_ERROR);
+        $manifest['format'] = 2;
+        $contents = json_encode($manifest, JSON_THROW_ON_ERROR);
+        file_put_contents($file, $contents);
+        self::assertSame([], (new Pruner())->prune(new Paths($this->root), 0)['removed']);
+        self::assertSame($contents, file_get_contents($file));
+        self::assertFileExists($future . '/bootstrap.php');
+    }
+
     public function testSymlinkPayloadAndNestedSymlinkArePreserved(): void
     {
         $active = $this->payload('active', 1);

@@ -6,7 +6,11 @@ namespace SymPress\Runtime\Application;
 
 use InvalidArgumentException;
 
-/** Serializable process boundary; no framework or live Composer objects. */
+/**
+ * Serializable process boundary; no framework or live Composer objects.
+ *
+ * @internal
+ */
 final readonly class RunContext
 {
     /** @param list<array{name: string, version: string}> $updatedPackages */

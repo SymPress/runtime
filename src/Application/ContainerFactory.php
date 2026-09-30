@@ -63,6 +63,7 @@ use Symfony\Component\Process\ExecutableFinder;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface as EventDispatcherContract;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
+/** @internal */
 final class ContainerFactory
 {
     public function create(Config $config, Paths $paths, Io $io, RunContext $context, Registry $registry, ?callable $configure = null, Selection $selection = new Selection()): ContainerBuilder

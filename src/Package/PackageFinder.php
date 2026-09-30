@@ -9,6 +9,7 @@ use SymPress\Runtime\Application\RunContext;
 use SymPress\Runtime\Config\ConfigLoader;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final class PackageFinder
 {
     /** @var list<Package>|null */

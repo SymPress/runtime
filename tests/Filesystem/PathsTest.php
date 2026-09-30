@@ -31,7 +31,7 @@ final class PathsTest extends TemporaryProject
         $this->write('templates/index.php', 'custom');
         $paths->useCustomTemplatesDir($this->root . '/templates');
         self::assertSame($this->root . '/templates/index.php', $paths->template('index.php'));
-        self::assertStringEndsWith('/runtime/templates/other.php', $paths->template('other.php'));
+        self::assertSame(dirname(__DIR__, 2) . '/templates/other.php', $paths->template('other.php'));
         $this->expectException(BadMethodCallException::class);
         $paths['extra'] = 'changed';
     }

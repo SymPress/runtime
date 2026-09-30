@@ -13,6 +13,7 @@ use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 
+/** @internal */
 final readonly class ContentPublisher
 {
     public function __construct(private Filesystem $files, private ProjectBoundary $boundary, private OverwritePolicy $overwrite, private Selection $selection)

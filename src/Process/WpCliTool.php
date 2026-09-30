@@ -13,6 +13,7 @@ use SymPress\Runtime\Filesystem\Paths;
 use Symfony\Component\Console\Input\StringInput;
 use UnexpectedValueException;
 
+/** @internal */
 final class WpCliTool implements PhpTool
 {
     private const string API_URL = 'https://api.github.com/repos/wp-cli/wp-cli/releases/latest';

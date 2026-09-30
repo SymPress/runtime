@@ -8,7 +8,11 @@ use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Filesystem\ProjectBoundary;
 use Throwable;
 
-/** Project-local trust on first use; raw URLs never enter the lock or diagnostics. */
+/**
+ * Project-local trust on first use; raw URLs never enter the lock or diagnostics.
+ *
+ * @internal
+ */
 final readonly class DownloadLock
 {
     public function __construct(private Paths $paths, private ProjectBoundary $boundary)
@@ -34,7 +38,13 @@ final readonly class DownloadLock
         } catch (Throwable) {
             throw new DownloadException('Download lock is unreadable or invalid.');
         }
-        if (!is_array($data) || ($data['version'] ?? null) !== 1 || !is_array($data['downloads'] ?? null)) {
+        if (!is_array($data)) {
+            throw new DownloadException('Download lock has an unsupported format.');
+        }
+        // 0.2 used only "version". Keep that reader contract while adding the
+        // uniform format discriminator; an explicit unknown format always wins.
+        $format = array_key_exists('format', $data) ? $data['format'] : ($data['version'] ?? null);
+        if ($format !== 1 || (array_key_exists('version', $data) && $data['version'] !== 1) || !is_array($data['downloads'] ?? null)) {
             throw new DownloadException('Download lock has an unsupported format.');
         }
         $entries = [];
@@ -110,7 +120,7 @@ final readonly class DownloadLock
             }
             if ($changed) {
                 ksort($entries);
-                $json = json_encode(['version' => 1, 'downloads' => $entries], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . "\n";
+                $json = json_encode(['format' => 1, 'version' => 1, 'downloads' => $entries], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . "\n";
                 $temporary = tempnam($this->paths->root(), '.sympress-lock-');
                 if ($temporary === false || realpath(dirname($temporary)) !== realpath($this->paths->root()) || !chmod($temporary, 0600) || file_put_contents($temporary, $json) !== strlen($json)) {
                     throw new DownloadException('Cannot stage the download lock.');

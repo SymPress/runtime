@@ -7,10 +7,12 @@ not your `.env`, dump, authentication files or generated salts.
 
 ## Composer cannot fetch Runtime
 
-The repository is private. The identity running Composer needs read access.
-A developer's SSH agent is not automatically available in CI. Supply a
-repository-scoped deploy key and pinned host keys, or private Composer GitHub
-authentication. Do not put the credential in the manifest or lockfile.
+The repository is public. When using a direct Git repository, prefer
+`https://github.com/SymPress/runtime.git`. Older lockfiles can still contain SSH
+source URLs from the private-repository phase; review a targeted dependency
+update to replace them. SSH URLs need a GitHub identity even for public projects.
+Private application dependencies still need their own credentials. Keep those
+in Composer authentication or an SSH agent, never in the manifest or lockfile.
 
 ## Composer installed packages but setup did not run
 

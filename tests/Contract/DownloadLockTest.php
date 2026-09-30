@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Tests\Contract;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Config\Validator;
 use SymPress\Runtime\Download\DownloadLock;
@@ -17,6 +18,48 @@ use Symfony\Component\HttpClient\Response\MockResponse;
 
 final class DownloadLockTest extends TemporaryProject
 {
+    public function testVersionOnlyLockFrom02MigratesOnWriteWithoutChangingExistingPins(): void
+    {
+        $url = 'https://example.test/old';
+        $pins = [hash('sha256', $url) => hash('sha256', 'old')];
+        $legacy = json_encode(['version' => 1, 'downloads' => $pins], JSON_THROW_ON_ERROR);
+        $this->write('sympress-runtime.lock', $legacy);
+        self::assertSame($pins, $this->entries());
+        self::assertSame($legacy, file_get_contents($this->root . '/sympress-runtime.lock'));
+        $downloader = $this->downloader(new MockHttpClient(new MockResponse('new')));
+        self::assertSame('new', $downloader->fetch('https://example.test/new'));
+        $migrated = json_decode((string) file_get_contents($this->root . '/sympress-runtime.lock'), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame(1, $migrated['format']);
+        self::assertSame(1, $migrated['version'], '0.2 readers can still read the additive marker.');
+        self::assertSame($pins[hash('sha256', $url)], $this->entries()[hash('sha256', $url)]);
+        self::assertCount(2, $this->entries());
+    }
+
+    /** @return iterable<string, array{array<string, mixed>}> */
+    public static function unsupportedFormats(): iterable
+    {
+        yield 'future format with legacy alias' => [['format' => 2, 'version' => 1]];
+        yield 'future legacy version' => [['version' => 2]];
+        yield 'conflicting alias' => [['format' => 1, 'version' => 2]];
+        yield 'null is not absent' => [['format' => null, 'version' => 1]];
+        yield 'string is not integer' => [['format' => '1', 'version' => 1]];
+        yield 'older unsupported format' => [['format' => 0]];
+        yield 'missing discriminator' => [[]];
+    }
+
+    /** @param array<string, mixed> $markers */
+    #[DataProvider('unsupportedFormats')]
+    public function testUnknownFormatCannotBeReplacedEvenWithExplicitUpdate(array $markers): void
+    {
+        $contents = json_encode($markers + ['downloads' => []], JSON_THROW_ON_ERROR);
+        $this->write('sympress-runtime.lock', $contents);
+        $downloader = $this->downloader(new MockHttpClient(new MockResponse('new')), ['update-lock' => true]);
+        self::assertFalse($downloader->save('https://example.test/new', $this->root . '/artifact'));
+        self::assertStringContainsString('unsupported format', $downloader->error());
+        self::assertSame($contents, file_get_contents($this->root . '/sympress-runtime.lock'));
+        self::assertFileDoesNotExist($this->root . '/artifact');
+    }
+
     /** @param array<string, mixed> $options */
     private function downloader(MockHttpClient $http, array $options = [], string $profile = 'native'): UrlDownloader
     {

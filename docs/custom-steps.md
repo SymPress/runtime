@@ -117,15 +117,17 @@ also exposes the shared services through these accessors:
 
 | Purpose | Accessors |
 | --- | --- |
-| Settings and paths | `config`, `paths`, `runContext` |
-| Console | `io`, `composerIo` |
-| Files and templates | `filesystem`, `composerFilesystem`, `fileContentBuilder`, `overwriteHelper`, `wpConfigSectionEditor` |
+| Settings and paths | `config`, `paths` |
+| Console | `io` |
+| Files and configuration | `filesystem`, `wpConfigSectionEditor` |
 | Environment and database | `env`, `dbChecker` |
-| Packages | `packageFinder`, `muPluginsList`, `composerConfig` |
-| Downloads and salts | `urlDownloader`, `pharInstaller`, `salter` |
-| Processes | `systemProcess`, `executableFinder`, `phpProcess`, `phpToolProcessFactory`, `wpCliProcess` |
+| Downloads | `urlDownloader` |
+| Processes | `systemProcess`, `wpCliProcess`, `phpToolProcessFactory` |
 
-The `composer*` accessors return Runtime equivalents, not live Composer objects.
+Only the methods listed in the [public PHP API](api.md) are stable. Concrete
+service handles retain internal methods for Runtime and legacy compatibility;
+constructor injection does not expose those methods as extension API. The other
+`Services` accessors, including the `composer*` aliases, are internal.
 Environment parsing and database checks are lazy. `dbChecker()->status()`
 distinguishes unknown state from a confirmed missing database; a boolean accessor
 is true only for a confirmed result.
@@ -141,6 +143,14 @@ Use argv arrays for process arguments. The explicit string overload is a trusted
 shell API: do not construct it from request or remote input. Capturing process
 execution returns `[stdout, stderr, success, throwable]`.
 
+For a custom executable PHP tool, implement the public `PhpTool` interface and
+pass its descriptor to `$services->phpToolProcessFactory()->create($tool)`.
+The returned process supports `execute`, `executeSilently` and `withEnvironment`.
+The factory prefers an installed Composer package, then a readable local PHAR,
+then a verified permitted download. Its optional second argument selects the PHP
+executable. Inject or obtain the factory; constructing its internal dependencies
+is not part of the extension contract.
+
 ## Callbacks and events
 
 Configure `pre-<step>` / `post-<step>` or
@@ -149,8 +159,9 @@ function/static-method string or a list of callbacks, including nested
 `["ClassName", "method"]` pairs. Programmatic lists can include closures or
 callable objects.
 
-Callbacks receive `(int $result, StepInterface|Runner $subject, Services $services,
-RunContext $context)`. Pre callbacks receive NONE, post callbacks receive the
+Callbacks should declare `(int $result, StepInterface|Runner $subject, Services $services)`.
+A fourth internal `RunContext` argument is still passed for legacy compatibility;
+new extensions should not depend on it. Pre callbacks receive NONE, post callbacks receive the
 actual result. Exceptions fail the command without exposing exception contents;
 later callbacks still run.
 

@@ -10,14 +10,17 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use Throwable;
 
+/** @internal */
 final class UrlDownloader
 {
     private string $lastError = '';
 
+    /** @internal */
     public function __construct(private readonly HttpClientInterface $http, private readonly Filesystem $files, private readonly Config $config, private readonly ?DownloadLock $lock = null)
     {
     }
 
+    /** @api */
     public function fetch(string $url, bool $pin = true): string
     {
         $this->lastError = '';
@@ -39,7 +42,10 @@ final class UrlDownloader
         }
     }
 
-    /** @param (callable(string): bool)|null $verify Additional artifact verification before publication and TOFU. */
+    /**
+     * @param (callable(string): bool)|null $verify Additional artifact verification before publication and TOFU.
+     * @api
+     */
     public function save(string $url, string $filename, ?callable $verify = null, ?string $artifact = null): bool
     {
         $this->lastError = '';
@@ -79,7 +85,11 @@ final class UrlDownloader
         }
     }
 
-    /** Verify previously downloaded executables offline; explicit updates can adopt a local artifact. */
+    /**
+     * Verify previously downloaded executables offline; explicit updates can adopt a local artifact.
+     *
+     * @api
+     */
     public function verifyArtifact(string $artifact, string $filename): bool
     {
         $this->lastError = '';
@@ -110,6 +120,7 @@ final class UrlDownloader
         }
     }
 
+    /** @api */
     public function error(): string
     {
         return $this->lastError;

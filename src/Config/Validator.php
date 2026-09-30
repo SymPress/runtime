@@ -9,6 +9,7 @@ use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\WordPress\VersionDiscovery;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final class Validator
 {
     public function __construct(private readonly Paths $paths, private readonly string $profile = 'native')

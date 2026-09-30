@@ -10,6 +10,7 @@ use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\Validator as JsonValidator;
 use RuntimeException;
 
+/** @internal */
 final class SchemaValidator
 {
     /** @param array<string, mixed> $values */

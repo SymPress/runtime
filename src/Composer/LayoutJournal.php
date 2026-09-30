@@ -19,6 +19,7 @@ use Symfony\Component\Filesystem\Path;
  * @phpstan-type JournalMove array{from: string, to: string, dev: int, ino: int, link: string|null}
  * @phpstan-type JournalSnapshot array{contents: string|null, link: string|null, mode: int}
  * @phpstan-type JournalRecord array{format: int, root: string, vendor: string, manifest: string, phase: string, cursor: int, moves: list<JournalMove>, snapshots: array<string, JournalSnapshot>}
+ * @internal
  */
 final class LayoutJournal
 {
@@ -30,9 +31,11 @@ final class LayoutJournal
 
     public function __construct(private string $root, private string $vendor, private ?Closure $checkpoint = null, ?string $manifestFile = null)
     {
-        $this->manifestFile = Path::makeAbsolute($manifestFile ?? 'composer.json', $root);
-        $this->file = $root . '/var/runtime/package-layout.pending.json';
-        $this->boundary = new ProjectBoundary(new Paths($root, $vendor));
+        $this->root = Path::canonicalize($root);
+        $this->vendor = Path::canonicalize($vendor);
+        $this->manifestFile = Path::makeAbsolute($manifestFile ?? 'composer.json', $this->root);
+        $this->file = $this->root . '/var/runtime/package-layout.pending.json';
+        $this->boundary = new ProjectBoundary(new Paths($this->root, $this->vendor));
     }
 
     /**
@@ -96,7 +99,7 @@ final class LayoutJournal
                 continue;
             }
 
-            $handle = fopen($file, 'r');
+            $handle = fopen($file, PHP_OS_FAMILY === 'Windows' ? 'r+b' : 'r');
             if ($handle === false) {
                 throw new RuntimeException('Cannot synchronize generated metadata.');
             }
@@ -423,6 +426,11 @@ final class LayoutJournal
 
     private function syncDirectory(string $directory): void
     {
+        // PHP's Windows file wrapper cannot open directories for fsync.
+        // File contents are still flushed; directory durability is OS-managed.
+        if (PHP_OS_FAMILY === 'Windows') {
+            return;
+        }
         $handle = fopen($directory, 'r');
         if ($handle === false) {
             throw new RuntimeException('Cannot open journal directory for synchronization.');

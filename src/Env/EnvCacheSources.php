@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Env;
 
+/** @internal */
 final class EnvCacheSources
 {
     public static function matches(mixed $data): bool

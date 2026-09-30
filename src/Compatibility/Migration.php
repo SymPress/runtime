@@ -16,6 +16,7 @@ use SymPress\Runtime\Filesystem\ProjectBoundary;
 use SymPress\Runtime\Generation\ArtifactWriter;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final readonly class Migration
 {
     public function __construct(private RunContext $context, private Paths $paths)

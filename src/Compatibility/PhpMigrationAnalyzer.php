@@ -11,7 +11,11 @@ use RecursiveIteratorIterator;
 use RuntimeException;
 use SplFileInfo;
 
-/** Static inspection only: never require project files or resolve class names. */
+/**
+ * Static inspection only: never require project files or resolve class names.
+ *
+ * @internal
+ */
 final class PhpMigrationAnalyzer
 {
     /**

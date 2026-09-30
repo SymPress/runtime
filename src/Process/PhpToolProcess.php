@@ -7,13 +7,18 @@ namespace SymPress\Runtime\Process;
 use SymPress\Runtime\Console\Io;
 use SymPress\Runtime\Filesystem\Paths;
 
+/** @internal */
 final readonly class PhpToolProcess
 {
+    /** @internal */
     public function __construct(private PhpProcess $php, private PhpTool $tool, private string $toolPath, private Paths $paths, private Io $io)
     {
     }
 
-    /** @param array<string, string|false> $environment */
+    /**
+     * @param array<string, string|false> $environment
+     * @api
+     */
     public function withEnvironment(array $environment): self
     {
         $this->php->withEnvironment($environment);
@@ -21,13 +26,19 @@ final readonly class PhpToolProcess
         return $this;
     }
 
-    /** @param list<string>|string $command */
+    /**
+     * @param list<string>|string $command
+     * @api
+     */
     public function execute(array|string $command): bool
     {
         return $this->php->execute($this->prepare($command));
     }
 
-    /** @param list<string>|string $command */
+    /**
+     * @param list<string>|string $command
+     * @api
+     */
     public function executeSilently(array|string $command, ?string $cwd = null): bool
     {
         return $this->php->executeSilently($this->prepare($command), $cwd);

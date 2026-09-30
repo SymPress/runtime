@@ -7,7 +7,11 @@ namespace SymPress\Runtime\Composer;
 use Composer\Package\PackageInterface;
 use InvalidArgumentException;
 
-/** Mirrors the standard WordPress installer path rules without activating plugins. */
+/**
+ * Mirrors the standard WordPress installer path rules without activating plugins.
+ *
+ * @internal
+ */
 final class PackageDestination
 {
     /**

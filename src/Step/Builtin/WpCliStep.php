@@ -12,6 +12,7 @@ use SymPress\Runtime\Step\ConditionalStepInterface;
 use Symfony\Component\Console\Input\StringInput;
 use Throwable;
 
+/** @internal */
 final class WpCliStep implements ConditionalStepInterface
 {
     /** @var list<list<string>>|null */

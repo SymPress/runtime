@@ -6,7 +6,11 @@ namespace SymPress\Runtime\Env;
 
 use InvalidArgumentException;
 
-/** Atomic writes which never send content to tempnam's fallback directory. */
+/**
+ * Atomic writes which never send content to tempnam's fallback directory.
+ *
+ * @internal
+ */
 final class SecureFileWriter
 {
     /** @var array<string, true> */

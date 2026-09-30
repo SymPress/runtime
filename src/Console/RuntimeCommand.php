@@ -35,6 +35,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Throwable;
 
+/** @internal */
 final class RuntimeCommand extends Command
 {
     private bool $legacyApiEnabled = false;

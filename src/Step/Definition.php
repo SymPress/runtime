@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Step;
 
+/** @internal */
 final readonly class Definition
 {
     /** @param class-string<StepInterface>|null $class */

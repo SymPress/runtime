@@ -14,6 +14,7 @@ use SymPress\Runtime\Step\OptionalStepInterface;
 use SymPress\Runtime\WordPress\DropinCatalog;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final class PublishContentDevStep implements OptionalStepInterface
 {
     private ?string $operation = null;

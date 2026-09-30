@@ -9,6 +9,7 @@ use SymPress\Runtime\Config\SchemaValidator;
 use SymPress\Runtime\Config\Validator;
 use SymPress\Runtime\Filesystem\Paths;
 
+/** @internal */
 final readonly class ExtensionMetadata
 {
     public function __construct(private Paths $paths)

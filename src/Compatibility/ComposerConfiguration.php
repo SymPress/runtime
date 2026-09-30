@@ -8,7 +8,11 @@ use SymPress\Runtime\Application\RunContext;
 use SymPress\Runtime\Config\ConfigLoader;
 use Symfony\Component\Filesystem\Path;
 
-/** Read-only project configuration; deliberately not a live Composer Config instance. */
+/**
+ * Read-only project configuration; deliberately not a live Composer Config instance.
+ *
+ * @internal
+ */
 final readonly class ComposerConfiguration
 {
     public function __construct(private RunContext $context)
