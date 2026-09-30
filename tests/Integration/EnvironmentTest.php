@@ -90,6 +90,20 @@ PHP);
         self::assertSame(['production', null], $actual);
     }
 
+    #[Group('PAR-ENV-002')]
+    public function testInterpolationIgnoresRequestHeadersAndKeepsTrustedFileValues(): void
+    {
+        $this->write('.env', "RTV_HEADER=\"\${HTTP_RUNTIME_HEADER:-safe}\"\nHTTP_RUNTIME_FILE=trusted\nRTV_FILE=\"\${HTTP_RUNTIME_FILE}\"\n");
+        $actual = $this->runPhp(<<<'PHP'
+$_SERVER['HTTP_RUNTIME_HEADER'] = 'request-input';
+$_SERVER['HTTP_RUNTIME_FILE'] = 'request-input';
+$reader = new SymPress\Runtime\Env\EnvReader();
+$reader->loadChain();
+echo json_encode([$reader->readMany('RTV_HEADER', 'RTV_FILE'), $_SERVER['HTTP_RUNTIME_FILE']]);
+PHP);
+        self::assertSame([['RTV_HEADER' => 'safe', 'RTV_FILE' => 'trusted'], 'request-input'], $actual);
+    }
+
     #[Group('PAR-ENV-010')]
     #[Group('PAR-ENV-017')]
     public function testTypedCustomAndExistingConstantsAreSetOnce(): void

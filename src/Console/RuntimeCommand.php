@@ -6,6 +6,7 @@ namespace SymPress\Runtime\Console;
 
 use InvalidArgumentException;
 use SymPress\Runtime\Application\ContainerFactory;
+use SymPress\Runtime\Application\DatabasePreflight;
 use SymPress\Runtime\Application\RunContext;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Config\ConfigLoader;
@@ -32,6 +33,9 @@ final class RuntimeCommand extends Command
     protected function configure(): void
     {
         $this->setDescription($this->operation === 'validate' ? 'Validate project configuration without running steps.' : 'Run project setup steps.');
+        if ($this->operation === 'dump-env') {
+            $this->addArgument('environment', InputArgument::REQUIRED, 'Raw environment name to resolve and dump.');
+        }
         if ($this->operation !== 'run') {
             return;
         }
@@ -47,7 +51,7 @@ final class RuntimeCommand extends Command
     {
         $io = new Io($input, $output);
         $context = $this->context->withConsole($input->isInteractive(), $output->isDecorated(), $output->getVerbosity());
-        if (!in_array($this->operation, ['run', 'validate'], true)) {
+        if (!in_array($this->operation, ['run', 'validate', 'flush-env-cache', 'dump-env'], true)) {
             $io->error('Command ' . $this->operation . ' is scheduled for a later implementation phase.');
 
             return self::INVALID;
@@ -87,6 +91,14 @@ final class RuntimeCommand extends Command
 
             return self::SUCCESS;
         }
+        if ($this->operation === 'dump-env') {
+            $environment = $input->getArgument('environment');
+            if (!is_string($environment)) {
+                throw new InvalidArgumentException('A dump requires an explicit environment.');
+            }
+
+            return (new DumpEnvironment($config, $paths, $io))->run($environment);
+        }
         if (in_array($manifest['type'] ?? null, ['sympress-runtime-extension', 'wpstarter-extension'], true)) {
             $io->error('Runtime extension roots do not run project setup.');
 
@@ -103,12 +115,16 @@ final class RuntimeCommand extends Command
             $configure = is_callable($result) ? $result : null;
         }
         $registry = new Registry();
-        $container = (new ContainerFactory())->create($config, $paths, $io, $context, $registry, $configure);
+        $container = (new ContainerFactory())->create($config, $paths, $io, $context, $registry, $configure, $selection);
         $skips = $config['skip-steps']->unwrapOrFallback([]);
         $skips = is_array($skips) ? array_values(array_filter($skips, is_string(...))) : [];
         $resolved = $selection->resolve($registry, $skips, $loaded->profile);
         foreach ($resolved['warnings'] as $warning) {
             $io->error($warning);
+        }
+        $release = $config['compatibility-profile']->is('release-3.0.1');
+        if ($this->operation === 'run' && $release) {
+            $this->checkWordPress($config);
         }
         if ($selection->list) {
             foreach ($resolved['steps'] as $step) {
@@ -118,16 +134,33 @@ final class RuntimeCommand extends Command
             return self::SUCCESS;
         }
 
-        if ($config['require-wp']->is(true)) {
-            $fallback = $config['wp-version']->unwrap();
-            (new VersionDiscovery(new PackageFinder($this->context)))->discover(is_string($fallback) ? $fallback : null);
+        if ($this->operation === 'run') {
+            if (!$release && !($selection->selected() && $config['compatibility-profile']->is('upstream-dev'))) {
+                $this->checkWordPress($config);
+            }
+            $preflight = $container->get(DatabasePreflight::class);
+            if (!$preflight instanceof DatabasePreflight || !$preflight->run($selection)) {
+                return self::FAILURE;
+            }
         }
 
         return (new Runner($config, $paths, $io, $container, $selection))->run($resolved['steps']);
     }
 
+    private function checkWordPress(Config $config): void
+    {
+        if (!$config['require-wp']->is(true)) {
+            return;
+        }
+        $fallback = $config['wp-version']->unwrap();
+        (new VersionDiscovery(new PackageFinder($this->context)))->discover(is_string($fallback) ? $fallback : null);
+    }
+
     private function selection(InputInterface $input): Selection
     {
+        if ($this->operation === 'flush-env-cache') {
+            return new Selection(['flushenvcache'], ignoreSkipConfig: true);
+        }
         if ($this->operation !== 'run') {
             return new Selection();
         }

@@ -1,0 +1,41 @@
+name: Isolated WP Starter differential
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  differential:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH_JSON }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Set up compatible oracle PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.2.33'
+          extensions: curl, dom, mbstring, mysqli
+          tools: composer:2.10.3
+          coverage: none
+      - name: Set up candidate PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5.9'
+          extensions: curl, dom, mbstring, mysqli
+          tools: composer:2.10.3
+          coverage: none
+      - name: Install candidate dependencies
+        run: composer install --no-interaction --no-progress --no-plugins --no-scripts
+      - name: Compare pinned oracles and candidate
+        run: python3 tools/differential/run.py --oracle-php /usr/bin/php8.2 --candidate-php /usr/bin/php8.5 --composer "$(command -v composer)"
+      - name: Preserve exact comparison evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: wpstarter-differential
+          path: build/differential/report.json
+          if-no-files-found: error

@@ -79,8 +79,13 @@ final readonly class Runner
 
             return false;
         }
-        if ($step instanceof FileCreationStepInterface && !(new OverwritePolicy($this->config, $this->paths, $this->io))->shouldOverwrite($step->targetPath($this->paths), $this->selection->force)) {
-            return false;
+        if ($step instanceof FileCreationStepInterface) {
+            $target = $step->targetPath($this->paths);
+            if (!(new OverwritePolicy($this->config, $this->paths, $this->io))->shouldOverwrite($target, $this->selection->force)) {
+                $this->io->comment('Preserved protected target: ' . $target);
+
+                return false;
+            }
         }
         $ask = !$this->selection->selected() || $this->config['compatibility-profile']->is('release-3.0.1');
         if ($ask && $step instanceof OptionalStepInterface && !$step->askConfirm($this->config, $this->io)) {

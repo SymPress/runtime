@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace SymPress\Runtime\Step;
 
 use InvalidArgumentException;
+use SymPress\Runtime\Step\Builtin\CheckPathsStep;
+use SymPress\Runtime\Step\Builtin\FlushEnvCacheStep;
+use SymPress\Runtime\Step\Builtin\IndexStep;
+use SymPress\Runtime\Step\Builtin\WpConfigStep;
 
 final class Registry
 {
@@ -15,13 +19,20 @@ final class Registry
 
     public const array RESERVED = ['validate', 'doctor', 'check', 'dump-env', 'migrate', 'flush-env-cache'];
 
+    public const array IMPLEMENTATIONS = [
+        'checkpaths' => CheckPathsStep::class,
+        'wpconfig' => WpConfigStep::class,
+        'index' => IndexStep::class,
+        'flushenvcache' => FlushEnvCacheStep::class,
+    ];
+
     /** @var array<string, Definition> */
     private array $definitions = [];
 
     public function __construct()
     {
         foreach (self::DEFAULT_ORDER as $name) {
-            $this->definitions[$name] = new Definition($name);
+            $this->definitions[$name] = new Definition($name, self::IMPLEMENTATIONS[$name] ?? null);
         }
     }
 

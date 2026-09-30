@@ -8,11 +8,11 @@ namespace SymPress\Runtime\Tests\Contract;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
-use PHPUnit\Framework\TestCase;
 use SymPress\Runtime\Env\ConstantCatalog;
 use SymPress\Runtime\Env\EnvReader;
+use SymPress\Runtime\Tests\Support\TemporaryProject;
 
-final class ConstantCatalogTest extends TestCase
+final class ConstantCatalogTest extends TemporaryProject
 {
     /** @return iterable<string, array{string, string|null, string, bool|int|float|string}> */
     public static function constants(): iterable
@@ -53,6 +53,74 @@ final class ConstantCatalogTest extends TestCase
         self::assertSame($expected, $reader->read($name));
         $reader->setupConstants();
         self::assertSame($predefined ? $original : $expected, constant($name));
+    }
+
+    /** @return iterable<string, array{string, bool}> */
+    public static function edgeCases(): iterable
+    {
+        foreach (self::constants() as $id => [$name, $type]) {
+            yield $id => [$name, in_array($type, ['bool', 'int', 'float', 'int|bool', 'mod'], true)];
+        }
+    }
+
+    #[DataProvider('edgeCases')]
+    #[PreserveGlobalState(false)]
+    #[RunInSeparateProcess]
+    public function testMissingAndUnrecognizedValuesSurviveCacheWithTheirTypes(string $name, bool $rejectsUnrecognized): void
+    {
+        unset($_ENV[$name], $_SERVER[$name]);
+        putenv($name);
+        $predefined = defined($name);
+        $original = $predefined ? constant($name) : null;
+        $missing = new EnvReader();
+        $missing->write('RTV_CACHE_SEED', 'fixture');
+        $missing->setupConstants();
+        self::assertNull($missing->read($name));
+        self::assertSame($predefined, defined($name));
+        $file = $this->root . '/missing.php';
+        self::assertTrue($missing->dumpCached($file));
+        $cachedMissing = EnvReader::buildFromCacheDump($file);
+        self::assertNull($cachedMissing->read($name));
+        self::assertSame($predefined, defined($name));
+
+        $reader = new EnvReader();
+        $reader->write($name, 'unrecognized!');
+        $expected = $rejectsUnrecognized ? null : 'unrecognized!';
+        self::assertSame($expected, $reader->read($name));
+        $reader->setupConstants();
+        self::assertSame($predefined || !$rejectsUnrecognized, defined($name));
+        if (defined($name)) {
+            self::assertSame($predefined ? $original : $expected, constant($name));
+        }
+        $file = $this->root . '/unrecognized.php';
+        self::assertTrue($reader->dumpCached($file));
+        $cached = EnvReader::buildFromCacheDump($file);
+        self::assertSame($expected, $cached->read($name));
+        self::assertSame($predefined || !$rejectsUnrecognized, defined($name));
+    }
+
+    #[DataProvider('constants')]
+    #[PreserveGlobalState(false)]
+    #[RunInSeparateProcess]
+    public function testEveryPredefinedConstantSurvivesSetupAndCache(string $name, ?string $type, string $raw, bool|int|float|string $expected): void
+    {
+        unset($_ENV[$name], $_SERVER[$name]);
+        putenv($name);
+        if (!defined($name)) {
+            define($name, 'predefined-fixture');
+        }
+        $original = constant($name);
+        $reader = new EnvReader();
+        self::assertSame($type, ConstantCatalog::TYPES[$name]);
+        $reader->write($name, $raw);
+        $reader->setupConstants();
+        self::assertSame($expected, $reader->read($name));
+        self::assertSame($original, constant($name));
+        $file = $this->root . '/predefined.php';
+        self::assertTrue($reader->dumpCached($file));
+        $cached = EnvReader::buildFromCacheDump($file);
+        self::assertSame($expected, $cached->read($name));
+        self::assertSame($original, constant($name));
     }
 
     public function testBothPinnedCatalogsAreCompleteAndProfileDifferencesStayExplicit(): void

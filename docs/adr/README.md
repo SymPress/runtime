@@ -15,3 +15,6 @@ Implementation decisions after Phase 0:
 
 7. [Filesystem and discovery safety](0007-filesystem-and-discovery-safety.md)
 8. [Environment and database service boundaries](0008-environment-and-database-boundaries.md)
+9. [Independent payload publication and path guards](0009-independent-payload-and-path-guards.md)
+10. [Managed configuration regeneration and build dumps](0010-managed-config-regeneration-and-dumps.md)
+11. [Pinned oracle default environment directory defect](0011-oracle-default-env-directory.md)

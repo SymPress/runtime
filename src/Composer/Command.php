@@ -21,6 +21,9 @@ final class Command extends BaseCommand
     protected function configure(): void
     {
         $this->setDescription('Run the isolated SymPress Runtime application.');
+        if ($this->operation === 'dump-env') {
+            $this->addArgument('environment', InputArgument::REQUIRED, 'Raw environment name to resolve and dump.');
+        }
         if ($this->operation !== null) {
             return;
         }
@@ -43,7 +46,9 @@ final class Command extends BaseCommand
     private function arguments(InputInterface $input): array
     {
         if ($this->operation !== null) {
-            return [$this->operation];
+            $environment = $this->operation === 'dump-env' ? $input->getArgument('environment') : null;
+
+            return is_string($environment) ? [$this->operation, $environment] : [$this->operation];
         }
         $arguments = [];
         foreach (['skip', 'skip-custom', 'ignore-skip-config', 'list-steps', 'force'] as $flag) {
