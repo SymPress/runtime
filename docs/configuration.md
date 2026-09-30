@@ -72,7 +72,7 @@ Compatibility profiles can use different defaults.
 | `custom-steps` | `null` | Class list or name-to-class map included in full runs. |
 | `steps` | `null` | Native DI step contributions. |
 | `db-check` | `true` | Run database preflight; `health` additionally requests a health check. |
-| `dropins` | `null` | Map destination filenames to local files/directories or download URLs. |
+| `dropins` | `null` | Map destination filenames to local files or download URLs. |
 | `dropins-op` | `"auto"` | Local dropin operation: `auto`, `copy`, `symlink` or `none`. |
 | `early-hook-file` | `""` | Trusted PHP file executed before the main WordPress bootstrap. |
 | `env-bootstrap-dir` | `null` | Directory for environment-specific PHP; null resolves to the environment directory. |
@@ -88,7 +88,7 @@ Compatibility profiles can use different defaults.
 | `skip-db-check` | `false` | Deprecated inverse database switch; use `db-check` for new projects. |
 | `skip-steps` | `null` | List of step names to omit from full runs. |
 | `templates-dir` | `null` | Directory containing overrides for individual bundled templates. |
-| `unknown-dropins` | `false` | Allow unrecognized dropin names; also accepts `ask`. |
+| `unknown-dropins` | `false` | Release compatibility profile only: allow unrecognized dropin names; also accepts `ask`. Native mode permits these names regardless of this setting. |
 | `wp-cli-commands` | `[]` | Command strings starting with `wp `, or a JSON/PHP provider path. |
 | `wp-cli-files` | `[]` | Eval-file paths/descriptors, including arguments and skip-wordpress. |
 | `wp-config-autoload` | `false` | Load the configured project Composer autoloader before early PHP hooks. |

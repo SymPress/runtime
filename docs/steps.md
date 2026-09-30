@@ -10,9 +10,9 @@ Native full-run order is shown below. Each step can be selected by slug: `vendor
 | `flushenvcache` | Invalidate the runtime environment cache; retain deployment dumps |
 | `muloader` | Generate the MU package loader; retire recognized stock legacy loaders safely |
 | `envexample` | Generate the environment example when `env-example` is enabled |
-| `dropins` | Publish configured files/directories/verified URLs using `dropins-op` |
+| `dropins` | Publish configured files or verified URLs using `dropins-op` |
 | `movecontent` | Move core content when `move-content` enables it |
-| `publishcontentdev` | Publish `content-dev-dir` through the chosen copy/move/symlink/auto operation |
+| `publishcontentdev` | Publish `content-dev-dir` using `auto`, `copy` or `symlink`; `none` disables publication and `ask` requests a choice |
 | `vcsignorecheck` | Check/create relevant ignore rules using `check-vcs-ignore` and `create-vcs-ignore-file` |
 | `wpcliconfig` | Generate WP-CLI path/bootstrap configuration |
 | `wpcli` | Execute configured eval files and command providers after setup |
