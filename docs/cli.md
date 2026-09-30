@@ -2,16 +2,20 @@
 
 Run these commands from the directory containing your project's `composer.json`.
 
+The development branch provides `bin/runtime`, installed by Composer as
+`vendor/bin/runtime`. This rename is unreleased; version 0.1.0 uses the executable
+name `sympress-runtime`. Update shell and CI scripts when upgrading.
+
 ```sh
 # Inspect configuration without running project providers.
-vendor/bin/sympress-runtime validate
-vendor/bin/sympress-runtime --list-steps
+vendor/bin/runtime validate
+vendor/bin/runtime --list-steps
 
 # Regenerate only the front controller and WordPress configuration.
-vendor/bin/sympress-runtime --no-interaction index wpconfig
+vendor/bin/runtime --no-interaction index wpconfig
 
 # Get machine-readable deployment diagnostics.
-vendor/bin/sympress-runtime doctor --json
+vendor/bin/runtime doctor --json
 ```
 
 ## Commands and flags
@@ -20,9 +24,9 @@ The standalone runner uses the current project directory and its Composer vendor
 
 | Invocation | Meaning |
 | --- | --- |
-| `vendor/bin/sympress-runtime` | Default and custom steps, respecting configured skips |
-| `vendor/bin/sympress-runtime index wpconfig` | Only the requested steps, in that order; WP-CLI is always last |
-| `vendor/bin/sympress-runtime --skip index` | Exclude the named steps in addition to configured skips |
+| `vendor/bin/runtime` | Default and custom steps, respecting configured skips |
+| `vendor/bin/runtime index wpconfig` | Only the requested steps, in that order; WP-CLI is always last |
+| `vendor/bin/runtime --skip index` | Exclude the named steps in addition to configured skips |
 | `--skip-custom` | Exclude custom steps in full/opt-out mode |
 | `--ignore-skip-config` | Ignore only the configured skip list |
 | `--list-steps` | List matching steps, sorted; never execute steps or connect to the database |

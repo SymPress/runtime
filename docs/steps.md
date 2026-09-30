@@ -1,6 +1,6 @@
 # Setup steps
 
-Native full-run order is shown below. Each step can be selected by slug: `vendor/bin/sympress-runtime -n wpconfig index`. WP-CLI runs last even in an explicit selection. Configured skips and optional features govern whether a listed step performs work; listing a step does not imply its inputs exist.
+Native full-run order is shown below. Each step can be selected by slug: `vendor/bin/runtime -n wpconfig index`. WP-CLI runs last even in an explicit selection. Configured skips and optional features govern whether a listed step performs work; listing a step does not imply its inputs exist.
 
 | Slug | Work and principal settings |
 | --- | --- |

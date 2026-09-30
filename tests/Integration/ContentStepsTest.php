@@ -20,7 +20,7 @@ final class ContentStepsTest extends TemporaryProject
     /** @param list<string> $steps */
     private function execute(array $steps): Process
     {
-        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/sympress-runtime', '-n', ...$steps], $this->root, ['COMPOSER_VENDOR_DIR' => false, 'COMPOSER' => false]);
+        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', '-n', ...$steps], $this->root, ['COMPOSER_VENDOR_DIR' => false, 'COMPOSER' => false]);
         $process->run();
 
         return $process;

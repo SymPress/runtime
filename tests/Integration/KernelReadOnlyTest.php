@@ -21,7 +21,7 @@ final class KernelReadOnlyTest extends TemporaryProject
         $this->write('composer.json', '{"extra":{"sympress-runtime":{"require-wp":false,"db-check":false}}}');
         $this->write('vendor/autoload.php', '<?php return require ' . var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true) . ';');
         $this->write('.env', "WP_ENVIRONMENT_TYPE=production\nRUNTIME_READ_ONLY_VALUE=from-build-dump\nSYMPRESS_KERNEL_BUILD_ID=readonly-build\n");
-        $dump = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/sympress-runtime', '-n', 'dump-env', 'production'], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false]);
+        $dump = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', '-n', 'dump-env', 'production'], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false]);
         $dump->mustRun();
         $this->write('.env', 'INVALID="must not be parsed');
         $this->write('config/services.php', <<<'PHP'

@@ -76,7 +76,7 @@ return $services->dbChecker()->status()->installed === true
 ## Run the step
 
 ```sh
-vendor/bin/sympress-runtime -n wpcliconfig wpcli
+vendor/bin/runtime -n wpcliconfig wpcli
 php wp-cli.phar core version
 php wp-cli.phar console doctor --json
 ```

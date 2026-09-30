@@ -48,7 +48,7 @@ configuration. See the [complete manifest](../examples/site/composer.json).
 ## Validate before running setup
 
 ```sh
-vendor/bin/sympress-runtime validate
+vendor/bin/runtime validate
 ```
 
 Validation checks JSON/schema and semantic paths without executing PHP command

@@ -32,7 +32,7 @@
     },
     "autoload": {"psr-4": {"SymPress\\Runtime\\": "src/"}},
     "autoload-dev": {"psr-4": {"SymPress\\Runtime\\Tests\\": "tests/"}},
-    "bin": ["bin/sympress-runtime"],
+    "bin": ["bin/runtime"],
     "extra": {
         "class": "SymPress\\Runtime\\Composer\\Plugin",
         "kernel": {"bundle": "SymPress\\Runtime\\Bridge\\Kernel\\RuntimeBundle", "entry": "sympress/runtime"}

@@ -44,7 +44,7 @@ final class ProductionDoctorTest extends TemporaryProject
     /** @return array{int|null, array<string, string>, string} */
     private function diagnose(string ...$arguments): array
     {
-        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/sympress-runtime', '-n', 'doctor', '--production', '--json', '--webroot=public', ...$arguments], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false]);
+        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', '-n', 'doctor', '--production', '--json', '--webroot=public', ...$arguments], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false]);
         $process->run();
         $report = json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR);
         self::assertIsArray($report);
@@ -231,7 +231,7 @@ final class ProductionDoctorTest extends TemporaryProject
     {
         $this->fixture();
         $this->write('composer.json', '{"extra":{"sympress-runtime":{"require-wp":false}}}');
-        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/sympress-runtime', '-n', 'wpconfig', '--force'], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => dirname(__DIR__, 2) . '/vendor']);
+        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', '-n', 'wpconfig', '--force'], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => dirname(__DIR__, 2) . '/vendor']);
         $process->mustRun();
         [$exit, $checks, $output] = $this->diagnose();
         self::assertSame(0, $exit, $output);

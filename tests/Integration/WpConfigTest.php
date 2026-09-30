@@ -116,7 +116,7 @@ PHP);
     private function generate(array $arguments = ['wpconfig'], array $environment = []): Process
     {
         $package = dirname(__DIR__, 2);
-        $process = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', '-n', ...$arguments], $this->root, array_replace(['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false], $environment));
+        $process = new Process([PHP_BINARY, $package . '/bin/runtime', '-n', ...$arguments], $this->root, array_replace(['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false], $environment));
         $process->run();
 
         return $process;

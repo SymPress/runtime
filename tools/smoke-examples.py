@@ -27,7 +27,7 @@ def main():
         def run(command):
             subprocess.run(command, cwd=project, check=True)
         run([args.composer, "install", "--no-interaction", "--no-progress"])
-        binary = [args.php, str(project / "vendor/bin/sympress-runtime")]
+        binary = [args.php, str(project / "vendor/bin/runtime")]
         run(binary + ["validate"])
         run(binary + ["--list-steps"])
         run(binary + ["--no-interaction"])

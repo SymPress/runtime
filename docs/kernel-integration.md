@@ -5,12 +5,12 @@ The package works without sympress/kernel. When the kernel is installed, generat
 Standalone commands:
 
 ```sh
-vendor/bin/sympress-runtime doctor --json
-vendor/bin/sympress-runtime check
-vendor/bin/sympress-runtime validate
-vendor/bin/sympress-runtime dump-env production
-vendor/bin/sympress-runtime kernel-cache
-vendor/bin/sympress-runtime kernel-cache --generate-build-id
+vendor/bin/runtime doctor --json
+vendor/bin/runtime check
+vendor/bin/runtime validate
+vendor/bin/runtime dump-env production
+vendor/bin/runtime kernel-cache
+vendor/bin/runtime kernel-cache --generate-build-id
 ```
 
 Composer exposes `sympress-runtime:doctor`, `sympress-runtime:check`, `sympress-runtime:validate`, `sympress-runtime:dump-env` and the equivalent step flags on `composer sympress-runtime`. `--generate-build-id` requires an explicit kernel-cache selection.

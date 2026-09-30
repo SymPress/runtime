@@ -56,8 +56,8 @@ Then regenerate autoloading and select the step:
 
 ```sh
 composer dump-autoload
-vendor/bin/sympress-runtime --list-steps
-vendor/bin/sympress-runtime --no-interaction buildmarker
+vendor/bin/runtime --list-steps
+vendor/bin/runtime --no-interaction buildmarker
 ```
 
 This writes `var/build-marker.txt`. Using `FileCreationStepInterface` lets the

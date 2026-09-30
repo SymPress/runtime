@@ -25,7 +25,7 @@ PHP);
     private function command(array $arguments = ['wpcli']): Process
     {
         $package = dirname(__DIR__, 2);
-        $process = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', '-n', ...$arguments], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
+        $process = new Process([PHP_BINARY, $package . '/bin/runtime', '-n', ...$arguments], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
         $process->run();
 
         return $process;
@@ -158,7 +158,7 @@ PHP);
         $this->write('wp-cli.phar', '<?php require ' . var_export($bootstrap, true) . ';');
         $this->write('wp-cli-global.yml', '{}');
         $package = dirname(__DIR__, 2);
-        $run = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', '-n', 'wpconfig', 'wpcliconfig', 'wpcli'], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false, 'WP_CLI_CONFIG_PATH' => $this->root . '/wp-cli-global.yml', 'WP_CLI_PACKAGES_DIR' => $this->root . '/wp-cli-packages']);
+        $run = new Process([PHP_BINARY, $package . '/bin/runtime', '-n', 'wpconfig', 'wpcliconfig', 'wpcli'], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false, 'WP_CLI_CONFIG_PATH' => $this->root . '/wp-cli-global.yml', 'WP_CLI_PACKAGES_DIR' => $this->root . '/wp-cli-packages']);
         $run->run();
         self::assertSame(0, $run->getExitCode(), $run->getErrorOutput());
         self::assertStringContainsString('WP-CLI 2.12.0', $run->getOutput());

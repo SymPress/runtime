@@ -22,7 +22,7 @@ final class DoctorTest extends TemporaryProject
 
     private function diagnose(string $command = 'doctor'): Process
     {
-        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/sympress-runtime', '-n', $command, '--json', '-vvv'], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false]);
+        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', '-n', $command, '--json', '-vvv'], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false]);
         $process->run();
 
         return $process;

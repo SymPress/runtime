@@ -21,7 +21,7 @@ final class RunnerProcess
             if (!chmod($file, 0600) || file_put_contents($file, json_encode($context->toArray(), JSON_THROW_ON_ERROR)) === false) {
                 throw new RuntimeException('Cannot secure or write runner context.');
             }
-            $command = [PHP_BINARY, dirname(__DIR__, 2) . '/bin/sympress-runtime', '--runtime-context=' . $file, ...$arguments];
+            $command = [PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', '--runtime-context=' . $file, ...$arguments];
             $process = proc_open($command, [STDIN, STDOUT, STDERR], $pipes, $context->root, null, ['bypass_shell' => true]);
             if (!is_resource($process)) {
                 throw new RuntimeException('Cannot start the isolated runtime process.');

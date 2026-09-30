@@ -36,7 +36,7 @@ final class WordPressBootTest extends TemporaryProject
             $this->write('content/mu-plugins/z-last/main.php', "<?php\n/* Plugin Name: Last */\n" . '$GLOBALS["fixture_boots"][] = "last"; $file = "changed";');
             $this->write('content/mu-plugins/a-first/main.php', "<?php\n/* Plugin Name: First */\n" . '$GLOBALS["fixture_boots"][] = "first"; $fixtureGlobalDb = $wpdb instanceof wpdb;');
             $package = dirname(__DIR__, 2);
-            $setup = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', '-n', 'wpconfig', 'muloader'], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
+            $setup = new Process([PHP_BINARY, $package . '/bin/runtime', '-n', 'wpconfig', 'muloader'], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
             $setup->mustRun();
             $loader = $this->root . '/content/mu-plugins/sympress-runtime-mu-loader.php';
             rename($loader, $this->root . '/linked-loader.php');
@@ -111,7 +111,7 @@ PHP);
             $this->write('content/keep', 'isolated content');
             $this->write('composer.json', '{"extra":{"wordpress-install-dir":"wp","wordpress-content-dir":"content","sympress-runtime":{"require-wp":false,"db-check":false,"cache-env":false}}}');
             $package = dirname(__DIR__, 2);
-            $generate = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', 'wpconfig', '-n'], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
+            $generate = new Process([PHP_BINARY, $package . '/bin/runtime', 'wpconfig', '-n'], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
             $generate->run();
             self::assertSame(0, $generate->getExitCode(), $generate->getErrorOutput());
             self::assertFileDoesNotExist($this->root . '/vendor/autoload.php');
@@ -139,7 +139,7 @@ PHP);
             ];
             $hashes = [];
             if ($readOnlyDump) {
-                $dump = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', '-n', 'dump-env', 'production'], $this->root, $environment + ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
+                $dump = new Process([PHP_BINARY, $package . '/bin/runtime', '-n', 'dump-env', 'production'], $this->root, $environment + ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
                 $dump->mustRun();
                 $this->write('.env', 'INVALID="must not be parsed');
                 $environment = array_fill_keys(array_keys($environment), false);

@@ -20,7 +20,7 @@ final class MigrationTest extends TemporaryProject
     /** @param list<string> $arguments */
     private function migrate(array $arguments = []): Process
     {
-        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/sympress-runtime', 'migrate', '--json', ...$arguments], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false]);
+        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', 'migrate', '--json', ...$arguments], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false]);
         $process->run();
 
         return $process;

@@ -64,7 +64,7 @@ PHP;
     public function testLegacyInterfacesLocatorConstructorAndDefaultReplacementWorkInChild(string $constructor): void
     {
         $this->fixture($constructor);
-        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/sympress-runtime', '-n', 'index'], $this->root, ['COMPOSER_VENDOR_DIR' => false, 'COMPOSER' => false]);
+        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', '-n', 'index'], $this->root, ['COMPOSER_VENDOR_DIR' => false, 'COMPOSER' => false]);
         $process->run();
         self::assertSame(0, $process->getExitCode(), $process->getErrorOutput());
         self::assertStringContainsString("legacy body\nlegacy callback:2:index", $process->getOutput());
@@ -81,7 +81,7 @@ PHP;
     public function testRequiredComposerObjectProducesConcreteMigrationDiagnostic(): void
     {
         $this->fixture('private \\WeCodeMore\\WpStarter\\Util\\Locator $locator, private \\Composer\\Composer $composer');
-        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/sympress-runtime', '-n', 'index'], $this->root, ['COMPOSER_VENDOR_DIR' => false, 'COMPOSER' => false]);
+        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', '-n', 'index'], $this->root, ['COMPOSER_VENDOR_DIR' => false, 'COMPOSER' => false]);
         $process->run();
         self::assertNotSame(0, $process->getExitCode());
         self::assertStringContainsString('LegacyFixtureStep::$composer', $process->getErrorOutput());
