@@ -49,7 +49,8 @@ final class RuntimeCommand extends Command
     {
         $this->setDescription(match ($this->operation) {
             'validate' => 'Validate project configuration without running steps.',
-            'doctor', 'check' => 'Check project configuration and deployment readiness.',
+            'doctor' => 'Check project configuration and deployment readiness.',
+            'check' => 'Alias of doctor: check project configuration and deployment readiness.',
             'dump-env' => 'Dump a resolved environment for deployment.',
             'flush-env-cache' => 'Remove the runtime environment cache.',
             'migrate' => 'Migrate compatibility configuration to native Runtime.',
@@ -62,9 +63,9 @@ final class RuntimeCommand extends Command
         }
         if (in_array($this->operation, ['doctor', 'check'], true)) {
             $this->addOption('json', null, InputOption::VALUE_NONE, 'Print structured diagnostics without environment values.');
-            foreach (['production', 'database-health', 'quick'] as $flag) {
-                $this->addOption($flag, null, InputOption::VALUE_NONE);
-            }
+            $this->addOption('production', null, InputOption::VALUE_NONE, 'Run strict production deployment checks.');
+            $this->addOption('database-health', null, InputOption::VALUE_NONE, 'Run database table health checks with mysqlcheck.');
+            $this->addOption('quick', null, InputOption::VALUE_NONE, 'Use mysqlcheck --quick to reduce work; requires --database-health.');
             $this->addOption('php-user', null, InputOption::VALUE_REQUIRED, 'PHP-FPM user for POSIX access checks.');
             $this->addOption('webroot', null, InputOption::VALUE_REQUIRED, 'Actual web server document root.');
         }

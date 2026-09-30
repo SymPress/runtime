@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Describe the production and database health flags in diagnostic help, including the requirement for `--quick`, and identify `check` as an alias of `doctor` in command listings.
+
 ## 1.1.0 — 2026-09-30
 
 - Support Symfony Console `list`, `help`, command-specific help and shell completion without interpreting them as setup steps.
