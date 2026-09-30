@@ -28,11 +28,13 @@ try {
             assert.doesNotMatch(await page.locator('body').innerText(), /Fatal error:|There has been a critical error|Error establishing a database connection/);
             await page.screenshot({ path: path.join(outputDirectory, `${name}-home.png`), fullPage: true });
             await page.goto(`${env.WP_HOME}/wp-login.php`, { waitUntil: 'domcontentloaded' });
+            assert.equal(new URL(page.url()).pathname, '/wp-login.php', 'Login must remain at the public root.');
+            assert.equal(new URL(await page.locator('#loginform').getAttribute('action'), page.url()).pathname, '/wp-login.php', 'Login POST must use the public root.');
             await page.locator('#user_login').fill(env.WP_ADMIN_USERNAME);
             await page.locator('#user_pass').fill(env.WP_ADMIN_PASSWORD);
             await page.locator('#wp-submit').click();
             await page.getByRole('heading', { name: 'Dashboard', exact: true }).waitFor();
-            assert.match(page.url(), /\/wp-admin\//);
+            assert.equal(new URL(page.url()).pathname, '/wp-admin/', 'Dashboard must remain at the public root.');
             assert.equal(await page.locator('#adminmenu').count(), 1);
             await page.screenshot({ path: path.join(outputDirectory, `${name}-admin.png`), fullPage: true });
             assert.deepEqual(errors, [], 'Browser JavaScript must not fail.');
