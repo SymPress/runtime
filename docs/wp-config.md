@@ -1,0 +1,28 @@
+# Generated wp-config and sections
+
+The `wpconfig` step generates the main configuration at the project root in native/upstream-dev profiles. The release-3.0.1 profile uses the core parent. A proxy in the core parent is generated when required. Both files are parsed before publication. Native unmarked files require overwrite approval; protected paths, symlinks and directories retain their documented guards. Existing salts and edited managed sections are preserved during regeneration.
+
+The configuration loads WordPress's hook API, optionally the project Composer autoloader, and a scoped parser from `var/runtime/<fingerprint>/bootstrap.php`. That payload is required on every request: it is a deployment artifact, not disposable cache. `wp-config-autoload` defaults false natively and true in legacy profiles. With it disabled, the environment parser works without Composer; application hooks that use Composer classes still need their own bootstrap.
+
+Sections use PHP labels and paired comments, for example:
+
+```php
+BEFORE_BOOTSTRAP : {
+    // Trusted project PHP.
+} #@@/BEFORE_BOOTSTRAP
+```
+
+All nineteen sections are supported: `DEBUG_INFO_INIT`, `ABSPATH`, `AUTOLOAD`, `WPS_GETENV_FUNCTION`, `ENV_VARIABLES`, `KEYS`, `DB_SETUP`, `EARLY_HOOKS`, `DEFAULT_ENV`, `SSL_FIX`, `URL_CONSTANTS`, `THEMES_REGISTER`, `ADMIN_COLOR`, `ENV_CACHE`, `DEBUG_INFO`, `GETENV_FILTER`, `BEFORE_BOOTSTRAP`, `CLEAN_UP`, `WP_CLI_HACK`.
+
+Custom steps obtain the editor through `$services->wpConfigSectionEditor()`:
+
+```php
+$editor = $services->wpConfigSectionEditor();
+$editor->append('BEFORE_BOOTSTRAP', 'define("PROJECT_BOOTSTRAPPED", true);');
+```
+
+`sectionContent()` reads the normalized body. `append()` and `prepend()` add content with a call-site/content marker so a repeated invocation from that location is a no-op. `replace()` replaces the body; `delete()` empties it while retaining the section. Names are case-insensitive. Missing sections are a no-op for edits and read as an empty string. Dollar signs/backslashes in inserted PHP stay literal. These semantics intentionally fix the legacy editor's replacement and duplicate edge cases; exact differences are recorded in [ADR 0005, D15](adr/0005-compatibility-and-differences.md).
+
+Keep section delimiters intact. Regeneration retains edited bodies, including manually maintained early autoload code; changing configuration options does not silently discard those edits. Review preservation diagnostics after template/configuration upgrades. Custom templates take responsibility for their bootstrap and must be tested with real WordPress, WP-CLI and the selected autoload policy.
+
+The generated paths are relative where the layout permits, but unchanged relative paths are only one part of relocation. Environment dumps and compiled kernel/application files can contain absolute paths. Follow [deployment](deployment.md) before moving artifacts to another root.

@@ -13,6 +13,16 @@ resources/legacy-mu-loader.php.txt and resources/legacy-mu-loader-dev.php.txt ar
 the pinned upstream MU loader templates, retained only for byte-exact
 recognition of generated files during migration.
 
+Source-derived API compatibility files (verified against upstream dev revision
+059bbc9198ac51dee86c5233b6b006ca4d8008a4):
+- src/Process/PhpTool.php adapts src/Cli/PhpTool.php: tool interface method
+  signatures, with SymPress namespace and service types.
+- src/Step/NullStep.php adapts src/Step/NullStep.php: extensible no-op step
+  contract and return values, using SymPress StepInterface.
+- src/Step/ScriptHaltSignal.php adapts src/Step/ScriptHaltSignal.php: propagation
+  and step-halting factories/accessors, with readonly promoted properties.
+These adaptations remain covered by the following retained upstream MIT notice.
+
 The MIT License (MIT)
 
 Copyright (c) 2023 Giuseppe Mazzapica and contributors.

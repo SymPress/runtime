@@ -11,6 +11,10 @@ vendor/bin/sympress-runtime migrate
 
 The command reads inline `extra.wpstarter`, referenced JSON and root `wpstarter.json`, followed by native sources. Native values win and root files win within each family. It writes `sympress-runtime.json`, preserving the resolved compatibility profile and explicitly recording changed defaults. `skip-db-check=true` becomes `db-check=false`. Option paths remain relative to the project root.
 
+Keep `release-3.0.1` or `upstream-dev` while preserving the corresponding WP Starter behavior. Selecting `native` is a separate behavior change: explicit step selections override configured skips, `WP_ENVIRONMENT_TYPE` has first selector priority, local dotenv overrides are enabled, and VCS/step ordering differs. Renaming configuration keys alone does not require switching profiles. Review [ADR 0005](adr/0005-compatibility-and-differences.md) before making that decision.
+
+Legacy profiles default `wp-config-autoload` to true; migration records that inherited value explicitly. It loads the actual configured vendor autoloader after WordPress's hook API and before environment PHP and `early-hook-file`, preserving Composer `autoload.files` callbacks and vendor classes at that stage. Retain it if any early code/plugin relies on this behavior. Native defaults false; the environment parser itself remains independent of Composer either way. Existing edited `AUTOLOAD` sections are preserved, so inspect regeneration diagnostics and custom templates rather than assuming an option change rewrote hand-maintained PHP.
+
 | Option | Behavior |
 | --- | --- |
 | `--output=<path>` | Choose a target inside the project; point `extra.sympress-runtime` to it when it is not the root default |
@@ -27,3 +31,7 @@ After review, remove `extra.wpstarter`, archive the old root config, replace the
 Compatibility remains available until PHP and configuration migration are complete. Legacy configuration sources, extension metadata and lifecycle names produce diagnostics; loaded PHP references report each legacy symbol once per invocation. Eager type aliases preserve PHP parameter checking without loading the old package. Set `compatibility=false` after removing old sources, extension types/metadata, lifecycle names and deprecated options. It disables generated getter/filter adapters and rejects remaining legacy configuration/metadata clearly. HTTP deprecations go to the log and the WordPress deprecation action, never into the response body.
 
 Regenerate the runtime files, validate, run doctor, and verify WordPress login, MU-loader ownership, kernel boot and `wp console debug:container` in a fresh environment before switching production. The migration command alone is not a full parity or deployment acceptance result.
+
+With `compatibility=false`, `WPSTARTER_ENV_LOADED` and `WP_STARTER_ENV_TO_CONST` no longer control parsing or constant creation. Replace them with `SYMPRESS_RUNTIME_ENV_LOADED` and `SYMPRESS_RUNTIME_ENV_TO_CONST` if those capabilities are needed. Enabled legacy controls emit name-only deprecation diagnostics, without exposing values or writing into HTTP responses. WordPress environment aliases such as `WP_ENV` remain supported.
+
+Caches and build dumps record the compatibility mode. Earlier formats without that field are treated as compatibility-enabled. After disabling compatibility, run `vendor/bin/sympress-runtime flush-env-cache` and regenerate any build dump with `vendor/bin/sympress-runtime dump-env <environment>` before deploying the new generated configuration. A mode mismatch fails explicitly instead of restoring constants derived through legacy controls.

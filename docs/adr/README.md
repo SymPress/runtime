@@ -26,3 +26,4 @@ Implementation decisions after Phase 0:
 17. [Consumer CLI isolation and link replacement](0017-consumer-cli-isolation-and-link-replacement.md)
 18. [Relative environment example directories](0018-relative-environment-example-directory.md)
 19. [Standalone WordPress package layouts](0019-standalone-wordpress-package-layout.md)
+20. [Early project autoload and bounded service downloads](0020-early-autoload-and-download-limits.md)

@@ -4,11 +4,11 @@ Status: accepted by the project owner on 2026-09-29 with Phase 0 approval.
 
 ## Constraint
 
-The work order requires Symfony Dotenv parsing and a generated wp-config without a Composer dependency at runtime. Upstream templates directly require Composer autoload and WordPressEnvBridge. Simply renaming that require would violate the requested boundary. A build-time dump alone would lose first-request dotenv parsing and therefore is not a full replacement.
+The work order requires Symfony Dotenv parsing and the ability to run generated wp-config without Composer. Upstream templates additionally load Composer early so application files can register hooks and use vendor classes. These are separate capabilities: the parser must remain independent while early project autoload remains available. ADR 0020 corrects the initial unconditional omission discovered during review. A build-time dump alone would lose first-request dotenv parsing and therefore is not a full replacement.
 
 ## Decision
 
-Build a versioned, self-contained bootstrap payload from the runtime's own environment implementation and a narrowly scoped Symfony Dotenv distribution. Embed it in, or emit it alongside, the generated wp-config with direct requires only. It must contain every transitive parser class it uses and no calls to vendor/autoload.php, Composer APIs or runner DI. The exact payload format is an implementation detail to validate in Phase 2; the boundary is an acceptance test that removes vendor/autoload.php before executing the generated config against stub WordPress files.
+Build a versioned, self-contained bootstrap payload from the runtime's own environment implementation and a narrowly scoped Symfony Dotenv distribution. Emit it alongside generated wp-config with direct requires only. The payload contains every transitive parser class it uses and no calls to vendor/autoload.php, Composer APIs or runner DI. It is published under `var/runtime/<fingerprint>/`. With `wp-config-autoload=false`, acceptance tests remove vendor/autoload.php before executing generated configuration. Legacy profiles enable early application autoload by default; this explicit application dependency does not change the parser payload's independence. See [deployment](../deployment.md) for mandatory publication and rollback-safe retention.
 
 Keep upstream section identifiers and placeholder compatibility in the generated main file. Native generated artifacts have explicit ownership/version markers. The payload is deterministic for a given runtime version and settings. Build-time dump bypasses parser work but does not replace the parser capability. Atomic replacement must not leave main file and payload on incompatible versions.
 

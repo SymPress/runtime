@@ -1,8 +1,8 @@
 # SymPress Runtime
 
-`sympress/runtime` will replace WP Starter across the SymPress ecosystem.
+`sympress/runtime` provides Composer project setup and generated WordPress runtime configuration for SymPress, with WP Starter migration support.
 
-**Status: Phases 1-5 are available as stacked draft PRs. Phase 6 implements migration and compatibility diagnostics; full parity acceptance and consumer migration remain open. Phase 0 was approved on 2026-09-29.**
+**Status: Phases 1–6 are merged. Review corrections and final parity acceptance are tracked in [the acceptance record](docs/acceptance.md). No stable release or universal drop-in acceptance is claimed.**
 
 Requires PHP 8.5 and Symfony 8.1. The Composer plugin runs application code in a separate PHP process. The standalone binary also recovers standard WordPress package paths after `composer install --no-plugins`, before loading project code. WPackagist, private repositories and local Composer packages keep the regular installer workflow; dependency resolution and downloads stay with Composer. See [the package-layout boundaries](docs/adr/0019-standalone-wordpress-package-layout.md) and [the acceptance record](docs/acceptance.md).
 
@@ -15,6 +15,13 @@ composer qa
 
 All twelve inventoried setup steps are implemented, together with scripts/events, extension autoloading, legacy step adapters, environment dumps and cache flushing. Kernel maintenance, optional boot ownership and doctor/check support standalone, Composer and kernel-console workflows. Tests cover isolated Composer execution, independent generated configuration, real WordPress/WP-CLI/VCS fixtures and an actual compiled kernel on a read-only filesystem.
 
+- [Getting started](docs/getting-started.md)
+- [Settings cheat sheet](docs/settings-cheat-sheet.md)
+- [Environment, caches and dumps](docs/environment.md)
+- [Generated wp-config and sections](docs/wp-config.md)
+- [Setup steps](docs/steps.md)
+- [WP-CLI](docs/wp-cli.md)
+- [Deployment and payload retention](docs/deployment.md)
 - [Parity acceptance matrix](docs/parity.md)
 - [Source evidence and reproducibility](docs/source-evidence.md)
 - [Architecture decisions](docs/adr/README.md)
