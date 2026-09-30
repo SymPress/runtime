@@ -16,6 +16,8 @@ use SymPress\Runtime\Tests\Support\TemporaryProject;
 final class MuPluginListTest extends TemporaryProject
 {
     #[Group('PAR-SVC-015')]
+    #[Group('PAR-MU-001')]
+    #[Group('PAR-MU-002')]
     public function testTypedPackagesFallbackDiscoveryHeadersDeduplicationAndDropinExclusion(): void
     {
         $paths = new Paths($this->root);

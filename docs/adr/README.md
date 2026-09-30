@@ -18,3 +18,5 @@ Implementation decisions after Phase 0:
 9. [Independent payload publication and path guards](0009-independent-payload-and-path-guards.md)
 10. [Managed configuration regeneration and build dumps](0010-managed-config-regeneration-and-dumps.md)
 11. [Pinned oracle default environment directory defect](0011-oracle-default-env-directory.md)
+12. [WP-CLI arguments and diagnostics](0012-wp-cli-argument-and-diagnostic-boundaries.md)
+13. [Content publication and VCS verification](0013-content-publication-and-vcs-verification.md)

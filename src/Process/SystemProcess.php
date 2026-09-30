@@ -6,6 +6,7 @@ namespace SymPress\Runtime\Process;
 
 use SymPress\Runtime\Console\Io;
 use SymPress\Runtime\Filesystem\Paths;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use Throwable;
 
@@ -39,7 +40,8 @@ final class SystemProcess
 
             return true;
         } catch (Throwable $error) {
-            $this->io->error($error->getMessage());
+            $code = $error instanceof ProcessFailedException ? $error->getProcess()->getExitCode() : null;
+            $this->io->error($code === null ? 'Process could not be started or completed.' : 'Process failed with exit code ' . $code . '.');
 
             return false;
         }

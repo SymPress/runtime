@@ -36,6 +36,9 @@ final readonly class PhpToolProcess
     /** @param list<string>|string $command */
     private function prepare(array|string $command): string
     {
+        if (is_array($command) && $this->tool instanceof WpCliTool) {
+            return $this->tool->prepareArguments([$this->toolPath, ...$command], $this->paths);
+        }
         $arguments = is_array($command) ? implode(' ', array_map(escapeshellarg(...), $command)) : $command;
 
         return $this->tool->prepareCommand(escapeshellarg($this->toolPath) . ' ' . $arguments, $this->paths, $this->io);
