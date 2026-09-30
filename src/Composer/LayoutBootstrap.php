@@ -16,7 +16,17 @@ final class LayoutBootstrap
     /** @param list<string> $arguments */
     public static function prepare(string $root, string $vendor, string $manifest, array $arguments): void
     {
+        $firstArgument = true;
         foreach (array_slice($arguments, 1) as $argument) {
+            if ($argument === '--') {
+                $firstArgument = false;
+            }
+            if ($firstArgument && !str_starts_with($argument, '-')) {
+                if (in_array($argument, ['list', 'help', 'completion', '_complete'], true)) {
+                    return;
+                }
+                $firstArgument = false;
+            }
             if (in_array($argument, ['--help', '-h', '--version', '-V', '--list-steps', 'validate', 'doctor', 'check', 'migrate', 'dump-env', 'flush-env-cache', '--dry-run', '--check', 'prune', 'env:diff'], true)) {
                 return;
             }

@@ -22,6 +22,8 @@ final class WpCliBridgeTest extends TemporaryProject
         yield 'environment diff' => [['env:diff', '--json']];
         yield 'dump argument boundaries' => [['dump-env', 'environment with spaces']];
         yield 'list setup steps' => [['--list-steps']];
+        yield 'list commands' => [['list', '--raw']];
+        yield 'command help' => [['help', 'doctor']];
         yield 'preview prune' => [['prune', '--keep=1', '--dry-run', '--json']];
     }
 

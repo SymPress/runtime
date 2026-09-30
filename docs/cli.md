@@ -7,6 +7,10 @@ Version 0.1.0 used the executable name `sympress-runtime`. Update shell and CI
 scripts when upgrading; see the [0.2.0 upgrade notes](releases/0.2.0.md).
 
 ```sh
+# Discover commands and their options.
+vendor/bin/runtime list
+vendor/bin/runtime help doctor
+
 # Inspect configuration without running project providers.
 vendor/bin/runtime validate
 vendor/bin/runtime --list-steps
@@ -25,6 +29,9 @@ The standalone runner uses the current project directory and its Composer vendor
 | Invocation | Meaning |
 | --- | --- |
 | `vendor/bin/runtime` | Default and custom steps, respecting configured skips |
+| `list [--raw] [--format=json]` | List Console commands without loading setup configuration, running providers or recovering package layout |
+| `help [command]`, `<command> --help` | Show Symfony Console help; `help run` documents setup options |
+| `run [steps]` | Explicit form of the default setup command |
 | `vendor/bin/runtime index wpconfig` | Only the requested steps, in that order; WP-CLI is always last |
 | `vendor/bin/runtime --skip index` | Exclude the named steps in addition to configured skips |
 | `--skip-custom` | Exclude custom steps in full/opt-out mode |
@@ -54,6 +61,13 @@ The standalone runner uses the current project directory and its Composer vendor
 | `env:diff [--json]` | Compare environment example names with the selected file chain/process; never print values or execute substitutions. Exit 1 for missing names. |
 
 ## Selecting steps
+
+`list` lists Console commands; `--list-steps` lists your configured setup steps.
+Direct selection such as `runtime index wpconfig` still works. If a custom step
+shares a Console command name such as `list`, `help` or `run`, select it explicitly
+with `runtime run list` or `runtime -- list`. For an opt-out selection, use
+`runtime run --skip list`. Only the first positional name selects a command;
+`runtime index help` selects the two steps.
 
 `--skip` without names is an error. Native explicit selection wins over `skip-steps` and `--skip-custom`. Command-only steps are available only through explicit selection or listing. Unknown selected names produce diagnostics; a partial valid selection still executes, while a selection containing no valid steps fails.
 

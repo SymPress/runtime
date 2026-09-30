@@ -138,6 +138,12 @@ PHP);
         self::assertStringContainsString('Runtime setup deferred', $require->getErrorOutput());
         self::assertFileExists($this->root . '/vendor/bin/runtime');
         self::assertFileExists($this->root . '/composer.lock');
+        foreach ([['list', '--raw'], ['help', 'doctor']] as $arguments) {
+            $discovery = new Process([PHP_BINARY, $this->root . '/vendor/bin/runtime', ...$arguments], $this->root);
+            $discovery->run();
+            self::assertSame(0, $discovery->getExitCode(), $discovery->getErrorOutput());
+            self::assertStringContainsString('doctor', $discovery->getOutput());
+        }
         $repeat = $this->composer(['install', '--no-progress']);
         self::assertSame(0, $repeat->getExitCode(), $repeat->getErrorOutput());
         self::assertStringContainsString('Runtime setup deferred', $repeat->getErrorOutput());

@@ -47,7 +47,16 @@ final class RuntimeCommand extends Command
 
     protected function configure(): void
     {
-        $this->setDescription($this->operation === 'validate' ? 'Validate project configuration without running steps.' : 'Run project setup steps.');
+        $this->setDescription(match ($this->operation) {
+            'validate' => 'Validate project configuration without running steps.',
+            'doctor', 'check' => 'Check project configuration and deployment readiness.',
+            'dump-env' => 'Dump a resolved environment for deployment.',
+            'flush-env-cache' => 'Remove the runtime environment cache.',
+            'migrate' => 'Migrate compatibility configuration to native Runtime.',
+            'prune' => 'Prune unused runtime payloads and package backups.',
+            'env:diff' => 'Compare environment variable names with the example.',
+            default => 'Run project setup steps.',
+        });
         if ($this->operation === 'dump-env') {
             $this->addArgument('environment', InputArgument::REQUIRED, 'Raw environment name to resolve and dump.');
         }
