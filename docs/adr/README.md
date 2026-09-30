@@ -22,3 +22,7 @@ Implementation decisions after Phase 0:
 13. [Content publication and VCS verification](0013-content-publication-and-vcs-verification.md)
 14. [Extension lifecycle and legacy API](0014-extension-lifecycle-and-legacy-api.md)
 15. [Kernel operations and diagnostics](0015-kernel-operations-and-diagnostics.md)
+16. [Migration and compatibility diagnostics](0016-migration-and-compatibility-diagnostics.md)
+17. [Consumer CLI isolation and link replacement](0017-consumer-cli-isolation-and-link-replacement.md)
+18. [Relative environment example directories](0018-relative-environment-example-directory.md)
+19. [Standalone WordPress package layouts](0019-standalone-wordpress-package-layout.md)

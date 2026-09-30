@@ -122,6 +122,7 @@ PHP);
 
     #[Group('PAR-SYM-001')]
     #[Group('PAR-NATIVE-008')]
+    #[Group('PAR-SYM-007')]
     public function testComposerForwardsDoctorJsonAndExplicitKernelBuildIdGeneration(): void
     {
         $this->fixture();
@@ -135,6 +136,12 @@ PHP);
         self::assertSame(0, $build->getExitCode(), $build->getErrorOutput());
         self::assertFileExists($this->root . '/var/runtime/production/kernel-build-id.json');
         self::assertMatchesRegularExpression('/SYMPRESS_KERNEL_BUILD_ID=[a-f0-9]{32}/', $build->getOutput());
+        $migration = $this->composer(['sympress-runtime:migrate', '--json', '--dry-run', '--output=review/runtime.json', '--no-interaction']);
+        self::assertSame(0, $migration->getExitCode(), $migration->getErrorOutput());
+        $report = json_decode($migration->getOutput(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('would-write', $report['status']);
+        self::assertSame($this->root . '/review/runtime.json', $report['target']);
+        self::assertDirectoryDoesNotExist($this->root . '/review');
     }
 
     #[Group('PAR-CLI-001')]
@@ -168,6 +175,7 @@ PHP);
     }
 
     #[Group('PAR-CLI-014')]
+    #[Group('PAR-QA-002')]
     public function testNoPluginsInstallAndStandaloneProduceTheSameFile(): void
     {
         $this->fixture();
@@ -202,6 +210,7 @@ PHP);
         self::assertTrue($this->context()['decorated']);
     }
 
+    #[Group('PAR-SVC-016')]
     public function testEnvironmentServiceIsSharedAndOnlyLoadsWhenUsed(): void
     {
         $this->fixture();
@@ -275,6 +284,7 @@ PHP);
     }
 
     #[DataProvider('extensionTypes')]
+    #[Group('PAR-CLI-017')]
     public function testExtensionRootDoesNotAutorunSetup(string $type): void
     {
         $this->fixture();

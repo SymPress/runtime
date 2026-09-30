@@ -6,6 +6,7 @@
     "require": {
         "php": "^8.5",
         "composer-plugin-api": "^2.6",
+        "composer/composer": "^2.8",
         "composer/semver": "^3.4",
         "opis/json-schema": "^2.6",
         "symfony/console": "^8.1",
@@ -17,7 +18,6 @@
         "symfony/process": "^8.1"
     },
     "require-dev": {
-        "composer/composer": "^2.8",
         "phpunit/phpunit": "^13.0",
         "sympress/kernel": "dev-main",
         "sympress/qa": "dev-main"

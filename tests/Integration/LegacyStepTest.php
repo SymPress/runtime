@@ -59,6 +59,8 @@ PHP;
     #[DataProvider('constructors')]
     #[Group('PAR-EXT-007')]
     #[Group('PAR-EXT-001')]
+    #[Group('PAR-SYM-009')]
+    #[Group('PAR-NATIVE-001')]
     public function testLegacyInterfacesLocatorConstructorAndDefaultReplacementWorkInChild(string $constructor): void
     {
         $this->fixture($constructor);
@@ -67,6 +69,7 @@ PHP;
         self::assertSame(0, $process->getExitCode(), $process->getErrorOutput());
         self::assertStringContainsString("legacy body\nlegacy callback:2:index", $process->getOutput());
         self::assertStringContainsString('legacy postprocess', $process->getOutput());
+        self::assertSame(1, substr_count($process->getErrorOutput(), 'Deprecated WP Starter API: WeCodeMore\\WpStarter\\Util\\Locator;'));
         self::assertFileDoesNotExist($this->root . '/index.php');
         $normal = new Process([PHP_BINARY, '-r', 'require ' . var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true) . '; echo (int) interface_exists("WeCodeMore\\WpStarter\\Step\\Step");']);
         $normal->mustRun();

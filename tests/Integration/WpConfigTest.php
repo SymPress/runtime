@@ -18,6 +18,17 @@ use Symfony\Component\Process\Process;
 
 final class WpConfigTest extends TemporaryProject
 {
+    #[Group('PAR-WP-010')]
+    public function testDatabaseDefaultsAndExplicitValuesSurviveGeneratedBoot(): void
+    {
+        $this->fixture();
+        self::assertSame(0, $this->generate()->getExitCode());
+        $report = 'echo json_encode([DB_HOST, DB_CHARSET, DB_COLLATE, defined("DB_NAME"), defined("DB_USER"), defined("DB_PASSWORD"), $table_prefix]);';
+        self::assertSame(['localhost', 'utf8', '', false, false, false, 'wp_'], $this->boot($report, environment: ['DB_HOST' => false, 'DB_CHARSET' => false, 'DB_COLLATE' => false, 'DB_TABLE_PREFIX' => false]));
+        $this->write('.env', "DB_HOST=db:3307\nDB_CHARSET=utf8mb4\nDB_COLLATE=utf8mb4_unicode_ci\nDB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=synthetic\nDB_TABLE_PREFIX=site_\n");
+        self::assertSame(['db:3307', 'utf8mb4', 'utf8mb4_unicode_ci', true, true, true, 'site_'], $this->boot($report));
+    }
+
     /** @param array<string, mixed> $settings */
     private function fixture(array $settings = []): void
     {
@@ -64,6 +75,41 @@ PHP);
         return json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR);
     }
 
+    #[Group('PAR-SYM-009')]
+    #[Group('PAR-ENV-021')]
+    public function testHttpDeprecationsAreOnceOnlyAndNeverContaminateTheResponse(): void
+    {
+        $this->fixture();
+        $this->write('.env', "DB_PASSWORD='private-http-test-value'\n");
+        $generated = $this->generate();
+        self::assertSame(0, $generated->getExitCode(), $generated->getErrorOutput());
+        $this->write('probe.php', <<<'PHP'
+<?php
+require __DIR__ . '/public/wp-config.php';
+$GLOBALS['deprecations'] = 0;
+add_action('deprecated_function_run', static function (): void { ++$GLOBALS['deprecations']; });
+wpstarter_getenv('DB_PASSWORD');
+wpstarter_getenv('DB_PASSWORD');
+echo json_encode(['ok' => true, 'deprecations' => $GLOBALS['deprecations']]);
+PHP);
+        $socket = stream_socket_server('tcp://127.0.0.1:0');
+        self::assertIsResource($socket);
+        $address = stream_socket_get_name($socket, false);
+        self::assertIsString($address);
+        fclose($socket);
+        $server = new Process([PHP_BINARY, '-d', 'display_errors=1', '-S', $address, '-t', $this->root], $this->root);
+        $server->start();
+        try {
+            self::assertTrue($server->waitUntil(static fn (string $type, string $buffer): bool => str_contains($buffer, 'Development Server')));
+            $response = file_get_contents('http://' . $address . '/probe.php');
+            self::assertSame('{"ok":true,"deprecations":1}', $response);
+            self::assertSame(1, substr_count($server->getErrorOutput(), 'wpstarter_getenv is deprecated'));
+            self::assertStringNotContainsString('private-http-test-value', $server->getErrorOutput());
+        } finally {
+            $server->stop();
+        }
+    }
+
     #[Group('PAR-STEP-002')]
     #[Group('PAR-WP-001')]
     #[Group('PAR-WP-002')]
@@ -106,6 +152,7 @@ PHP);
     }
 
     #[Group('PAR-WP-014')]
+    #[Group('PAR-QA-002')]
     public function testSeparateGenerationsRetainSaltsSectionEditsAndUnchangedBytes(): void
     {
         $this->fixture();
@@ -131,6 +178,8 @@ PHP);
     }
 
     #[Group('PAR-STEP-002')]
+    #[Group('PAR-CFG-012')]
+    #[Group('PAR-TPL-005')]
     public function testProtectedProxyBlocksAllConfigWritesAndForceKeepsExistingSalts(): void
     {
         $this->fixture();
@@ -177,6 +226,7 @@ PHP);
     #[Group('PAR-WP-006')]
     #[Group('PAR-WP-007')]
     /** @param array<bool|string|null> $expected */
+    #[Group('PAR-ENV-007')]
     public function testCanonicalEnvironmentDefaults(string $environment, array $expected): void
     {
         $this->fixture();
@@ -189,6 +239,8 @@ PHP);
     #[Group('PAR-WP-009')]
     #[Group('PAR-WP-015')]
     #[Group('PAR-ENV-021')]
+    #[Group('PAR-WP-011')]
+    #[Group('PAR-WP-012')]
     public function testRuntimeHooksCompatibilityAndHealthAllowlist(): void
     {
         $this->fixture(['register-theme-folder' => true]);

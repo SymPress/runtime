@@ -12,11 +12,14 @@ use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Config\Result;
 use SymPress\Runtime\Console\Io;
 use SymPress\Runtime\Console\Question;
+use SymPress\Runtime\Database\DbChecker;
+use SymPress\Runtime\Env\EnvReader;
 use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Services;
 use SymPress\Runtime\Step\BlockingStepInterface;
 use SymPress\Runtime\Step\ConditionalStepInterface;
 use SymPress\Runtime\Step\FileCreationStepInterface;
+use SymPress\Runtime\Step\NullStep;
 use SymPress\Runtime\Step\OptionalStepInterface;
 use SymPress\Runtime\Step\PostProcessStepInterface;
 use SymPress\Runtime\Step\Runner;
@@ -33,9 +36,12 @@ final class LegacyApi
         'Config\\Result' => Result::class,
         'Io\\Io' => Io::class,
         'Io\\Question' => Question::class,
+        'Env\\WordPressEnvBridge' => EnvReader::class,
+        'Util\\DbChecker' => DbChecker::class,
         'Util\\Paths' => Paths::class,
         'Util\\Locator' => Services::class,
         'Step\\Step' => StepInterface::class,
+        'Step\\NullStep' => NullStep::class,
         'Step\\BlockingStep' => BlockingStepInterface::class,
         'Step\\ConditionalStep' => ConditionalStepInterface::class,
         'Step\\FileCreationStep' => FileCreationStepInterface::class,
@@ -50,6 +56,23 @@ final class LegacyApi
     {
         foreach (self::ALIASES as $suffix => $native) {
             self::registerAlias('WeCodeMore\\WpStarter\\' . $suffix, $native);
+        }
+    }
+
+    /** @param list<string> $files */
+    public static function reportUsage(array $files, Io $io): void
+    {
+        // PHP does not autoload parameter aliases on type checks. Register eagerly,
+        // then diagnose declarations/references in files the setup process actually loaded.
+        $files = array_values(array_filter($files, static fn (string $file): bool => !str_starts_with($file, dirname(__DIR__, 2) . '/')));
+        $reported = [];
+        foreach ((new PhpMigrationAnalyzer())->analyze($files) as $finding) {
+            $symbol = $finding['symbol'];
+            if (!str_starts_with($symbol, 'WeCodeMore\\WpStarter') || isset($reported[$symbol])) {
+                continue;
+            }
+            $reported[$symbol] = true;
+            $io->error('Deprecated WP Starter API: ' . $symbol . '; see migrate for replacement guidance.');
         }
     }
 

@@ -35,11 +35,20 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq mercurial subversion
       - name: Verify real VCS integrations
         run: php vendor/bin/phpunit --filter VcsIgnoreStepTest --no-progress --fail-on-skipped
+      - name: Verify executed evidence for every parity row
+        run: |
+          php vendor/bin/phpunit --no-progress
+          php vendor/bin/phpunit --no-logging --list-tests-xml build/test-list.xml
+          python3 -m unittest discover -s tools/tests
+          python3 tools/parity-evidence.py
       - name: Compare pinned oracles and candidate
         run: python3 tools/differential/run.py --oracle-php /usr/bin/php8.2 --candidate-php /usr/bin/php8.5 --composer "$(command -v composer)"
       - name: Preserve exact comparison evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: wpstarter-differential
-          path: build/differential/report.json
+          path: |
+            build/differential/report.json
+            build/parity-evidence.json
+            build/phpunit.xml
           if-no-files-found: error

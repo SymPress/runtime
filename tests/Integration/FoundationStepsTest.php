@@ -77,6 +77,7 @@ final class FoundationStepsTest extends TemporaryProject
     }
 
     #[Group('PAR-STEP-003')]
+    #[Group('PAR-TPL-002')]
     public function testIndexExecutesTheCoreFrontControllerWithQuotedPaths(): void
     {
         $paths = $this->paths("public/word'press");

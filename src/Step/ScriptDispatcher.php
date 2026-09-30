@@ -58,6 +58,10 @@ final readonly class ScriptDispatcher implements EventSubscriberInterface
         $prefix = $event->isPre() ? 'pre-' : 'post-';
         $callbacks = [];
         $run = $event->subject instanceof Runner;
+        $legacyKey = $prefix . 'wpstarter';
+        if ($run && isset($scripts[$legacyKey])) {
+            $this->legacyScript($scripts, $legacyKey, $event);
+        }
         $names = $run ? ['wpstarter', '', 'runtime', 'sympress-runtime'] : [$event->subject->name()];
         foreach ($names as $name) {
             foreach ($scripts as $key => $value) {
@@ -74,6 +78,17 @@ final readonly class ScriptDispatcher implements EventSubscriberInterface
         }
 
         return $callbacks;
+    }
+
+    /** @param array<array-key, mixed> $scripts */
+    private function legacyScript(array &$scripts, string $key, LifecycleEvent $event): void
+    {
+        if ($this->config['compatibility']->is(false)) {
+            unset($scripts[$key]);
+
+            return;
+        }
+        $event->services->io()->error('Deprecated runtime script: ' . $key . '; use ' . str_replace('wpstarter', 'sympress-runtime', $key) . '.');
     }
 
     private function normalize(string $name): string

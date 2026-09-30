@@ -59,6 +59,28 @@ PHP);
     }
 
     #[Group('PAR-WPC-006')]
+    #[Group('PAR-SYM-009')]
+    public function testLegacyEnvironmentProviderReadsSharedProbeFlagsAndWarnsOnce(): void
+    {
+        $this->write('.env', "WPDB_ENV_VALID=true\nWPDB_EXISTS=true\nWP_INSTALLED=false\n");
+        $this->write('commands.php', <<<'PHP'
+<?php
+namespace WeCodeMore\WpStarter;
+$env = new Env\WordPressEnvBridge();
+file_put_contents(__DIR__ . '/legacy-flags.json', json_encode($env->readMany(Util\DbChecker::WPDB_ENV_VALID, Util\DbChecker::WPDB_EXISTS, Util\DbChecker::WP_INSTALLED)));
+if (!$env->read(Util\DbChecker::WPDB_ENV_VALID) || !$env->read(Util\DbChecker::WPDB_EXISTS) || $env->read(Util\DbChecker::WP_INSTALLED)) { throw new \RuntimeException('Legacy probe flags lost'); }
+return ['wp core version'];
+PHP);
+        $this->fixture(['wp-cli-commands' => 'commands.php', 'db-check' => true]);
+        $run = $this->command();
+        self::assertSame(['WPDB_ENV_VALID' => true, 'WPDB_EXISTS' => true, 'WP_INSTALLED' => false], json_decode((string) file_get_contents($this->root . '/legacy-flags.json'), true, flags: JSON_THROW_ON_ERROR));
+        self::assertSame(0, $run->getExitCode(), $run->getErrorOutput());
+        self::assertSame('core', $this->calls()[1][0]);
+        self::assertSame(1, substr_count($run->getErrorOutput(), 'Deprecated WP Starter API: WeCodeMore\\WpStarter\\Env\\WordPressEnvBridge;'));
+        self::assertSame(1, substr_count($run->getErrorOutput(), 'Deprecated WP Starter API: WeCodeMore\\WpStarter\\Util\\DbChecker;'));
+    }
+
+    #[Group('PAR-WPC-006')]
     public function testPhpProviderGetsScopedServicesRunsOnceAndListingDoesNotEvaluateIt(): void
     {
         $this->write('.env', "RTV_PROVIDER=available\n");

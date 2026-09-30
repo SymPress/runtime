@@ -9,6 +9,9 @@ revisions and individual file references are recorded in docs/source-evidence.md
 and docs/upstream-inventory.json. The upstream notice is retained for any
 source-derived portions, including the salt catalog, section-edit format,
 WordPress constant/type catalog and environment alias order.
+resources/legacy-mu-loader.php.txt and resources/legacy-mu-loader-dev.php.txt are
+the pinned upstream MU loader templates, retained only for byte-exact
+recognition of generated files during migration.
 
 The MIT License (MIT)
 

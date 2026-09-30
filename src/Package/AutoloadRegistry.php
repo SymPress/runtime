@@ -22,6 +22,9 @@ final class AutoloadRegistry
             return $empty;
         }
         $extra = $package->getExtra();
+        if (!$compatibility && ($package->getType() === 'wpstarter-extension' || array_key_exists('wpstarter-autoload', $extra))) {
+            throw new InvalidArgumentException('Legacy extension metadata requires compatibility: ' . $package->getName() . '. Migrate its type and autoload key.');
+        }
         $native = array_key_exists('sympress-runtime-autoload', $extra);
         if (!$native && !$compatibility) {
             return $empty;

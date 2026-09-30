@@ -42,6 +42,7 @@ final class WpCliToolTest extends TemporaryProject
     }
 
     #[Group('PAR-SVC-021')]
+    #[Group('PAR-WPC-001')]
     public function testLocalDiscoveryIsOfflineAndPrefersDefaultThenHighestVersion(): void
     {
         $http = new MockHttpClient();
@@ -58,6 +59,7 @@ final class WpCliToolTest extends TemporaryProject
     }
 
     #[Group('PAR-SVC-021')]
+    #[Group('PAR-WPC-002')]
     public function testLatestReleaseLookupIsCachedAndOnlyAcceptsOfficialMatchingAssets(): void
     {
         $release = 'https://github.com/wp-cli/wp-cli/releases/download/v2.12.0/wp-cli-2.12.0.phar';
@@ -77,6 +79,7 @@ final class WpCliToolTest extends TemporaryProject
     }
 
     #[Group('PAR-SVC-021')]
+    #[Group('PAR-WPC-003')]
     public function testSha512IsRequiredAndMismatchCannotPass(): void
     {
         $this->write('download.phar', 'synthetic artifact');

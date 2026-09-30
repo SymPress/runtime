@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -30,7 +31,7 @@ SAMPLES = {
 
 
 def run(argv, cwd, env=None, expected_file=None):
-    result = subprocess.run(argv, cwd=cwd, env=env, text=True, capture_output=True)
+    result = subprocess.run(argv, cwd=cwd, env=env, text=True, capture_output=True, timeout=180)
     if result.returncode or (expected_file is not None and not expected_file.is_file()):
         raise RuntimeError(f"Command failed ({result.returncode}): {argv[0]}\n{result.stdout[-2000:]}\n{result.stderr[-4000:]}")
     return result.stdout
@@ -293,6 +294,124 @@ def compare_steps(work, baseline, autoload, args, report):
         print("PASS dev/steps/vcs-marker: actual ignore evidence replaces marker trust", flush=True)
 
 
+def compare_artifacts(work, baseline, autoload, args, report):
+    oracle = autoload.parent.parent
+    candidate = work / (baseline + "-artifacts")
+    candidate.mkdir()
+    manifest = json.loads((oracle / "composer.json").read_text())
+    options = {"db-check": False, "require-wp": False, "env-dir": ".", "register-theme-folder": False, "env-example": True, "wp-cli-commands": ["wp cli version"]}
+    manifest["config"]["allow-plugins"] = {"wecodemore/wpstarter": True, "composer/installers": False}
+    manifest["extra"] = {"wordpress-install-dir": "public/wp", "wordpress-content-dir": "public/content", "wpstarter": options}
+    write_json(oracle / "composer.json", manifest)
+    write_json(candidate / "composer.json", {"extra": {"wordpress-install-dir": "public/wp", "wordpress-content-dir": "public/content", "sympress-runtime": dict(options, **{"compatibility-profile": BASELINES[baseline][1]})}})
+    for project in [oracle, candidate]:
+        shutil.rmtree(project / "public", ignore_errors=True)
+        core_fixture(project, "development")
+        (project / ".env").unlink()
+        (project / ".env.cached.php").unlink(missing_ok=True)
+        (project / ".env.example").unlink(missing_ok=True)
+        (project / "wp-cli.yml").unlink(missing_ok=True)
+        # The factory eagerly locates WP-CLI even when no CLI commands are configured.
+        # Keep the ordering probe offline; execution/argv have separate fixtures.
+        (project / "wp-cli.phar").write_text('<?php echo "WP-CLI 2.12.0";\n')
+        for path, source in {
+            "single/entry.php": '<?php $GLOBALS["mu_trace"][] = "single";\n',
+            "multi/main.php": '<?php\n// Plugin Name: Main\n$GLOBALS["mu_trace"][] = "main";\n',
+            "multi/helper.php": '<?php throw new RuntimeException("Non-plugin must not load");\n',
+        }.items():
+            target = project / "vendor/fixture" / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(source)
+        (project / "public/content/mu-plugins").mkdir(parents=True)
+        installed_file = project / "vendor/composer/installed.json"
+        installed_file.parent.mkdir(parents=True, exist_ok=True)
+        installed = json.loads(installed_file.read_text()) if installed_file.exists() else {"packages": []}
+        installed["packages"] = [p for p in installed["packages"] if not p["name"].startswith("fixture/")]
+        installed["packages"].extend({"name": "fixture/" + name, "version": "1.0.0", "version_normalized": "1.0.0.0", "type": "wordpress-muplugin", "install-path": "../fixture/" + name} for name in ["single", "multi"])
+        write_json(installed_file, installed)
+    (candidate / "vendor/autoload.php").write_text("<?php return require " + json.dumps(str(ROOT / "vendor/autoload.php")) + ";\n")
+    order_probe = r'''Phar::loadPhar($argv[2], 'composer.phar'); require 'phar://composer.phar/vendor/autoload.php'; $loader = require $argv[1];
+$io = new Composer\IO\NullIO();
+$composer = Composer\Factory::create($io, getcwd() . '/composer.json', true, true);
+$loader->register();
+(new WeCodeMore\WpStarter\ComposerPlugin())->setupAutoload();
+$requirements = WeCodeMore\WpStarter\Util\Requirements::forSelectedStepsCommand($composer, $io, new Composer\Util\Filesystem());
+$locator = new WeCodeMore\WpStarter\Util\Locator($requirements, $composer, $io);
+$locator->wpCliProcess(); // Do not let the upstream factory silently discard constructor failures.
+if (!$locator->config()['wp-cli-commands']->notEmpty()) { throw new RuntimeException('The ordering fixture must enable WP-CLI.'); }
+$steps = WeCodeMore\WpStarter\Util\SelectedStepsFactory::autorun()->selectAndFactory($locator, $composer);
+echo json_encode(array_map(static fn($step) => $step->name(), $steps));'''
+    old_order = json.loads(run([args.oracle_php, "-r", order_probe, str(autoload), args.composer], oracle))
+    new_order_probe = r'''require $argv[1];
+$selection = (new SymPress\Runtime\Console\Selection())->resolve(new SymPress\Runtime\Step\Registry(), [], $argv[2]);
+echo json_encode(array_map(static fn($step) => $step->name, $selection['steps']));'''
+    new_order = json.loads(run([args.candidate_php, "-r", new_order_probe, str(ROOT / "vendor/autoload.php"), BASELINES[baseline][1]], candidate))
+    aliases = {"check-paths": "checkpaths", "build-wp-config": "wpconfig", "build-index": "index", "flush-env-cache": "flushenvcache", "build-mu-loader": "muloader", "build-env-example": "envexample", "move-content": "movecontent", "publish-content-dev": "publishcontentdev", "build-wp-cli-yml": "wpcliconfig", "wp-cli": "wpcli"}
+    if [aliases.get(name, name) for name in old_order] != new_order:
+        raise RuntimeError(f"Effective default step order mismatch: {old_order} / {new_order}")
+    report["cases"].append({"id": baseline + "/steps/effective-default-order", "oracle": old_order, "candidate": new_order, "normalization": "documented legacy step aliases only", "differences": []})
+    sections = []
+    for project, binary, loader, mode in [(oracle, args.oracle_php, autoload, "oracle"), (candidate, args.candidate_php, ROOT / "vendor/autoload.php", "candidate")]:
+        sections.append(json.loads(run([binary, str(ROOT / "tools/differential/section-editor.php"), str(loader), args.composer, BASELINES[baseline][1], mode, str(ROOT / "docs/upstream-inventory.json")], project)))
+    if len(sections[0]) != 19 or sections[0].keys() != sections[1].keys():
+        raise RuntimeError("Section editor probe must cover all nineteen inventoried sections.")
+    for name, old_section in sections[0].items():
+        new_section = sections[1][name]
+        old_literal, new_literal = old_section.pop("literal"), new_section.pop("literal")
+        expected = {"trace": ["before", "seed", "after"], "edited": '$GLOBALS["trace"][] = "before";\n$GLOBALS[\'trace\'][] = \'seed\';\n$GLOBALS["trace"][] = "after";', "missing_error": False, "missing_noop": True, "replaced": '$GLOBALS["trace"][] = "replacement";', "deleted": ""}
+        old_expected = dict(expected)
+        differences = []
+        if baseline == "release":
+            old_expected.update({"trace": ["before", "seed", "after", "after"], "edited": expected["edited"] + '\n$GLOBALS["trace"][] = "after";', "missing_error": True})
+            differences.extend({"id": "D15", "field": field, "oracle": old_expected[field], "candidate": expected[field]} for field in ["trace", "edited", "missing_error"])
+        if old_section != old_expected or new_section != expected:
+            raise RuntimeError(f"Section editor behavior mismatch: {name}: {old_section} / {new_section}")
+        if new_literal != '$literal = "$1";' or old_literal != '$literal = "' + name + ' : {";':
+            raise RuntimeError(f"Literal section replacement no longer matches D15: {name}: {old_literal} / {new_literal}")
+        differences.append({"id": "D15", "field": "literal", "oracle": old_literal, "candidate": new_literal})
+        report["cases"].append({"id": baseline + "/sections/" + name, "observed": new_section, "differences": differences})
+    old_names = ["build-mu-loader", "build-env-example", "build-wp-cli-yml"] if baseline == "release" else ["muloader", "envexample", "wpcliconfig"]
+    if baseline == "dev":
+        failure = subprocess.run([args.oracle_php, "-d", "max_execution_time=2", args.composer, "--no-interaction", "wpstarter", *old_names], cwd=oracle, text=True, capture_output=True, timeout=30)
+        if failure.returncode != 255 or "Maximum execution time of 2 seconds exceeded" not in failure.stderr or re.search(r"Filesystem\.php on line (255|256|257)", failure.stderr) is None or (oracle / ".env.example").exists():
+            raise RuntimeError("The pinned dev relative env-example directory failure no longer matches D25.")
+        # Keep the failing fixture explicit, then use an equivalent absolute root for output comparison.
+        manifest["extra"]["wpstarter"]["env-dir"] = str(oracle)
+        write_json(oracle / "composer.json", manifest)
+    run([args.oracle_php, "-d", "max_execution_time=10", args.composer, "--no-interaction", "wpstarter", *old_names], oracle)
+    runtime_env = dict(os.environ, COMPOSER_VENDOR_DIR=str(candidate / "vendor"))
+    runtime_env.pop("COMPOSER", None)
+    run([args.candidate_php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", "muloader", "envexample", "wpcliconfig"], candidate, runtime_env)
+    def mu_probe(project, binary, filename):
+        loader = project / "public/content/mu-plugins" / filename
+        source = 'function wp_normalize_path($path) { return str_replace("\\\\", "/", $path); } $GLOBALS["mu_trace"] = []; require $argv[1]; require $argv[1]; echo json_encode($GLOBALS["mu_trace"]);'
+        return json.loads(run([binary, "-r", source, str(loader)], project))
+    old_mu = mu_probe(oracle, args.oracle_php, "wpstarter-mu-loader.php")
+    new_mu = mu_probe(candidate, args.candidate_php, "sympress-runtime-mu-loader.php")
+    if old_mu != ["single", "main"] or new_mu != old_mu:
+        raise RuntimeError(f"MU loader discovery/order/require-once mismatch: {old_mu} / {new_mu}")
+    def yaml_probe(project):
+        source = 'require $argv[1]; $yaml = Symfony\\Component\\Yaml\\Yaml::parseFile("wp-cli.yml"); if (isset($yaml["exec"])) { eval($yaml["exec"]); } echo json_encode([array_keys($yaml), $yaml["path"], getenv("WP_CONFIG_PATH") ?: null]);'
+        values = json.loads(run([args.candidate_php, "-r", source, str(ROOT / "vendor/autoload.php")], project))
+        if values[2] is not None:
+            values[2] = values[2].replace(str(project), "<ROOT>")
+        return values
+    old_yaml, new_yaml = yaml_probe(oracle), yaml_probe(candidate)
+    expected_yaml = [["path"], "public/wp", None] if baseline == "release" else [["path", "exec"], "public/wp", "<ROOT>/wp-config.php"]
+    if old_yaml != expected_yaml or new_yaml != old_yaml:
+        raise RuntimeError(f"WP-CLI YAML semantic mismatch: {old_yaml} / {new_yaml}")
+    def env_values(project):
+        return dict(re.findall(r"^([A-Z][A-Z0-9_]*)=(.*)$", (project / ".env.example").read_text(), re.MULTILINE))
+    old_env, new_env = env_values(oracle), env_values(candidate)
+    expected_env = {"WP_ENVIRONMENT_TYPE": "development", "DB_NAME": "", "DB_USER": "", "DB_PASSWORD": "", "WP_HOME": ""}
+    if old_env != expected_env or new_env != old_env:
+        raise RuntimeError(f"Environment example active assignment mismatch: {old_env} / {new_env}")
+    if baseline == "dev":
+        report["cases"].append({"id": "dev/artifacts/env-example-relative-directory", "differences": [{"id": "D25", "oracle": {"exit": 255, "generated": False, "failure": "Filesystem.php:255-257 CPU limit"}, "candidate": {"exit": 0, "generated": True}}]})
+    report["cases"].append({"id": baseline + "/artifacts/mu-yaml-example", "mu_trace": new_mu, "yaml": new_yaml, "env_assignments": new_env, "differences": []})
+    print(f"PASS {baseline}/artifacts/mu-yaml-example: generated loaders, parsed YAML and active environment assignments", flush=True)
+
+
 def compare_lifecycle(work, baseline, autoload, args, report):
     oracle = autoload.parent.parent
     manifest = json.loads((oracle / "composer.json").read_text())
@@ -361,14 +480,14 @@ def main():
     parser.add_argument("--oracle-php", default="php8.2")
     parser.add_argument("--candidate-php", default="php8.5")
     parser.add_argument("--composer", required=True)
-    parser.add_argument("--scope", choices=["all", "constants", "environment", "generated", "steps", "lifecycle"], default="all")
+    parser.add_argument("--scope", choices=["all", "constants", "environment", "generated", "steps", "artifacts", "lifecycle"], default="all")
     args = parser.parse_args()
     build = ROOT / "build/differential"
     build.mkdir(parents=True, exist_ok=True)
     (build / "report.json").unlink(missing_ok=True)
     inventory = json.loads((ROOT / "docs/upstream-inventory.json").read_text())
     candidate_types = {item["name"]: item["type"] for item in inventory["baselines"]["dev"]["constants"]}
-    report = {"scope": "constant reader/definitions, environment aliases, generated index/wp-config, warm-cache runtime, exact content trees, package retention, WP-CLI argv, VCS marker, lifecycle and extension autoload behavior; complete generated-template snapshots remain pending", "oracles": {}, "cases": []}
+    report = {"scope": "constant reader/definitions, environment aliases, generated index/wp-config execution, warm-cache runtime, exact content trees, package retention, WP-CLI argv, VCS marker, effective default step order, all nineteen section editor behaviors, generated MU loader execution, parsed WP-CLI YAML, active env-example values, lifecycle and extension autoload", "oracles": {}, "cases": []}
     report["php"] = {key: run([binary, "-r", "echo PHP_VERSION;"], ROOT) for key, binary in [("oracle", args.oracle_php), ("candidate", args.candidate_php)]}
     report["composer"] = run([args.oracle_php, args.composer, "--version", "--no-ansi"], ROOT).strip()
     with tempfile.TemporaryDirectory(prefix="oracle-", dir=build) as temp:
@@ -425,6 +544,8 @@ def main():
                 compare_generated(work, baseline, autoload, args, report)
             if args.scope in ["all", "steps"]:
                 compare_steps(work, baseline, autoload, args, report)
+            if args.scope in ["all", "artifacts"]:
+                compare_artifacts(work, baseline, autoload, args, report)
             if args.scope in ["all", "lifecycle"]:
                 compare_lifecycle(work, baseline, autoload, args, report)
     report["executed_scope"] = args.scope

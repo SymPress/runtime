@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SymPress\Runtime\Tests\Contract;
 
 use PHPUnit\Framework\Attributes\Group;
+use SymPress\Runtime\Application\ContainerFactory;
 use SymPress\Runtime\Application\RunContext;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Config\Validator;
@@ -16,12 +17,48 @@ use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Package\PackageFinder;
 use SymPress\Runtime\Process\PhpProcess;
 use SymPress\Runtime\Process\SystemProcess;
+use SymPress\Runtime\Services;
+use SymPress\Runtime\Step\Registry;
 use SymPress\Runtime\Tests\Support\TemporaryProject;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 final class ServicesTest extends TemporaryProject
 {
+    #[Group('PAR-SVC-001')]
+    #[Group('PAR-SVC-004')]
+    #[Group('PAR-SVC-005')]
+    #[Group('PAR-SVC-006')]
+    #[Group('PAR-SVC-018')]
+    public function testInjectedServiceAdaptersPreserveConfigurationIoPathsAndExecutableDiscovery(): void
+    {
+        $this->write('composer.json', '{"config":{"preferred-install":"dist"}}');
+        $paths = new Paths($this->root, $this->root . '/deps', $this->root . '/tools');
+        $config = new Config(['custom' => 4, 'cache-env' => 'invalid'], new Validator($paths));
+        $output = new BufferedOutput();
+        $io = new Io(new ArrayInput([]), $output);
+        $context = new RunContext($this->root, $paths->vendor(), $paths->bin());
+        $services = (new ContainerFactory())->create($config, $paths, $io, $context, new Registry())->get(Services::class);
+        self::assertInstanceOf(Services::class, $services);
+        self::assertSame($config, $services->config());
+        $services->config()->appendValidator('custom', static fn (int $value): int => $value * 2);
+        self::assertSame(8, $services->config()['custom']->unwrap());
+        self::assertArrayHasKey('cache-env', $services->config()->errors());
+        $services->composerIo()->write('through adapter');
+        self::assertSame("through adapter\n", $output->fetch());
+        self::assertTrue($services->composerFilesystem()->save('content', $this->root . '/generated/file'));
+        self::assertSame('content', file_get_contents($this->root . '/generated/file'));
+        self::assertSame('../generated/file', $services->composerFilesystem()->findShortestPath($this->root . '/nested/index.php', $this->root . '/generated/file'));
+        self::assertSame($paths->vendor(), $services->composerConfig()->get('vendor-dir'));
+        self::assertSame('tools', $services->composerConfig()->get('bin-dir', 1));
+        self::assertSame('dist', $services->composerConfig()->get('preferred-install'));
+        self::assertNull($services->composerConfig()->get('absent'));
+        $this->write('tools/runtime-executable-fixture', "#!/bin/sh\nexit 0\n");
+        chmod($this->root . '/tools/runtime-executable-fixture', 0755);
+        self::assertSame($this->root . '/tools/runtime-executable-fixture', $services->executableFinder()->find('runtime-executable-fixture', null, [$paths->bin()]));
+        self::assertNull($services->executableFinder()->find('runtime-nonexistent-command-8c19'));
+    }
+
     private function io(): Io
     {
         $input = new ArrayInput([]);
@@ -112,6 +149,7 @@ final class ServicesTest extends TemporaryProject
 
     #[Group('PAR-SVC-017')]
     #[Group('PAR-SVC-019')]
+    #[Group('PAR-WPC-008')]
     public function testProcessesRetainOutputFailureEnvironmentAndArgumentBoundaries(): void
     {
         $process = new SystemProcess(new Paths($this->root), $this->io());

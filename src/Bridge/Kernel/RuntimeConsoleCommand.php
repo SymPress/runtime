@@ -9,6 +9,7 @@ use SymPress\Runtime\Application\RunContext;
 use SymPress\Runtime\Config\ConfigLoader;
 use SymPress\Runtime\Console\RuntimeCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -32,10 +33,27 @@ final class RuntimeConsoleCommand extends Command
             return;
         }
         $this->addOption('json', null, InputOption::VALUE_NONE, 'Print structured diagnostics.');
+        $this->addOption('format', null, InputOption::VALUE_REQUIRED, 'Diagnostic output format: text or json.', 'text');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        if (in_array($this->operation, ['doctor', 'check'], true)) {
+            $options = $input->getOptions();
+            $format = $options['format'];
+            if (!in_array($format, ['text', 'json'], true)) {
+                throw new InvalidArgumentException('Diagnostic format must be text or json.');
+            }
+            unset($options['format']);
+            $options['json'] = $options['json'] === true || $format === 'json';
+            $parameters = $input->getArguments();
+            foreach ($options as $name => $value) {
+                $parameters['--' . $name] = $value;
+            }
+            $normalized = new ArrayInput($parameters);
+            $normalized->setInteractive($input->isInteractive());
+            $input = $normalized;
+        }
         $manifest = Path::makeAbsolute(getenv('COMPOSER') ?: 'composer.json', $this->projectDir);
         $data = (new ConfigLoader())->readObject($manifest);
         $configuration = $data['config'] ?? [];

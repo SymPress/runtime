@@ -39,6 +39,8 @@ final class AutoloadRegistryTest extends TemporaryProject
         $library = new Package('fixture/library', 'library', '1.0.0', $this->root, ['sympress-runtime-autoload' => ['files' => ['bootstrap.php']]]);
         self::assertSame([], $registry->load($library));
         $disabled = new Package('fixture/legacy', 'wpstarter-extension', '1.0.0', $this->root, ['wpstarter-autoload' => ['files' => ['bootstrap.php']]]);
-        self::assertSame([], $registry->load($disabled, false));
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Legacy extension metadata requires compatibility');
+        $registry->load($disabled, false);
     }
 }

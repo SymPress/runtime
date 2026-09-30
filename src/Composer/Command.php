@@ -27,6 +27,12 @@ final class Command extends BaseCommand
         if (in_array($this->operation, ['doctor', 'check'], true)) {
             $this->addOption('json', null, InputOption::VALUE_NONE);
         }
+        if ($this->operation === 'migrate') {
+            $this->addOption('output', null, InputOption::VALUE_REQUIRED, 'New configuration path.', 'sympress-runtime.json');
+            foreach (['force', 'dry-run', 'json'] as $flag) {
+                $this->addOption($flag, null, InputOption::VALUE_NONE);
+            }
+        }
         if ($this->operation !== null) {
             return;
         }
@@ -48,6 +54,21 @@ final class Command extends BaseCommand
     /** @return list<string> */
     private function arguments(InputInterface $input): array
     {
+        if ($this->operation === 'migrate') {
+            $arguments = ['migrate'];
+            $target = $input->getOption('output');
+            if (is_string($target)) {
+                $arguments[] = '--output=' . $target;
+            }
+            foreach (['force', 'dry-run', 'json'] as $flag) {
+                if ($input->getOption($flag) !== true) {
+                    continue;
+                }
+                $arguments[] = '--' . $flag;
+            }
+
+            return $arguments;
+        }
         if ($this->operation !== null) {
             $environment = $this->operation === 'dump-env' ? $input->getArgument('environment') : null;
             if (in_array($this->operation, ['doctor', 'check'], true) && $input->getOption('json') === true) {

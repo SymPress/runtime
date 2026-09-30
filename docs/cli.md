@@ -10,7 +10,7 @@ The standalone runner uses the current project directory and its Composer vendor
 | `--skip-custom` | Exclude custom steps in full/opt-out mode |
 | `--ignore-skip-config` | Ignore only the configured skip list |
 | `--list-steps` | List matching steps, sorted; never execute steps or connect to the database |
-| `--force` | Allow overwriting protected files; directories and symlinks remain protected |
+| `--force` | Allow overwriting protected files; content publication can replace a symlink leaf after preparing its replacement, without modifying the referenced destination; generated configuration and real directories remain protected |
 | `validate` | Validate JSON/schema and semantic configuration without executing PHP providers or the run-only autoload file |
 | `flush-env-cache` | Remove only the runtime cache in the configured environment directory; WordPress installation is not required |
 | `dump-env <environment>` | Resolve an explicit raw environment into a private `.env.dump.php`; does not execute steps or run-only autoload |
@@ -19,6 +19,9 @@ The standalone runner uses the current project directory and its Composer vendor
 | `kernel-cache` | Explicitly clear only the selected environment's kernel cache/build and discovery metadata |
 | `kernel-cache --generate-build-id` | Explicitly generate and persist a new kernel deployment ID |
 | `kernel-boot` | Reconcile optional boot ownership; generation requires kernel-boot configuration |
+| `migrate` | Write native configuration and statically report PHP migration findings |
+| `migrate --output=<path> --dry-run --json` | Preview a private configuration target and structured report without writes |
+| `migrate --force` | Replace a differing regular target; originals, directories and symlinks stay protected |
 | `-n`, `--no-interaction` | Use documented question defaults |
 | `-q`, `-v`, `-vv`, `-vvv`, `--ansi`, `--no-ansi` | Standard Symfony Console output controls |
 
@@ -28,8 +31,10 @@ Composer exposes `composer sympress-runtime [steps] [flags]`, `composer sympress
 
 Exit status is zero for successful/no-op execution, nonzero for invalid input, configuration errors or any failed step. A blocking step stops subsequent work on pure ERROR; SUCCESS|ERROR continues but the command still fails. Composer event failures stop subsequent root scripts.
 
-Legacy profiles retain their documented selection differences, including rejecting positional opt-in combined with listing. Native mode permits this combination. The current test suite verifies root-script ordering; real asset-compiler coexistence remains a later acceptance check.
+Legacy profiles retain their documented selection differences, including rejecting positional opt-in combined with listing. Native mode permits this combination. The test suite verifies root-script ordering; the fresh demo installation also verifies Runtime setup before asset-compiler execution.
 
-All twelve default steps are implemented. Composer also exposes `sympress-runtime:doctor` and `sympress-runtime:check`, including `--json`. Kernel-only maintenance does not require a database connection or an installed WordPress core; mixed selections retain normal preflight checks. `migrate` remains reserved for Phase 6. See [kernel integration](kernel-integration.md) for optional kernel-console commands and boot ownership.
+Through the kernel console, `wp console doctor --json` and `wp console check --json` accept WP-CLI's automatic rewrite to `--format=json`. The bridge also accepts explicit `--format=text` or `--format=json`; other formats are rejected.
+
+All twelve default steps are implemented. Composer also exposes `sympress-runtime:doctor`, `sympress-runtime:check` and `sympress-runtime:migrate`, including `--json`. Kernel-only maintenance does not require a database connection or an installed WordPress core; mixed selections retain normal preflight checks. See [migration](migration.md) and [kernel integration](kernel-integration.md) for the corresponding contracts.
 
 A build dump takes precedence over the runtime cache and disables request-time cache writes. Actual process values still win. The requested raw environment must agree with an actual process environment selector; otherwise dump creation fails. Remove or rebuild the dump to switch its environment. Flush never deletes a build dump. Deploy generated configuration and dumps with PHP-readable private permissions; defaults are mode 0600.

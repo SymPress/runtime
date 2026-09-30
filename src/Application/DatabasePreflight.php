@@ -21,8 +21,6 @@ final readonly class DatabasePreflight
             return true;
         }
         if ($this->config['skip-db-check']->is(true)) {
-            $this->io->comment('skip-db-check is deprecated; configure db-check=false instead.');
-
             return true;
         }
         if ($this->config['db-check']->is(false)) {

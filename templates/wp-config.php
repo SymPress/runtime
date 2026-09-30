@@ -51,6 +51,11 @@ WPS_GETENV_FUNCTION : {
             static $reported = [];
             if (isset($reported[$name])) { return; }
             $reported[$name] = true;
+            if (PHP_SAPI !== 'cli') {
+                if (function_exists('do_action')) { do_action('deprecated_function_run', $name, $replacement, '0.1.0'); }
+                error_log($name . ' is deprecated; use ' . $replacement . '.');
+                return;
+            }
             if (function_exists('_deprecated_function')) {
                 _deprecated_function($name, '0.1.0', $replacement);
             } else {

@@ -24,6 +24,7 @@ final class UrlDownloaderTest extends TemporaryProject
     }
 
     #[Group('PAR-SVC-008')]
+    #[Group('PAR-NATIVE-004')]
     public function testHttpsPolicyIsAppliedBeforeRequestsAndAfterRedirects(): void
     {
         $http = new MockHttpClient(new MockResponse('', ['http_code' => 302, 'redirect_url' => 'http://example.test/private?token=synthetic-secret']));
@@ -38,6 +39,8 @@ final class UrlDownloaderTest extends TemporaryProject
     }
 
     #[Group('PAR-SVC-008')]
+    #[Group('PAR-NATIVE-005')]
+    #[Group('PAR-NATIVE-006')]
     public function testChecksumsGuardAtomicReplacementAndErrorStateResets(): void
     {
         $url = 'https://example.test/artifact';
@@ -73,6 +76,7 @@ final class UrlDownloaderTest extends TemporaryProject
     }
 
     #[Group('PAR-SVC-008')]
+    #[Group('PAR-NATIVE-004')]
     public function testInsecureOptInDoesNotDisableTlsVerificationAndEmptyFileCanBeSaved(): void
     {
         $http = new MockHttpClient(static function (string $method, string $url, array $options): MockResponse {

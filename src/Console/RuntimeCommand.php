@@ -9,6 +9,7 @@ use SymPress\Runtime\Application\ContainerFactory;
 use SymPress\Runtime\Application\DatabasePreflight;
 use SymPress\Runtime\Application\RunContext;
 use SymPress\Runtime\Compatibility\LegacyApi;
+use SymPress\Runtime\Compatibility\Migration;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Config\ConfigLoader;
 use SymPress\Runtime\Config\Validator;
@@ -32,6 +33,8 @@ use Throwable;
 
 final class RuntimeCommand extends Command
 {
+    private bool $legacyApiEnabled = false;
+
     public function __construct(private readonly RunContext $context, private readonly string $operation = 'run')
     {
         parent::__construct($operation);
@@ -45,6 +48,12 @@ final class RuntimeCommand extends Command
         }
         if (in_array($this->operation, ['doctor', 'check'], true)) {
             $this->addOption('json', null, InputOption::VALUE_NONE, 'Print structured diagnostics without environment values.');
+        }
+        if ($this->operation === 'migrate') {
+            $this->addOption('output', null, InputOption::VALUE_REQUIRED, 'New configuration path relative to the project root.', 'sympress-runtime.json');
+            foreach (['force', 'dry-run', 'json'] as $flag) {
+                $this->addOption($flag, null, InputOption::VALUE_NONE);
+            }
         }
         if ($this->operation !== 'run') {
             return;
@@ -60,6 +69,7 @@ final class RuntimeCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $included = get_included_files();
         try {
             return $this->executeOperation($input, $output);
         } catch (Throwable $error) {
@@ -69,6 +79,10 @@ final class RuntimeCommand extends Command
             $output->writeln(json_encode(['environment' => null, 'checks' => [['id' => 'configuration', 'status' => 'fail', 'detail' => 'Cannot validate project configuration; values are redacted.']], 'exit' => 1], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
 
             return self::FAILURE;
+        } finally {
+            if ($this->legacyApiEnabled) {
+                LegacyApi::reportUsage(array_values(array_diff(get_included_files(), $included)), new Io($input, $output));
+            }
         }
     }
 
@@ -76,7 +90,7 @@ final class RuntimeCommand extends Command
     {
         $io = new Io($input, $output);
         $context = $this->context->withConsole($input->isInteractive(), $output->isDecorated(), $output->getVerbosity());
-        if (!in_array($this->operation, ['run', 'validate', 'flush-env-cache', 'dump-env', 'doctor', 'check'], true)) {
+        if (!in_array($this->operation, ['run', 'validate', 'flush-env-cache', 'dump-env', 'doctor', 'check', 'migrate'], true)) {
             $io->error('Command ' . $this->operation . ' is scheduled for a later implementation phase.');
 
             return self::INVALID;
@@ -96,6 +110,27 @@ final class RuntimeCommand extends Command
             $this->directory($extra, 'wordpress-install-dir', 'wordpress'),
             $this->directory($extra, 'wordpress-content-dir', 'wp-content'),
         );
+        if ($this->operation === 'migrate') {
+            $target = $input->getOption('output');
+            if (!is_string($target) || $target === '') {
+                throw new InvalidArgumentException('Migration output must be a non-empty path.');
+            }
+            $report = (new Migration($context, $paths))->run($extra, $target, $input->getOption('force') === true, $input->getOption('dry-run') === true);
+            if ($input->getOption('json') === true) {
+                $output->writeln(json_encode($report, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+                return self::SUCCESS;
+            }
+            $io->write($report['status'] . ': ' . $report['target'] . ' (profile: ' . $report['profile'] . ')');
+            foreach ($report['findings'] as $finding) {
+                $io->write($finding['file'] . ':' . $finding['line'] . ': ' . $finding['symbol'] . ' => ' . $finding['replacement'] . '. ' . $finding['guidance']);
+            }
+            foreach ($report['next'] as $next) {
+                $io->write($next);
+            }
+
+            return self::SUCCESS;
+        }
         $loaded = $loader->load($paths->root(), $extra);
         $values = array_replace($loaded->values, $this->context->configuration($selection->selected()));
         if ($this->operation === 'run' && $input->getOption('generate-build-id')) {
@@ -124,6 +159,11 @@ final class RuntimeCommand extends Command
         foreach ($packages as $package) {
             (new ExtensionMetadata($paths))->steps($package);
             $extensionAutoload->metadata($package, $compatible);
+            $packageExtra = $package->getExtra();
+            if (!$compatible || ($package->getType() !== 'wpstarter-extension' && !array_key_exists('wpstarter-autoload', $packageExtra))) {
+                continue;
+            }
+            $io->error('Deprecated WP Starter extension: ' . $package->getName() . '; use sympress-runtime-extension and sympress-runtime-autoload.');
         }
         if (in_array($this->operation, ['doctor', 'check'], true)) {
             return (new Doctor($config, $paths, $context, $io))->run($input->getOption('json') === true);
@@ -153,6 +193,7 @@ final class RuntimeCommand extends Command
         $autoload = $config['autoload']->unwrap();
         if ($compatible) {
             LegacyApi::register();
+            $this->legacyApiEnabled = true;
         }
         $configure = null;
         if (is_string($autoload)) {
@@ -172,7 +213,7 @@ final class RuntimeCommand extends Command
         $container = (new ContainerFactory())->create($config, $paths, $io, $context, $registry, $configure, $selection);
         $skips = $config['skip-steps']->unwrapOrFallback([]);
         $skips = is_array($skips) ? array_values(array_filter($skips, is_string(...))) : [];
-        $resolved = $selection->resolve($registry, $skips, $loaded->profile);
+        $resolved = $selection->resolve($registry, $skips, $loaded->profile, $compatible);
         foreach ($resolved['warnings'] as $warning) {
             $io->error($warning);
         }

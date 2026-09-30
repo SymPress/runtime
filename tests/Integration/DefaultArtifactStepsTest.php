@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Tests\Integration;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Config\Validator;
@@ -60,6 +61,53 @@ final class DefaultArtifactStepsTest extends TemporaryProject
         self::assertSame([1, false, false], json_decode($runtime->getOutput(), true, flags: JSON_THROW_ON_ERROR));
     }
 
+    #[DataProvider('legacyLoaderVariants')]
+    #[Group('PAR-SYM-010')]
+    #[Group('PAR-TPL-003')]
+    public function testMigrationRetiresOnlyTheExactGeneratedLegacyMuLoader(bool $custom, bool $plugins, string $template): void
+    {
+        $this->fixture(['compatibility' => false]);
+        $content = str_replace('{{{MU_PLUGINS_LIST}}}', 'first/main.php', (string) file_get_contents(dirname(__DIR__, 2) . '/resources/' . $template));
+        if ($custom) {
+            $content .= "\n// User customization must survive.\n";
+        }
+        $relative = 'public/content/mu-plugins/wpstarter-mu-loader.php';
+        $this->write($relative, $content);
+        if ($plugins) {
+            $this->write('public/content/mu-plugins/first/main.php', "<?php\n// Plugin Name: First\n\$GLOBALS['legacy_migrated_boots'] = (\$GLOBALS['legacy_migrated_boots'] ?? 0) + 1;");
+        }
+        $result = $this->generate(['muloader']);
+        $legacy = $this->root . '/' . $relative;
+        $native = dirname($legacy) . '/sympress-runtime-mu-loader.php';
+        if ($custom) {
+            self::assertNotSame(0, $result->getExitCode());
+            self::assertSame($content, file_get_contents($legacy));
+            self::assertFileDoesNotExist($native);
+            self::assertFileDoesNotExist($legacy . '.sympress-backup');
+
+            return;
+        }
+        self::assertSame(0, $result->getExitCode(), $result->getOutput() . $result->getErrorOutput());
+        self::assertFileDoesNotExist($legacy);
+        self::assertSame($content, file_get_contents($legacy . '.sympress-backup'));
+        self::assertSame(0, $this->generate(['muloader'])->getExitCode());
+        $probe = 'function wp_normalize_path($path) { return $path; } foreach (glob(' . var_export(dirname($native) . '/*.php', true) . ') as $file) { require $file; } echo $GLOBALS["legacy_migrated_boots"] ?? 0;';
+        $runtime = new Process([PHP_BINARY, '-r', $probe], $this->root);
+        $runtime->mustRun();
+        self::assertSame($plugins ? '1' : '0', $runtime->getOutput());
+    }
+
+    /** @return iterable<string, array{bool, bool, string}> */
+    public static function legacyLoaderVariants(): iterable
+    {
+        foreach (['legacy-mu-loader.php.txt', 'legacy-mu-loader-dev.php.txt'] as $template) {
+            yield $template . ': generated loader with plugin' => [false, true, $template];
+            yield $template . ': generated loader without remaining plugins' => [false, false, $template];
+            yield $template . ': custom loader with plugin' => [true, true, $template];
+            yield $template . ': custom loader without discovered plugins' => [true, false, $template];
+        }
+    }
+
     #[Group('PAR-STEP-006')]
     #[Group('PAR-OPT-016')]
     #[Group('PAR-TPL-001')]
@@ -104,6 +152,7 @@ final class DefaultArtifactStepsTest extends TemporaryProject
     }
 
     #[Group('PAR-STEP-011')]
+    #[Group('PAR-TPL-004')]
     public function testWpCliYamlEscapesPathsAndExecSetsTheActualConfigTarget(): void
     {
         rename($this->root, $this->root . "-'quoted");

@@ -39,6 +39,11 @@ final class ConfigLoader
         if ($legacy && $compatible === false) {
             throw new InvalidArgumentException('Legacy WP Starter configuration is present but compatibility is disabled.');
         }
+        $scripts = $values['scripts'] ?? [];
+        $legacyScripts = is_array($scripts) && (array_key_exists('pre-wpstarter', $scripts) || array_key_exists('post-wpstarter', $scripts));
+        if ($compatible === false && ($legacyScripts || array_key_exists('skip-db-check', $values))) {
+            throw new InvalidArgumentException('Legacy script names or skip-db-check require compatibility. Use pre/post-sympress-runtime and db-check.');
+        }
         $profile = $values['compatibility-profile'] ?? 'auto';
         if ($profile === 'auto') {
             $profile = $legacy && !$native ? 'release-3.0.1' : 'native';
@@ -48,7 +53,7 @@ final class ConfigLoader
         }
         $values['compatibility-profile'] = $profile;
         (new SchemaValidator())->validate($values);
-        if (($values['skip-db-check'] ?? false) !== false) {
+        if (array_key_exists('skip-db-check', $values)) {
             $diagnostics[] = 'Deprecated skip-db-check option: use db-check=false.';
         }
 
