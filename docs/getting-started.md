@@ -42,4 +42,6 @@ Composer install/update already invokes setup when the Runtime plugin is enabled
 
 Set the web document root to `public` for this layout. Commit the manifest, lockfile, application configuration and source; deploy generated configuration and its parser payload as described in [deployment](deployment.md). Native configuration does not load Composer during WordPress bootstrap unless `wp-config-autoload=true`; enable that option if early hooks or plugins need the project's Composer graph. A project with its own MU/kernel bootstrap can retain the native default.
 
+Set `WP_SITEURL` to the public WordPress URL your web server actually serves. In the SymPress starter/demo routing, it is `${WP_HOME}`: the existing server rules map root login/admin endpoints to the physical core directory. Do not append `/wp` merely because Composer stores core in `public/wp`.
+
 For a plugins-disabled build, run `composer install --no-plugins` followed by the standalone binary. Recovery covers the standard installers' distinct in-project directories. Root/nested layouts and arbitrary third-party installers retain the [documented boundaries](adr/0019-standalone-wordpress-package-layout.md).
