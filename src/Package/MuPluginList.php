@@ -46,6 +46,10 @@ final readonly class MuPluginList
             $this->append($plugins, basename($directory), $this->pluginFiles($directory, true, $dropins));
         }
 
+        if ($config['compatibility-profile']->is('native')) {
+            asort($plugins, SORT_STRING);
+        }
+
         return $plugins;
     }
 

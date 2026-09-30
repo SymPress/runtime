@@ -55,7 +55,7 @@ final class DefaultArtifactStepsTest extends TemporaryProject
         self::assertSame($before, file_get_contents($loader));
         self::assertSame(1000000000, filemtime($loader));
         unlink($this->root . '/public/content/mu-plugins/second/main.php');
-        $probe = 'function wp_normalize_path($path) { return str_replace("\\\\", "/", $path); } require ' . var_export($loader, true) . '; require ' . var_export($loader, true) . '; echo json_encode([$GLOBALS["first"], isset($runtimeMuPlugin), isset($runtimeMuPath)]);';
+        $probe = 'function add_filter(...$args) {} function do_action(...$args) {} function wp_normalize_path($path) { return str_replace("\\\\", "/", $path); } require ' . var_export($loader, true) . '; require ' . var_export($loader, true) . '; echo json_encode([$GLOBALS["first"], isset($runtimeMuPlugin), isset($runtimeMuPath)]);';
         $runtime = new Process([PHP_BINARY, '-r', $probe], $this->root);
         $runtime->mustRun();
         self::assertSame([1, false, false], json_decode($runtime->getOutput(), true, flags: JSON_THROW_ON_ERROR));
@@ -91,7 +91,7 @@ final class DefaultArtifactStepsTest extends TemporaryProject
         self::assertFileDoesNotExist($legacy);
         self::assertSame($content, file_get_contents($legacy . '.sympress-backup'));
         self::assertSame(0, $this->generate(['muloader'])->getExitCode());
-        $probe = 'function wp_normalize_path($path) { return $path; } foreach (glob(' . var_export(dirname($native) . '/*.php', true) . ') as $file) { require $file; } echo $GLOBALS["legacy_migrated_boots"] ?? 0;';
+        $probe = 'function add_filter(...$args) {} function do_action(...$args) {} function wp_normalize_path($path) { return $path; } foreach (glob(' . var_export(dirname($native) . '/*.php', true) . ') as $file) { require $file; } echo $GLOBALS["legacy_migrated_boots"] ?? 0;';
         $runtime = new Process([PHP_BINARY, '-r', $probe], $this->root);
         $runtime->mustRun();
         self::assertSame($plugins ? '1' : '0', $runtime->getOutput());

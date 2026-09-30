@@ -5,10 +5,39 @@
  * Description: Loads the discovered Composer and local MU plugin entry points.
  */
 
-foreach ({{{MU_PLUGINS_ARRAY}}} as $runtimeMuPlugin) {
-    $runtimeMuPath = wp_normalize_path(__DIR__ . '/' . $runtimeMuPlugin);
-    if (is_file($runtimeMuPath)) {
-        require_once $runtimeMuPath;
+(static function (array $entries, bool $native): void {
+    $directory = $native && defined('WPMU_PLUGIN_DIR') ? WPMU_PLUGIN_DIR : __DIR__;
+    $plugins = [];
+    foreach ($entries as $entry) {
+        $file = wp_normalize_path($directory . '/' . $entry);
+        if (is_file($file)) {
+            $plugins[$entry] = $file;
+        }
     }
-}
-unset($runtimeMuPlugin, $runtimeMuPath);
+
+    if ($native) {
+        add_filter('plugins_list', static function (array $groups) use ($plugins): array {
+            if (empty($groups['mustuse']) || !is_array($groups['mustuse'])) {
+                return $groups;
+            }
+            foreach ($plugins as $entry => $file) {
+                $metadata = get_plugin_data($file, false, false);
+                if (empty($metadata['Name'])) {
+                    $metadata['Name'] = basename(dirname($file));
+                }
+                $groups['mustuse'][$entry] = $metadata;
+            }
+            uasort($groups['mustuse'], '_sort_uname_callback');
+
+            return $groups;
+        });
+    }
+
+    foreach ($plugins as $file) {
+        // Keep the path outside the included file's variable scope.
+        (static function (string $path): void { require_once $path; })($file);
+        if ($native) {
+            do_action('mu_plugin_loaded', $file);
+        }
+    }
+})({{{MU_PLUGINS_ARRAY}}}, {{{MU_NATIVE}}});
