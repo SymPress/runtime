@@ -34,7 +34,7 @@ final class WordPressBootTest extends TemporaryProject
             self::assertTrue(symlink($core, $this->root . '/wp'));
             $this->write('composer.json', '{"extra":{"wordpress-install-dir":"wp","wordpress-content-dir":"content","sympress-runtime":{"require-wp":false,"db-check":false,"cache-env":false,"compatibility":false}}}');
             $this->write('content/mu-plugins/z-last/main.php', "<?php\n/* Plugin Name: Last */\n" . '$GLOBALS["fixture_boots"][] = "last"; $file = "changed";');
-            $this->write('content/mu-plugins/a-first/main.php', "<?php\n/* Plugin Name: First */\n" . '$GLOBALS["fixture_boots"][] = "first";');
+            $this->write('content/mu-plugins/a-first/main.php', "<?php\n/* Plugin Name: First */\n" . '$GLOBALS["fixture_boots"][] = "first"; $fixtureGlobalDb = $wpdb instanceof wpdb;');
             $package = dirname(__DIR__, 2);
             $setup = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', '-n', 'wpconfig', 'muloader'], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
             $setup->mustRun();
@@ -53,7 +53,7 @@ require_once ABSPATH . 'wp-admin/includes/plugin.php';
 require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
 require_once ABSPATH . 'wp-admin/includes/class-wp-plugins-list-table.php';
 $rows = apply_filters('plugins_list', ['mustuse' => get_mu_plugins()]);
-echo json_encode([$GLOBALS['fixture_boots'], $GLOBALS['fixture_hooks'], array_keys($rows['mustuse']), $rows['mustuse']['a-first/main.php']['Name']]);
+echo json_encode([$GLOBALS['fixture_boots'], $GLOBALS['fixture_hooks'], array_keys($rows['mustuse']), $rows['mustuse']['a-first/main.php']['Name'], $fixtureGlobalDb]);
 PHP);
             $probe = new Process([PHP_BINARY, $this->root . '/probe.php'], $this->root, [
                 'DB_HOST' => $host,
@@ -72,6 +72,7 @@ PHP);
             self::assertSame(['a-first', 'z-last', 'mu-plugins'], $result[1]);
             self::assertSame(['a-first/main.php', 'z-last/main.php', 'sympress-runtime-mu-loader.php'], $result[2]);
             self::assertSame('First', $result[3]);
+            self::assertTrue($result[4]);
         } finally {
             $connection->query('DROP DATABASE IF EXISTS `' . $database . '`');
             $connection->close();

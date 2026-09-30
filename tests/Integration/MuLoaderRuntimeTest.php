@@ -25,7 +25,7 @@ final class MuLoaderRuntimeTest extends TemporaryProject
         ],
         ], JSON_THROW_ON_ERROR));
         $this->write('wp-content/mu-plugins/z-last/main.php', "<?php\n/* Plugin Name: Last */\n" . '$GLOBALS["boots"][] = "last"; $file = "changed";');
-        $this->write('wp-content/mu-plugins/a-first/main.php', "<?php\n/* Plugin Name: First */\n" . '$GLOBALS["boots"][] = "first";');
+        $this->write('wp-content/mu-plugins/a-first/main.php', "<?php\n/* Plugin Name: First */\n" . '$GLOBALS["boots"][] = "first"; $GLOBALS["scope_read"] = $table_prefix; $fixtureGlobal = "plugin-global";');
         $package = dirname(__DIR__, 2);
         $setup = new Process([PHP_BINARY, $package . '/bin/sympress-runtime', '-n', 'muloader'], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
         $setup->mustRun();
@@ -46,11 +46,13 @@ final class MuLoaderRuntimeTest extends TemporaryProject
                 return ['Name' => str_contains($file, 'a-first') ? 'First' : ''];
             }
             function _sort_uname_callback($a, $b) { return strcasecmp($a['Name'], $b['Name']); }
+            $table_prefix = 'fixture_';
             require WPMU_PLUGIN_DIR . '/sympress-runtime-mu-loader.php';
             $filter = $GLOBALS['filters']['plugins_list'] ?? null;
             $hidden = ['mustuse' => [], 'active' => ['existing']];
             echo json_encode([
                 'boots' => $GLOBALS['boots'],
+                'scope' => [$GLOBALS['scope_read'], $fixtureGlobal],
                 'actions' => $GLOBALS['actions'] ?? [],
                 'rows' => $filter ? $filter(['mustuse' => ['loader.php' => ['Name' => 'Loader']]]) : [],
                 'hidden' => $filter ? $filter($hidden) === $hidden : true,
@@ -61,6 +63,7 @@ final class MuLoaderRuntimeTest extends TemporaryProject
         $process->mustRun();
         $result = json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR);
         self::assertSame(['first', 'last'], $result['boots']);
+        self::assertSame(['fixture_', 'plugin-global'], $result['scope']);
         self::assertTrue($result['hidden']);
         if ($profile !== 'native') {
             self::assertSame([], $result['actions']);

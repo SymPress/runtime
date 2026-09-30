@@ -85,7 +85,8 @@ deliberate; Runtime does not require a second application bootstrap.
 | Request-time writes | Possible when caching is enabled | Disabled while a valid dump is present |
 | Removed by `flush-env-cache` | Yes | No |
 
-Local/development requests skip runtime caching. The
+Runtime caching is skipped for the raw `local` environment or a truthy
+`WP_DEVELOPMENT_MODE`. The `development` environment alone does not disable it. The
 `sympress.runtime.skip-cache-env` filter can suppress it for other environments;
 its second argument is the raw environment name. Process values always win over
 cached or dumped values.

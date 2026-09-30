@@ -5,17 +5,16 @@
  * Description: Loads the discovered Composer and local MU plugin entry points.
  */
 
-(static function (array $entries, bool $native): void {
-    $directory = $native && defined('WPMU_PLUGIN_DIR') ? WPMU_PLUGIN_DIR : __DIR__;
-    $plugins = [];
-    foreach ($entries as $entry) {
-        $file = wp_normalize_path($directory . '/' . $entry);
-        if (is_file($file)) {
-            $plugins[$entry] = $file;
+if ({{{MU_NATIVE}}}) {
+    $runtimeMuPlugins = (static function (array $entries): array {
+        $directory = defined('WPMU_PLUGIN_DIR') ? WPMU_PLUGIN_DIR : __DIR__;
+        $plugins = [];
+        foreach ($entries as $entry) {
+            $file = wp_normalize_path($directory . '/' . $entry);
+            if (is_file($file)) {
+                $plugins[$entry] = $file;
+            }
         }
-    }
-
-    if ($native) {
         add_filter('plugins_list', static function (array $groups) use ($plugins): array {
             if (empty($groups['mustuse']) || !is_array($groups['mustuse'])) {
                 return $groups;
@@ -31,13 +30,22 @@
 
             return $groups;
         });
-    }
 
-    foreach ($plugins as $file) {
-        // Keep the path outside the included file's variable scope.
-        (static function (string $path): void { require_once $path; })($file);
-        if ($native) {
-            do_action('mu_plugin_loaded', $file);
+        return $plugins;
+    })({{{MU_PLUGINS_ARRAY}}});
+
+    foreach ($runtimeMuPlugins as $runtimeMuPath) {
+        // Like WordPress itself, include plugins in the caller's global scope.
+        require_once $runtimeMuPath;
+        do_action('mu_plugin_loaded', $runtimeMuPath);
+    }
+    unset($runtimeMuPlugins, $runtimeMuPath);
+} else {
+    foreach ({{{MU_PLUGINS_ARRAY}}} as $runtimeMuPlugin) {
+        $runtimeMuPath = wp_normalize_path(__DIR__ . '/' . $runtimeMuPlugin);
+        if (is_file($runtimeMuPath)) {
+            require_once $runtimeMuPath;
         }
     }
-})({{{MU_PLUGINS_ARRAY}}}, {{{MU_NATIVE}}});
+    unset($runtimeMuPlugin, $runtimeMuPath);
+}
