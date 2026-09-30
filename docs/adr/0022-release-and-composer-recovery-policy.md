@@ -46,6 +46,16 @@ no claim of atomic recovery from SIGKILL or power loss.
 The reported transient PackageLayoutTest warning had no accompanying message.
 The current baseline passed 30 randomized runs of its 15 recovery tests and a full
 randomized 1,063-test run with all fixtures, without warnings or deprecations.
-Do not claim an unidentified cause has been fixed. CI retains fail-on-warning,
-prints all issue details and repeats these tests on both Composer variants so any
-recurrence has a reproducible version/seed and diagnostic.
+The new forward-compatibility matrix then reproduced deterministic warnings from
+Composer's `Silencer::call('stat', ...)` when its atomic writer probes a not-yet-existing
+file. Native PHP honors Composer's temporary reporting mask; PHPUnit's handler
+reported that intentionally suppressed probe.
+
+Recovery tests now execute Composer preparation and binary generation in a PHP
+subprocess, matching the production isolation boundary. They still fail on a
+nonzero exit or any unsuppressed PHP stderr and verify the resulting metadata,
+autoload, backups, rollback and executable proxies. No global warning exclusion
+or vendor patch is introduced. CI retains fail-on-warning, prints all issue details,
+and always preserves available version reports. This fixes the reproduced matrix
+warning; without the original review's warning text, it cannot prove the original
+one-off report had the identical cause.

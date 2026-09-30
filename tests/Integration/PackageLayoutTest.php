@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Tests\Integration;
 
-use Composer\IO\NullIO;
-use Composer\Installer\BinaryInstaller;
-use Composer\Package\Loader\ArrayLoader;
 use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
-use SymPress\Runtime\Composer\PackageLayout;
 use SymPress\Runtime\Tests\Support\TemporaryProject;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
@@ -64,13 +60,21 @@ final class PackageLayoutTest extends TemporaryProject
 
     private function prepare(string $vendor = 'vendor'): void
     {
-        $previous = getcwd();
-        chdir($this->root);
-        try {
-            (new PackageLayout())->prepare($this->root, $this->root . '/' . $vendor, $this->root . '/composer.json');
-        } finally {
-            chdir((string) $previous);
+        $this->composerProcess(
+            '(new SymPress\\Runtime\\Composer\\PackageLayout())->prepare(getcwd(), getcwd() . ' . var_export('/' . $vendor, true) . ', getcwd() . "/composer.json");',
+        );
+    }
+
+    /** Match production isolation; Composer's expected filesystem probes use its own error reporting. */
+    private function composerProcess(string $code): void
+    {
+        $autoload = dirname(__DIR__, 2) . '/vendor/autoload.php';
+        $process = new Process([PHP_BINARY, '-d', 'display_errors=stderr', '-r', 'require ' . var_export($autoload, true) . '; ' . $code], $this->root);
+        $process->run();
+        if (!$process->isSuccessful()) {
+            throw new RuntimeException($process->getErrorOutput() . $process->getOutput());
         }
+        self::assertSame('', $process->getErrorOutput(), 'Recovery must not emit unsuppressed PHP diagnostics.');
     }
 
     /** @return iterable<string, array{string, bool}> */
@@ -326,8 +330,10 @@ final class PackageLayoutTest extends TemporaryProject
 
             $package['bin'] = ['command.php'];
             $this->write('vendor/private/plugin/command.php', '<?php echo "package command";');
-            $loaded = (new ArrayLoader())->load($package);
-            (new BinaryInstaller(new NullIO(), $this->root . '/vendor/bin', 'full', vendorDir: $this->root . '/vendor'))->installBinaries($loaded, $this->root . '/vendor/private/plugin');
+            $this->composerProcess(
+                '$loaded = (new Composer\\Package\\Loader\\ArrayLoader())->load(' . var_export($package, true) . ');'
+                . '(new Composer\\Installer\\BinaryInstaller(new Composer\\IO\\NullIO(), getcwd() . "/vendor/bin", "full", vendorDir: getcwd() . "/vendor"))->installBinaries($loaded, getcwd() . "/vendor/private/plugin");',
+            );
         }
         unset($package);
         $this->write('vendor/composer/installed.json', json_encode($data, JSON_THROW_ON_ERROR));
