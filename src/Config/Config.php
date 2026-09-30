@@ -13,6 +13,41 @@ use Throwable;
 /** @implements ArrayAccess<string, mixed> */
 final class Config implements ArrayAccess
 {
+    public const string AUTOLOAD = 'autoload';
+    public const string CACHE_ENV = 'cache-env';
+    public const string CHECK_VCS_IGNORE = 'check-vcs-ignore';
+    public const string COMMAND_STEPS = 'command-steps';
+    public const string COMPOSER_UPDATED_PACKAGES = 'composer-updated-packages';
+    public const string CONTENT_DEV_DIR = 'content-dev-dir';
+    public const string CONTENT_DEV_OPERATION = 'content-dev-op';
+    public const string CREATE_VCS_IGNORE_FILE = 'create-vcs-ignore-file';
+    public const string CUSTOM_STEPS = 'custom-steps';
+    public const string DB_CHECK = 'db-check';
+    public const string DROPINS = 'dropins';
+    public const string DROPINS_OPERATION = 'dropins-op';
+    public const string EARLY_HOOKS_FILE = 'early-hook-file';
+    public const string ENV_BOOTSTRAP_DIR = 'env-bootstrap-dir';
+    public const string ENV_DIR = 'env-dir';
+    public const string ENV_EXAMPLE = 'env-example';
+    public const string ENV_FILE = 'env-file';
+    public const string INSTALL_WP_CLI = 'install-wp-cli';
+    public const string IS_COMPOSER_INSTALL = 'is-composer-install';
+    public const string IS_COMPOSER_UPDATE = 'is-composer-update';
+    public const string IS_WPSTARTER_COMMAND = 'is-wpstarter-command';
+    public const string IS_WPSTARTER_SELECTED_COMMAND = 'is-wpstarter-selected-command';
+    public const string MOVE_CONTENT = 'move-content';
+    public const string PREVENT_OVERWRITE = 'prevent-overwrite';
+    public const string REGISTER_THEME_FOLDER = 'register-theme-folder';
+    public const string REQUIRE_WP = 'require-wp';
+    public const string SCRIPTS = 'scripts';
+    public const string SKIP_DB_CHECK = 'skip-db-check';
+    public const string SKIP_STEPS = 'skip-steps';
+    public const string TEMPLATES_DIR = 'templates-dir';
+    public const string WP_CLI_COMMANDS = 'wp-cli-commands';
+    public const string WP_CLI_FILES = 'wp-cli-files';
+    public const string WP_CONFIG_PATH = 'wp-config-php-path';
+    public const string WP_VERSION = 'wp-version';
+
     /** @var array<string, mixed> */
     private array $raw;
 

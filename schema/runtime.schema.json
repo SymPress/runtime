@@ -288,7 +288,15 @@
                     {
                         "type": "array",
                         "items": {
-                            "type": "string"
+                            "anyOf": [
+                                { "type": "string" },
+                                {
+                                    "type": "array",
+                                    "minItems": 2,
+                                    "maxItems": 2,
+                                    "items": { "type": "string" }
+                                }
+                            ]
                         }
                     }
                 ]

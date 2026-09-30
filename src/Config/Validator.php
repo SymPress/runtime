@@ -183,7 +183,7 @@ final class Validator
         return $steps;
     }
 
-    /** @return array<string, list<string>> */
+    /** @return array<string, list<string|\Closure>> */
     private function scripts(mixed $value): array
     {
         if (!$value) {
@@ -197,13 +197,26 @@ final class Validator
             if (!is_string($name) || !preg_match('/^(pre|post)-/i', $name)) {
                 throw new InvalidArgumentException('Script names must start with pre- or post-.');
             }
-            $callbacks = $this->strings(is_string($callbacks) ? [$callbacks] : $callbacks);
+            $callbacks = is_string($callbacks) ? [$callbacks] : $callbacks;
+            if (!is_array($callbacks)) {
+                throw new InvalidArgumentException('Expected an array of callbacks.');
+            }
+            $normalized = [];
             foreach ($callbacks as $callback) {
+                if (!is_string($callback) && is_callable($callback)) {
+                    $normalized[] = \Closure::fromCallable($callback);
+                    continue;
+                }
+                if (is_array($callback) && array_is_list($callback) && count($callback) === 2 && is_string($callback[0]) && is_string($callback[1])) {
+                    $callback = $callback[0] . '::' . $callback[1];
+                }
+                $callback = $this->string($callback);
                 if (!preg_match('/^\\\\?[a-zA-Z_][a-zA-Z0-9_\\\\]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)?$/D', $callback)) {
                     throw new InvalidArgumentException('Invalid callback name.');
                 }
+                $normalized[] = $callback;
             }
-            $scripts[strtolower($name)] = $callbacks;
+            $scripts[strtolower($name)] = $normalized;
         }
 
         return $scripts;

@@ -8,10 +8,12 @@ use InvalidArgumentException;
 use SymPress\Runtime\Application\ContainerFactory;
 use SymPress\Runtime\Application\DatabasePreflight;
 use SymPress\Runtime\Application\RunContext;
+use SymPress\Runtime\Compatibility\LegacyApi;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Config\ConfigLoader;
 use SymPress\Runtime\Config\Validator;
 use SymPress\Runtime\Filesystem\Paths;
+use SymPress\Runtime\Package\AutoloadRegistry;
 use SymPress\Runtime\Package\ExtensionMetadata;
 use SymPress\Runtime\Package\PackageFinder;
 use SymPress\Runtime\Step\Registry;
@@ -22,6 +24,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 final class RuntimeCommand extends Command
 {
@@ -83,8 +86,12 @@ final class RuntimeCommand extends Command
         if ($errors !== []) {
             return self::INVALID;
         }
-        foreach ((new PackageFinder($context))->all() as $package) {
+        $extensionAutoload = new AutoloadRegistry();
+        $packages = (new PackageFinder($context))->all();
+        $compatible = !$config['compatibility']->is(false);
+        foreach ($packages as $package) {
             (new ExtensionMetadata($paths))->steps($package);
+            $extensionAutoload->metadata($package, $compatible);
         }
         if ($this->operation === 'validate') {
             $io->success('Runtime configuration is valid.');
@@ -109,11 +116,23 @@ final class RuntimeCommand extends Command
             $paths->useCustomTemplatesDir($templates);
         }
         $autoload = $config['autoload']->unwrap();
+        if ($compatible) {
+            LegacyApi::register();
+        }
         $configure = null;
         if (is_string($autoload)) {
             $result = require_once $autoload;
             $configure = is_callable($result) ? $result : null;
         }
+        $configurators = $configure === null ? [] : [$configure];
+        foreach ($packages as $package) {
+            array_push($configurators, ...$extensionAutoload->load($package, $compatible));
+        }
+        $configure = static function (ContainerBuilder $builder) use ($configurators): void {
+            foreach ($configurators as $configure) {
+                $configure($builder);
+            }
+        };
         $registry = new Registry();
         $container = (new ContainerFactory())->create($config, $paths, $io, $context, $registry, $configure, $selection);
         $skips = $config['skip-steps']->unwrapOrFallback([]);

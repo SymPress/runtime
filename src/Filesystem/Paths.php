@@ -19,6 +19,7 @@ final class Paths implements ArrayAccess
     public const string WP = 'wp';
     public const string WP_PARENT = 'wp-parent';
     public const string WP_CONTENT = 'wp-content';
+    public const string WP_STARTER = 'wp-starter';
 
     /** @var array<string, string> */
     private array $paths;
@@ -58,6 +59,7 @@ final class Paths implements ArrayAccess
             self::WP_PARENT => $parent,
             self::WP_CONTENT => $content,
             'runtime' => Path::canonicalize(dirname(__DIR__, 2)),
+            self::WP_STARTER => Path::canonicalize(dirname(__DIR__, 2)),
         ];
     }
 
