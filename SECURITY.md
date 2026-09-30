@@ -6,7 +6,7 @@ Do not include production credentials in the report.
 
 ## Supported revisions
 
-The initial supported release is `0.1.0`. Fixes are developed on `main` and shipped
+The current supported release is `0.2.0`. Fixes are developed on `main` and shipped
 as tagged releases. Pin a reviewed release and its lockfile; update deliberately
 when a relevant fix is available. The Composer library is restricted to `~2.10.3`;
 new minor lines require recovery-matrix validation before widening that constraint.

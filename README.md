@@ -28,10 +28,9 @@ PHP **8.5 or newer**, Composer **2.10.3 or newer** with plugin API **2.6 or newe
 and a Composer-managed WordPress installation. Composer resolves Runtime's Symfony
 8.1 dependencies. WordPress and your application may require additional PHP extensions.
 
-Install the tagged release `0.1.0` and commit the resolved lockfile. The repository
+Install the tagged release `0.2.0` and commit the resolved lockfile. The repository
 is private, so use an authorized GitHub account or a repository-scoped read credential.
-Version 0.1.0 is the initial release accepted for the documented SymPress layouts;
-review release notes before changing the pinned version.
+Review the [upgrade notes](docs/releases/0.2.0.md) before updating an existing site.
 
 ## Start here
 
@@ -41,9 +40,8 @@ For an existing site, start with [Adopting Runtime](docs/migration.md).
 
 Once Runtime is installed, run these commands from your project root:
 
-The examples use the upcoming executable name `runtime`. With the tagged 0.1.0
-release, use `sympress-runtime` as the executable name instead; see the
-[CLI upgrade note](docs/cli.md).
+Version 0.2.0 uses the executable name `runtime`. When upgrading from 0.1.0,
+update shell and CI scripts to use this name; see [Command line](docs/cli.md).
 
 ```sh
 vendor/bin/runtime validate

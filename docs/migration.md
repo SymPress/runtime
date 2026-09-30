@@ -14,7 +14,7 @@ web-server routes. Adding Runtime does not require a URL change.
 Install the package without running setup while preparing the configuration:
 
 ```sh
-composer require sympress/runtime:0.1.0 --no-plugins --no-scripts
+composer require sympress/runtime:0.2.0 --no-plugins --no-scripts
 ```
 
 The private repository must already be present in Composer's repository
