@@ -1,0 +1,428 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://sympress.de/schema/runtime.schema.json",
+    "title": "SymPress Runtime configuration",
+    "type": "object",
+    "properties": {
+        "cache-env": {
+            "$ref": "#/$defs/boolean"
+        },
+        "install-wp-cli": {
+            "$ref": "#/$defs/boolean"
+        },
+        "require-wp": {
+            "$ref": "#/$defs/boolean"
+        },
+        "skip-db-check": {
+            "$ref": "#/$defs/boolean"
+        },
+        "compatibility": {
+            "$ref": "#/$defs/boolean"
+        },
+        "env-local-overrides": {
+            "$ref": "#/$defs/boolean"
+        },
+        "allow-insecure-downloads": {
+            "$ref": "#/$defs/boolean"
+        },
+        "require-download-checksums": {
+            "$ref": "#/$defs/boolean"
+        },
+        "kernel-boot": {
+            "$ref": "#/$defs/boolean"
+        },
+        "check-vcs-ignore": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/boolean"
+                },
+                {
+                    "const": "ask"
+                }
+            ]
+        },
+        "create-vcs-ignore-file": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/boolean"
+                },
+                {
+                    "const": "ask"
+                }
+            ]
+        },
+        "move-content": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/boolean"
+                },
+                {
+                    "const": "ask"
+                }
+            ]
+        },
+        "register-theme-folder": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/boolean"
+                },
+                {
+                    "const": "ask"
+                }
+            ]
+        },
+        "unknown-dropins": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/boolean"
+                },
+                {
+                    "const": "ask"
+                }
+            ]
+        },
+        "db-check": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/boolean"
+                },
+                {
+                    "type": "string",
+                    "pattern": "^[Hh][Ee][Aa][Ll][Tt][Hh]$"
+                }
+            ]
+        },
+        "content-dev-op": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/boolean"
+                },
+                {
+                    "type": "null"
+                },
+                {
+                    "type": "string",
+                    "pattern": "^\\s*(?:[Aa][Uu][Tt][Oo]|[Cc][Oo][Pp][Yy]|[Ss][Yy][Mm][Ll][Ii][Nn][Kk]|[Nn][Oo][Nn][Ee]|[Aa][Ss][Kk])\\s*$"
+                }
+            ]
+        },
+        "dropins-op": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/boolean"
+                },
+                {
+                    "type": "null"
+                },
+                {
+                    "type": "string",
+                    "pattern": "^\\s*(?:[Aa][Uu][Tt][Oo]|[Cc][Oo][Pp][Yy]|[Ss][Yy][Mm][Ll][Ii][Nn][Kk]|[Nn][Oo][Nn][Ee]|[Aa][Ss][Kk])\\s*$"
+                }
+            ]
+        },
+        "autoload": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "content-dev-dir": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "early-hook-file": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "env-bootstrap-dir": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "env-dir": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "templates-dir": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "kernel-build-id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "env-file": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[^/\\\\]+$"
+        },
+        "env-example": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/boolean"
+                },
+                {
+                    "type": "string",
+                    "minLength": 1
+                }
+            ]
+        },
+        "custom-steps": {
+            "anyOf": [
+                {
+                    "type": "null"
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                }
+            ]
+        },
+        "command-steps": {
+            "anyOf": [
+                {
+                    "type": "null"
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                }
+            ]
+        },
+        "skip-steps": {
+            "type": [
+                "array",
+                "null"
+            ],
+            "items": {
+                "type": "string",
+                "minLength": 1
+            }
+        },
+        "prevent-overwrite": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/boolean"
+                },
+                {
+                    "const": "ask"
+                },
+                {
+                    "type": "null"
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                }
+            ]
+        },
+        "dropins": {
+            "anyOf": [
+                {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            ]
+        },
+        "scripts": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "propertyNames": {
+                "pattern": "^(?:[Pp][Rr][Ee]|[Pp][Oo][Ss][Tt])-"
+            },
+            "additionalProperties": {
+                "anyOf": [
+                    {
+                        "type": "string"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "wp-cli-commands": {
+            "anyOf": [
+                {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "pattern": "^wp "
+                    }
+                }
+            ]
+        },
+        "wp-cli-files": {
+            "anyOf": [
+                {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "object",
+                                "required": [
+                                    "file"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "type": "string"
+                                    },
+                                    "args": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "skip-wordpress": {
+                                        "$ref": "#/$defs/boolean"
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "wp-version": {
+            "type": [
+                "string",
+                "integer",
+                "null"
+            ]
+        },
+        "compatibility-profile": {
+            "enum": [
+                "auto",
+                "native",
+                "release-3.0.1",
+                "upstream-dev"
+            ]
+        },
+        "download-checksums": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{64}$"
+            }
+        },
+        "composer-updated-packages": false,
+        "is-composer-install": false,
+        "is-composer-update": false,
+        "is-wpstarter-command": false,
+        "is-wpstarter-selected-command": false,
+        "is-runtime-command": false,
+        "is-runtime-selected-command": false,
+        "wp-config-php-path": false,
+        "steps": {
+            "anyOf": [
+                {
+                    "type": "null"
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                }
+            ]
+        }
+    },
+    "additionalProperties": true,
+    "$defs": {
+        "boolean": {
+            "oneOf": [
+                {
+                    "type": "boolean"
+                },
+                {
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "type": "string",
+                    "pattern": "^\\s*(?:[Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee]|[Yy][Ee][Ss]|[Nn][Oo]|[Oo][Nn]|[Oo][Ff][Ff]|0|1)\\s*$"
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<ruleset name="SymPress Runtime">
+    <arg name="colors"/>
+    <arg value="sp"/>
+    <config name="testVersion" value="8.5-"/>
+    <file>src</file>
+    <file>tests</file>
+    <!-- Match kernel conventions; contract method names and immutable DTOs are intentional. -->
+    <rule ref="SymPress-Pure">
+        <exclude name="SlevomatCodingStandard.Classes.ForbiddenPublicProperty.ForbiddenPublicProperty"/>
+        <exclude name="SlevomatCodingStandard.Functions.UnusedParameter.UnusedParameter"/>
+        <exclude name="SymPress.Arrays.ArrayDoubleArrowAlignment.AssignmentsNotAligned"/>
+        <exclude name="SymPress.Classes.AccessorNaming.GetterRequired"/>
+        <exclude name="SymPress.Files.LineLength.TooLong"/>
+        <exclude name="SymPress.Functions.FunctionLength.TooLong"/>
+        <exclude name="SymPress.Functions.FunctionBodyStart.WrongForMultiLineDeclaration"/>
+        <exclude name="SymPress.Variables.RedundantAssignment.Found"/>
+    </rule>
+    <rule ref="SymPress.Namespaces.Psr4">
+        <properties>
+            <property name="psr4" type="array">
+                <element key="SymPress\Runtime" value="src"/>
+                <element key="SymPress\Runtime\Tests" value="tests"/>
+            </property>
+        </properties>
+    </rule>
+</ruleset>

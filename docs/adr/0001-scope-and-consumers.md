@@ -1,6 +1,6 @@
 # ADR 0001: Scope, pinned baselines and consumer priorities
 
-Status: proposed. Date: 2026-09-29.
+Status: accepted by the project owner on 2026-09-29 with Phase 0 approval.
 
 ## Evidence
 

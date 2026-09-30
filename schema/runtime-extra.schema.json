@@ -1,0 +1,42 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://sympress.de/schema/runtime-extra.schema.json",
+    "title": "Composer extra configuration for SymPress Runtime",
+    "type": "object",
+    "properties": {
+        "sympress-runtime": {
+            "anyOf": [
+                {
+                    "$ref": "runtime.schema.json"
+                },
+                {
+                    "type": "string",
+                    "minLength": 1
+                }
+            ]
+        },
+        "wpstarter": {
+            "anyOf": [
+                {
+                    "$ref": "runtime.schema.json"
+                },
+                {
+                    "type": "string",
+                    "minLength": 1
+                }
+            ],
+            "deprecated": true
+        },
+        "wordpress-install-dir": {
+            "type": "string",
+            "minLength": 1,
+            "default": "./wordpress"
+        },
+        "wordpress-content-dir": {
+            "type": "string",
+            "minLength": 1,
+            "default": "./wp-content"
+        }
+    },
+    "additionalProperties": true
+}

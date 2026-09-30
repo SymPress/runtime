@@ -1,6 +1,6 @@
 # ADR 0005: Compatibility and explicit differences
 
-Status: proposed. None of these differences is approved or verified yet.
+Status: accepted by the project owner on 2026-09-29 with Phase 0 approval.
 
 The feature union stays available. Differences below are scoped behaviors with separate assertions in differential fixtures. Never normalize a failure away merely because upstream has a bug.
 

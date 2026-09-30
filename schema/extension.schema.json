@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sympress.dev/schema/runtime-extension.json",
+  "title": "SymPress Runtime installed-package contribution",
+  "type": "object",
+  "properties": {
+    "steps": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        { "type": "object", "additionalProperties": { "type": "string", "minLength": 1 } }
+      ]
+    }
+  },
+  "additionalProperties": true
+}

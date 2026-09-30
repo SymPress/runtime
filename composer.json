@@ -1,0 +1,46 @@
+{
+    "name": "sympress/runtime",
+    "description": "Isolated Composer project setup and WordPress runtime generation for SymPress.",
+    "type": "composer-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": "^8.5",
+        "composer-plugin-api": "^2.6",
+        "composer/semver": "^3.4",
+        "opis/json-schema": "^2.6",
+        "symfony/console": "^8.1",
+        "symfony/dependency-injection": "^8.1",
+        "symfony/dotenv": "^8.1",
+        "symfony/event-dispatcher": "^8.1",
+        "symfony/filesystem": "^8.1",
+        "symfony/http-client": "^8.1",
+        "symfony/process": "^8.1"
+    },
+    "require-dev": {
+        "composer/composer": "^2.8",
+        "phpunit/phpunit": "^13.0",
+        "sympress/qa": "dev-main"
+    },
+    "autoload": {"psr-4": {"SymPress\\Runtime\\": "src/"}},
+    "autoload-dev": {"psr-4": {"SymPress\\Runtime\\Tests\\": "tests/"}},
+    "bin": ["bin/sympress-runtime"],
+    "extra": {"class": "SymPress\\Runtime\\Composer\\Plugin"},
+    "scripts": {
+        "cs": "qa cs --strict",
+        "cs:fix": "qa cs:fix --strict",
+        "static-analysis": "qa static-analysis --strict",
+        "tests": "qa tests --strict",
+        "test": "@tests",
+        "qa": ["@cs", "@static-analysis", "@tests"]
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "phpstan/extension-installer": true
+        },
+        "sort-packages": true
+    },
+    "repositories": [{"type": "path", "url": "../*", "options": {"symlink": true}}],
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

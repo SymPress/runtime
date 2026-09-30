@@ -1,6 +1,6 @@
 # ADR 0002: Names and public boundaries
 
-Status: proposed, except the owner-selected package name.
+Status: accepted by the project owner on 2026-09-29 with Phase 0 approval.
 
 | Surface | Name | Reason |
 | --- | --- | --- |

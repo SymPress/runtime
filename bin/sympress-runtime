@@ -1,0 +1,48 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// This boundary intentionally uses only PHP's standard library before loading the project.
+try {
+    $arguments = $argv;
+    $context = null;
+    foreach ($arguments as $index => $argument) {
+        if ($index > 0 && str_starts_with($argument, '--runtime-context=')) {
+            $file = substr($argument, strlen('--runtime-context='));
+            require_once dirname(__DIR__) . '/src/Application/RunContext.php';
+            require_once dirname(__DIR__) . '/src/Composer/ContextFile.php';
+            $context = SymPress\Runtime\Composer\ContextFile::consume($file)->toArray();
+            unset($arguments[$index]);
+            break;
+        }
+    }
+    $root = $context['root'] ?? getcwd();
+    if (!is_string($root)) {
+        throw new RuntimeException('Cannot determine the project root.');
+    }
+    $manifestPath = $context['manifest'] ?? (getenv('COMPOSER') ?: 'composer.json');
+    if (!is_string($manifestPath)) {
+        throw new RuntimeException('Invalid project manifest path.');
+    }
+    if (!preg_match('~^(?:[A-Za-z]:[/\\\\]|/)~', $manifestPath)) {
+        $manifestPath = $root . '/' . $manifestPath;
+    }
+    $manifest = is_file($manifestPath) ? json_decode(file_get_contents($manifestPath), true, 512, JSON_THROW_ON_ERROR) : [];
+    $vendor = $context['vendor'] ?? getenv('COMPOSER_VENDOR_DIR') ?: ($manifest['config']['vendor-dir'] ?? 'vendor');
+    if (!is_string($vendor)) {
+        throw new RuntimeException('Invalid project vendor directory.');
+    }
+    if (!preg_match('~^(?:[A-Za-z]:[/\\\\]|/)~', $vendor)) {
+        $vendor = $root . '/' . $vendor;
+    }
+    $autoload = $vendor . '/autoload.php';
+    if (!is_file($autoload)) {
+        throw new RuntimeException('Project autoloader is missing. Run composer install first.');
+    }
+    require $autoload;
+    exit(SymPress\Runtime\Console\Application::main(array_values($arguments), $root, $vendor, $context));
+} catch (Throwable $error) {
+    fwrite(STDERR, 'SymPress Runtime: ' . $error->getMessage() . PHP_EOL);
+    exit(2);
+}
