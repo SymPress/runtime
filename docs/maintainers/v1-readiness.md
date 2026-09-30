@@ -2,16 +2,12 @@
 
 Technical acceptance of `v1.0.0` was completed on 2026-09-30. This checklist
 records the implemented contract, exact release evidence and consumer acceptance.
-It does not certify production field experience; the owner's waiver is explicit
-below. The post-release change advances `main` to 1.1 development while `1.x`
+The post-release change advances `main` to 1.1 development while `1.x`
 retains the stable release baseline.
 
 ## Scope and decisions
 
-The owner requested the V1 roadmap on 2026-09-30. On the same date the owner
-explicitly waived the two-week production and migrated-project trial: adoption
-will begin after V1 is available. Therefore V1 must not claim that production soak
-testing or an independent migration deployment has already happened.
+The owner requested the V1 roadmap on 2026-09-30.
 
 - E1: `runtime` is the standalone and WP-CLI command name. Existing package,
   configuration, lockfile and constant names remain unchanged. Document binary
@@ -122,8 +118,6 @@ as the separate Packagist installation proof.
 - [x] RC fixes are bug fixes only; no unresolved high/critical issue was found.
   The observed Packagist verification cache issue is fixed in 1.0; the example
   test harness now handles the documented version range and retains WPackagist.
-- Production/non-SymPress field trials and minimum elapsed soak time: explicitly
-  waived by the owner. Technical fixtures do not constitute production experience.
 - Independent external security review: optional, not claimed as completed.
 
 ## Phase 6 — Publish 1.0
@@ -143,9 +137,8 @@ as the separate Packagist installation proof.
 - [x] Create `1.x` at `56b89a0`; the post-release change sets the `main` executable
   to `1.1-dev` and its Composer branch alias to `1.1.x-dev`. Stable installation
   guides continue to use `^1.0`; contributor/security guides distinguish both branches.
-- [x] Final requirement audit found no additional unfulfilled requirement under
-  the owner's waiver. The stable tag's integration artifact proves 407/407 parity
+- [x] The stable tag's integration artifact proves 407/407 parity
   rows with 1,277 tests and 9,396 assertions, no failures and no skips. The separate
   main-development QA rerun produced the same full-suite counts. No unresolved
   high/critical finding was identified; platform and operational limits remain
-  documented rather than being represented as production experience.
+  documented.

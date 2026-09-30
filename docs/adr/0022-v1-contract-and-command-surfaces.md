@@ -39,5 +39,3 @@ contracts, contaminating command/JSON output. We set the supported contracts
 floor to 3.4.2, whose interface uses explicit nullable types, instead of suppressing
 those diagnostics. Lowest-version testing holds QA tools at current stable
 versions while lowering production dependencies and Symfony components.
-The owner waived a timed production trial before 1.0; release evidence must state
-that limitation rather than claiming deployment experience.

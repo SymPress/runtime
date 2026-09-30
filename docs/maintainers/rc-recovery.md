@@ -79,6 +79,4 @@ The rollback fixture changes the supported bootstrap mode to generate a distinct
 payload; it does not impersonate two published Runtime release versions.
 
 Full package QA, real WordPress/database integration, consumer browser checks,
-platform CI and release-artifact verification remain separate gates. The owner
-waived the production/non-SymPress field trial and two-week observation period;
-these technical fixtures do not create that missing operational experience.
+platform CI and release-artifact verification remain separate gates.

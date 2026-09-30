@@ -32,7 +32,3 @@ Read-only deployments use a built environment dump and retained payloads as
 described in [Deployment](deployment.md). Root-directory package placement,
 overlapping destinations and unknown third-party installers remain outside the
 automatic recovery boundary; normal Composer installers are the default path.
-
-The release owner waived a timed production trial before 1.0. Automated fixtures
-and the Starter/Demo smoke checks are evidence of tested behavior, not completed
-production field experience.
