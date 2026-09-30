@@ -1,8 +1,13 @@
 # Changelog
 
-## Unreleased — 1.1 development
+## 1.1.0 — 2026-09-30
 
-No changes yet.
+- Support Symfony Console `list`, `help`, command-specific help and shell completion without interpreting them as setup steps.
+- List every Runtime operation with its own description; retain direct step selection and add explicit `run [steps]` syntax for command-like custom step names.
+- Keep help and command discovery read-only, including before package layout recovery and when setup configuration is invalid.
+- Verify command discovery and help through the native WP-CLI bridge.
+
+See the [1.1 upgrade notes](docs/releases/1.1.0.md).
 
 ## 1.0.0 — 2026-09-30
 
