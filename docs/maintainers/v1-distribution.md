@@ -39,5 +39,11 @@ archive itself was downloaded from its public distribution URL.
 
 Release workflow:
 [36761888716](https://github.com/SymPress/runtime/actions/runs/36761888716).
+All technical jobs passed and the GitHub prerelease was created. Its final
+Packagist check failed because the ordinary package metadata URL still returned
+a pre-RC response with `s-maxage=43200` (twelve hours). Composer's public P2
+metadata, the actual installation and a release-specific metadata query all
+verified the RC revision. The 1.0 workflow adds a unique public query per attempt;
+the tag was not rewritten to alter the historical run.
 Consumer acceptance and the final stable distribution check are separate gates
 recorded in [V1 readiness](v1-readiness.md).

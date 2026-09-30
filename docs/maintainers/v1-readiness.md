@@ -102,7 +102,10 @@ as the separate Packagist installation proof.
 
 ## Phase 5 — Release candidate
 
-- [ ] Publish signed `v1.0.0-rc.1` after phases 2–4 pass.
+- [x] Publish signed `v1.0.0-rc.1` at `b532fdc` after every technical release
+  gate passed. The final distribution job then hit a stale Packagist response;
+  public Composer installation and a fresh metadata query independently verified
+  the exact tag. The 1.0 workflow fixes this cache issue; the signed RC is unchanged.
 - [ ] Starter and Demo consume the RC with green CI and smoke tests.
 - [x] Verify payload rollback, journal recovery and environment switching/cache
   invalidation on the RC tag: 68 tests / 462 assertions plus 2 Composer replay
