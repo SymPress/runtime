@@ -5,9 +5,8 @@ You need PHP 8.5+, Composer 2.10.3+, a database and a web server. Runtime's priv
 repository also requires GitHub read access. Keep credentials in Composer's private
 authentication configuration or an SSH agent, never in `composer.json`.
 
-Commands below use the upcoming executable name `runtime`. The example manifest
-pins 0.1.0, whose executable is named `sympress-runtime`; substitute that name
-until you upgrade to a release containing the rename. See [Command line](cli.md).
+Commands below use `runtime`, the executable provided by the pinned 0.2.0 release.
+Existing 0.1.0 projects should follow the [upgrade notes](releases/0.2.0.md).
 
 ## 1. Describe the project
 
@@ -24,7 +23,7 @@ cd my-site
 composer install
 ```
 
-The example pins Runtime `0.1.0`. Commit `composer.lock` and deploy with `composer install`, not an unreviewed update.
+The example pins Runtime `0.2.0`. Commit `composer.lock` and deploy with `composer install`, not an unreviewed update.
 
 The resulting layout is:
 

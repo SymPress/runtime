@@ -44,7 +44,7 @@ final class Application
             }
             break;
         }
-        $application = new ConsoleApplication('SymPress Runtime', '0.1.0-dev');
+        $application = new ConsoleApplication('SymPress Runtime', '0.2.0');
         $application->setAutoExit(false);
         $application->addCommand(new RuntimeCommand($context, $operation));
         $application->setDefaultCommand($operation, true);

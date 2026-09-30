@@ -2,9 +2,9 @@
 
 Run these commands from the directory containing your project's `composer.json`.
 
-The development branch provides `bin/runtime`, installed by Composer as
-`vendor/bin/runtime`. This rename is unreleased; version 0.1.0 uses the executable
-name `sympress-runtime`. Update shell and CI scripts when upgrading.
+Version 0.2.0 provides `bin/runtime`, installed by Composer as `vendor/bin/runtime`.
+Version 0.1.0 used the executable name `sympress-runtime`. Update shell and CI
+scripts when upgrading; see the [0.2.0 upgrade notes](releases/0.2.0.md).
 
 ```sh
 # Inspect configuration without running project providers.

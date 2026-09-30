@@ -1,7 +1,7 @@
 # Configuration
 
-This page describes the current development branch. The production operations
-options listed in [Unreleased](../CHANGELOG.md#unreleased) are not part of 0.1.0.
+This page describes Runtime 0.2.0. See the [upgrade notes](releases/0.2.0.md)
+for new options and changed native defaults when moving from 0.1.0.
 
 Runtime settings describe setup behavior. WordPress environment values such as
 database credentials and public URLs belong in [environment configuration](environment.md).

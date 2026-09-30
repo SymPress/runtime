@@ -1,7 +1,7 @@
 # Deployment checks and maintenance
 
-These commands and options are unreleased. They will be available in the next
-Runtime release; installing 0.1.0 does not include them.
+These commands and options require Runtime 0.2.0 or newer. Existing 0.1.0 projects
+should first follow the [upgrade notes](releases/0.2.0.md).
 
 Build once with the regular Composer installers, verify the generated artifacts,
 then deploy the lockfiles, generated configuration and referenced runtime payload.
