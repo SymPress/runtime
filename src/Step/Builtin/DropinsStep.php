@@ -71,19 +71,40 @@ final readonly class DropinsStep implements ConditionalStepInterface
                 $result |= $this->publisher->publish(Path::makeAbsolute($source, $paths->root()), $target, $operation);
                 continue;
             }
-            try {
-                $this->boundary->assertWritablePath($target);
-                if ($this->overwrite->shouldOverwrite($target, $this->selection->force)) {
-                    $result |= $this->downloader->save($source, $target) ? self::SUCCESS : self::ERROR;
-                }
-            } catch (Throwable) {
-                $result |= self::ERROR;
-            }
+            $result |= $this->publishUrl($source, $target);
         }
 
         $result &= self::SUCCESS | self::ERROR;
 
         return $result ?: self::NONE;
+    }
+
+    private function publishUrl(string $source, string $target): int
+    {
+        $temporary = null;
+        try {
+            $this->boundary->assertWritablePath(dirname($target));
+            if (is_link($target) && $this->selection->force) {
+                $temporary = tempnam(sys_get_temp_dir(), 'sympress-dropin-');
+                if ($temporary === false || !$this->downloader->save($source, $temporary)) {
+                    return self::ERROR;
+                }
+                // URL sources are files; replace the link only after verifying the download.
+                return $this->publisher->publish($temporary, $target, 'copy');
+            }
+            $this->boundary->assertWritablePath($target);
+            if (!$this->overwrite->shouldOverwrite($target, $this->selection->force)) {
+                return self::NONE;
+            }
+
+            return $this->downloader->save($source, $target) ? self::SUCCESS : self::ERROR;
+        } catch (Throwable) {
+            return self::ERROR;
+        } finally {
+            if (is_string($temporary) && is_file($temporary)) {
+                unlink($temporary);
+            }
+        }
     }
 
     private function accepted(string $name, Config $config): bool

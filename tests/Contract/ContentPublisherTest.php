@@ -100,6 +100,44 @@ final class ContentPublisherTest extends TemporaryProject
         self::assertSame(2, $http->getRequestsCount());
     }
 
+    /** @return iterable<string, array{bool}> */
+    public static function urlLinkDestinations(): iterable
+    {
+        yield 'inside project' => [false];
+        yield 'outside project' => [true];
+    }
+
+    #[DataProvider('urlLinkDestinations')]
+    #[Group('PAR-STEP-007')]
+    public function testForcedUrlDropinReplacesOnlyTheLinkAfterSuccessfulVerification(bool $external): void
+    {
+        $url = 'https://example.test/object-cache.php';
+        [$paths, $config, $io, $files, $overwrite, $boundary, $selection, $publisher] = $this->services(['dropins' => ['object-cache.php' => $url], 'download-checksums' => [$url => hash('sha256', 'valid')]], true);
+        $source = $external ? $this->root . '-external.php' : $this->root . '/original.php';
+        file_put_contents($source, 'original');
+        $files->createDir($paths->wpContent());
+        $target = $paths->wpContent('object-cache.php');
+        symlink($source, $target);
+        $http = new MockHttpClient([new MockResponse('corrupt'), new MockResponse('valid')]);
+        $step = new DropinsStep(new PackageFinder(new RunContext($this->root, $paths->vendor(), $paths->bin())), $publisher, new UrlDownloader($http, $files, $config), $overwrite, $boundary, $selection, $io);
+        try {
+            self::assertSame(StepInterface::ERROR, $step->run($config, $paths));
+            self::assertTrue(is_link($target));
+            self::assertSame($source, readlink($target));
+            self::assertSame('original', file_get_contents($source));
+            self::assertSame(StepInterface::SUCCESS, $step->run($config, $paths));
+            self::assertFalse(is_link($target));
+            self::assertSame('valid', file_get_contents($target));
+            self::assertSame('original', file_get_contents($source));
+            self::assertSame(2, $http->getRequestsCount());
+            self::assertSame([], glob($paths->wpContent('.runtime-publish-*')));
+        } finally {
+            if ($external) {
+                unlink($source);
+            }
+        }
+    }
+
     #[Group('PAR-FS-002')]
     public function testAutoFallsBackToCopyForExistingDirectoriesAndRejectsSymlinkOverlap(): void
     {
