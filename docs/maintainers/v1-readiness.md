@@ -46,7 +46,9 @@ testing or an independent migration deployment has already happened.
 ## Phase 3 — Platforms and dependencies
 
 - [ ] Linux, Windows and macOS with minimum and latest stable Composer.
-- [ ] Windows copy fallback, binary proxies, paths and permission semantics tested.
+- [x] Windows copy fallback, binary proxies, paths and permission semantics tested
+  with minimum/latest Composer at `2101bda`. Windows file flushes remain mandatory;
+  the documented platform boundary excludes directory-entry power-loss durability.
 - [x] macOS case-insensitive paths and BSD tooling tested on both Composer jobs.
 - [x] Lowest supported Symfony 8.1 dependency set tested; the complete QA suite
   passes with stable development tools and the lowest production dependencies.

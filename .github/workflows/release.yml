@@ -18,6 +18,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       commit: ${{ steps.verify.outputs.commit }}
+      tag_object: ${{ steps.verify.outputs.tag_object }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -35,7 +36,8 @@ jobs:
           [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|rc)\.[0-9]+)?$ ]]
           tag_object=$(gh api "repos/$GH_REPO/git/ref/tags/$TAG" --jq '.object | select(.type == "tag") | .sha')
           [[ -n "$tag_object" ]]
-          git -c gpg.format=ssh -c gpg.ssh.allowedSignersFile=.github/release-signers verify-tag "$TAG"
+          [[ "$(git rev-parse "refs/tags/$TAG")" == "$tag_object" ]]
+          git -c gpg.format=ssh -c gpg.ssh.allowedSignersFile=.github/release-signers verify-tag "$tag_object"
           gh api "repos/$GH_REPO/git/tags/$tag_object" > tag.json
           EXPECTED_TAG_COMMIT=$(git rev-parse HEAD)
           export EXPECTED_TAG_COMMIT
@@ -51,6 +53,7 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
               output.write('commit=' + tag['object']['sha'] + '\n')
           PYTHON
+          printf 'tag_object=%s\n' "$tag_object" >> "$GITHUB_OUTPUT"
   qa:
     needs: signature
     uses: ./.github/workflows/qa.yml
@@ -94,10 +97,13 @@ jobs:
       - name: Publish the verified tag after every technical gate passes
         env:
           EXPECTED_COMMIT: ${{ needs.signature.outputs.commit }}
+          EXPECTED_TAG_OBJECT: ${{ needs.signature.outputs.tag_object }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
         run: |
+          [[ -n "$EXPECTED_TAG_OBJECT" ]]
+          [[ "$(gh api "repos/$GH_REPO/git/ref/tags/$TAG" --jq '.object | select(.type == "tag") | .sha')" == "$EXPECTED_TAG_OBJECT" ]]
           [[ "$(gh api "repos/$GH_REPO/commits/$TAG" --jq .sha)" == "$EXPECTED_COMMIT" ]]
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo 'Release already exists; continue with distribution verification.'

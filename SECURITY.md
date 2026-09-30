@@ -33,9 +33,11 @@ verification. Findings and parser failures block the security job; no baseline
 suppression is used. This is static analysis, not an independent penetration test.
 Dependabot checks Composer packages and GitHub Actions weekly.
 
-The tag workflow requires GitHub-verified signatures and successful QA, Linux
-integration, platform, package-recovery and security gates before creating a
-release from the matching changelog section. Packagist must already be registered
+The tag workflow verifies SSH signatures against the repository's pinned release
+signers and requires successful QA, Linux integration, platform, package-recovery
+and security gates before creating a release from the matching changelog section.
+GitHub's account verification badge is optional; the cryptographic signature check
+is mandatory. Packagist must already be registered
 with its GitHub update webhook. Optional `PACKAGIST_USERNAME` and
 `PACKAGIST_API_TOKEN` repository secrets enable an explicit API refresh using an
 Authorization header. Both paths verify the version's exact source revision on
