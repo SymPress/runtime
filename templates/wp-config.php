@@ -11,6 +11,9 @@ ABSPATH : {
 } #@@/ABSPATH
 
 AUTOLOAD : {
+    if ({{{PROJECT_AUTOLOAD_ENABLED}}}) {
+        require_once {{{PROJECT_AUTOLOAD_PATH}}};
+    }
     $runtimeReaderClass = require {{{PAYLOAD_PATH}}};
     defined('SYMPRESS_RUNTIME_PATH') || define('SYMPRESS_RUNTIME_PATH', {{{ROOT_PATH}}});
     defined('SYMPRESS_RUNTIME_ENV_PATH') || define('SYMPRESS_RUNTIME_ENV_PATH', {{{ENV_PATH}}});
@@ -29,8 +32,8 @@ WPS_GETENV_FUNCTION : {
     $usingEnvDump = is_file($envDumpFile);
     global $sympressRuntimeEnvironment;
     $sympressRuntimeEnvironment = $usingEnvDump || {{{CACHE_ENABLED}}}
-        ? $runtimeReaderClass::buildFromCacheDump($usingEnvDump ? $envDumpFile : $envCacheFile, {{{PROFILE}}})
-        : new $runtimeReaderClass(profile: {{{PROFILE}}});
+        ? $runtimeReaderClass::buildFromCacheDump($usingEnvDump ? $envDumpFile : $envCacheFile, {{{PROFILE}}}, compatibility: {{{COMPATIBILITY}}})
+        : new $runtimeReaderClass(profile: {{{PROFILE}}}, compatibility: {{{COMPATIBILITY}}});
     if (!function_exists('sympress_runtime_getenv')) {
         function sympress_runtime_getenv(?string $name): bool|int|float|string|object|null
         {

@@ -17,6 +17,40 @@ use Symfony\Component\HttpClient\Response\MockResponse;
 
 final class UrlDownloaderTest extends TemporaryProject
 {
+    public function testStreamLimitRejectsLargeBodiesBeforeReplacingTargets(): void
+    {
+        $this->write('artifact', 'original');
+        $responses = [
+            new MockResponse('abcde', ['response_headers' => ['content-length: 5']]),
+            new MockResponse((static function (): iterable {
+                yield 'ab';
+                yield 'cde';
+            })()),
+            new MockResponse((static function (): iterable {
+                yield 'ab';
+                yield 'cd';
+            })()),
+        ];
+        $http = new MockHttpClient($responses);
+        $downloader = $this->downloader($http, ['download-max-bytes' => 4]);
+        for ($attempt = 0; $attempt < 2; ++$attempt) {
+            self::assertFalse($downloader->save('https://example.test/file', $this->root . '/artifact'));
+            self::assertStringContainsString('byte limit', $downloader->error());
+            self::assertSame('original', file_get_contents($this->root . '/artifact'));
+        }
+        self::assertTrue($downloader->save('https://example.test/file', $this->root . '/artifact'));
+        self::assertSame('abcd', file_get_contents($this->root . '/artifact'));
+        $larger = $this->downloader(new MockHttpClient(new MockResponse('abcde')), ['download-max-bytes' => 5]);
+        self::assertSame('abcde', $larger->fetch('https://example.test/file'));
+    }
+
+    public function testUppercaseChecksumsAreAccepted(): void
+    {
+        $url = 'https://example.test/file';
+        $downloader = $this->downloader(new MockHttpClient(new MockResponse('verified')), ['download-checksums' => [$url => strtoupper(hash('sha256', 'verified'))]]);
+        self::assertSame('verified', $downloader->fetch($url));
+    }
+
     /** @param array<string, mixed> $options */
     private function downloader(MockHttpClient $http, array $options = []): UrlDownloader
     {
@@ -83,6 +117,7 @@ final class UrlDownloaderTest extends TemporaryProject
             self::assertTrue($options['verify_peer']);
             self::assertTrue($options['verify_host']);
             self::assertSame(0, $options['max_redirects']);
+            self::assertFalse($options['buffer']);
 
             return new MockResponse('');
         });

@@ -70,6 +70,8 @@ final readonly class WpConfigGenerator
             'LEGACY_PROJECT_PATH' => $this->expression($directory, $this->config['compatibility-profile']->is('release-3.0.1') ? $environment : $this->paths->root()),
             'CONTENT_PATH' => $this->expression($directory, $this->paths->wpContent()),
             'PAYLOAD_PATH' => $this->expression($directory, $bundle->loader),
+            'PROJECT_AUTOLOAD_PATH' => $this->expression($directory, $this->paths->vendor('autoload.php')),
+            'PROJECT_AUTOLOAD_ENABLED' => $this->config['wp-config-autoload']->is(true) ? 'true' : 'false',
             'PAYLOAD_ID' => var_export($bundle->fingerprint, true),
             'PROFILE' => var_export($this->config['compatibility-profile']->unwrap(), true),
             'ENV_FILENAME' => var_export($this->config['env-file']->unwrap(), true),
