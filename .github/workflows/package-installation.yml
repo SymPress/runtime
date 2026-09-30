@@ -21,6 +21,8 @@ jobs:
           coverage: none
       - name: Compare normal and offline placement with real repository packages
         run: python3 tools/wpackagist-smoke.py --php php --composer "$(command -v composer)"
+      - name: Install and exercise the documented examples
+        run: python3 tools/smoke-examples.py --php php --composer "$(command -v composer)"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: wpackagist-installation

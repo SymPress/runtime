@@ -17,7 +17,7 @@ final class ConstantCatalogTest extends TemporaryProject
     /** @return iterable<string, array{string, string|null, string, bool|int|float|string}> */
     public static function constants(): iterable
     {
-        $inventory = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/docs/upstream-inventory.json'), true, flags: JSON_THROW_ON_ERROR);
+        $inventory = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/docs/maintainers/upstream-inventory.json'), true, flags: JSON_THROW_ON_ERROR);
         $types = ['STRING' => 'string', 'RAW_STRING' => 'raw-string', 'BOOL' => 'bool', 'INT' => 'int', 'FLOAT' => 'float', 'INT_OR_BOOL' => 'int|bool', 'STRING_OR_BOOL' => 'string|bool', 'OCTAL_MOD' => 'mod', 'null' => null];
         $samples = [
             'STRING' => ['<b>value</b>&', 'value&amp;'],

@@ -1,6 +1,6 @@
 # ADR 0020: Preserve early project autoload and bound service downloads
 
-Status: implemented review correction; final suite and CI evidence tracked in [acceptance](../acceptance.md).
+Status: implemented review correction; final suite and CI evidence tracked in [acceptance](https://github.com/SymPress/runtime/blob/main/docs/maintainers/acceptance.md).
 
 ## Early application autoload
 

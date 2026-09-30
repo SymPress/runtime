@@ -61,7 +61,7 @@ def build_report(matrix, listing, results):
 def main():
     root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--matrix", type=Path, default=root / "docs/parity.md")
+    parser.add_argument("--matrix", type=Path, default=root / "docs/maintainers/parity.md")
     parser.add_argument("--test-list", type=Path, default=root / "build/test-list.xml")
     parser.add_argument("--junit", type=Path, default=root / "build/phpunit.xml")
     parser.add_argument("--output", type=Path, default=root / "build/parity-evidence.json")

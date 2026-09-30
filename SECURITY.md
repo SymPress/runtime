@@ -1,7 +1,26 @@
-# Security reports
+# Security
 
-Report vulnerabilities privately to brian.schaeffner@sympress.de. Include the affected runtime revision, a minimal reproduction and the expected trust boundary. Do not include production secrets or publish an exploit in a public issue before coordination.
+Report vulnerabilities privately to brian.schaeffner@sympress.de. Include the
+affected commit or version, a minimal reproduction and the expected trust boundary.
+Do not include production credentials in the report.
 
-This package is under development and has no production release yet. Project configuration, PHP providers, custom steps and explicit shell commands are trusted executable inputs. Static `validate` does not execute PHP providers or the run-only autoload file. Composer integration launches a separate PHP process; it does not provide a security sandbox for project code.
+## Supported revisions
 
-The parity matrix tracks remaining hardening and compatibility acceptance tests. A passing partial phase suite is not a claim that the complete replacement is ready for deployment.
+There is no stable release tag yet. Security fixes are developed on `main`;
+pin and review a lockfile revision before deployment, and update it deliberately
+when a relevant fix is available.
+
+## Trust boundaries
+
+Project configuration, PHP providers, extensions, custom templates and steps are
+trusted executable inputs. Composer isolation prevents dependency collisions; it
+is not a sandbox for project code.
+
+Static validation does not execute PHP providers or the setup autoload file.
+Downloads use HTTPS by default and have a size limit. Configured checksums are
+verified before replacing a destination. File operations reject unsafe destination
+types and path traversal.
+
+Environment files, caches, dumps and generated salts are private. Keep them outside
+web access and logs. The [deployment guide](docs/deployment.md) explains ownership,
+read-only operation and the required runtime payload.

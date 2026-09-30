@@ -1,41 +1,80 @@
 # SymPress Runtime
 
-`sympress/runtime` provides Composer project setup and generated WordPress runtime configuration for SymPress, with WP Starter migration support.
+**Set up a Composer-managed WordPress site and configure it for each environment.**
 
-**Status: Phases 1–6 are merged. Review corrections and final parity acceptance are tracked in [the acceptance record](docs/acceptance.md). No stable release or universal drop-in acceptance is claimed.**
+Runtime generates `wp-config.php`, the front controller, the MU-plugin loader and
+WP-CLI configuration from your project's settings. It reads environment variables,
+publishes project plugins and themes, and runs your setup steps after Composer
+install or update. The same setup is available as a standalone command.
 
-Requires PHP 8.5 and Symfony 8.1. The Composer plugin runs application code in a separate PHP process. The standalone binary also recovers standard WordPress package paths after `composer install --no-plugins`, before loading project code. WPackagist, private repositories and local Composer packages keep the regular installer workflow; dependency resolution and downloads stay with Composer. See [the package-layout boundaries](docs/adr/0019-standalone-wordpress-package-layout.md) and [the acceptance record](docs/acceptance.md).
+[![QA](https://github.com/SymPress/runtime/actions/workflows/qa.yml/badge.svg)](https://github.com/SymPress/runtime/actions/workflows/qa.yml)
+
+## Why use it?
+
+- Keep WordPress core, plugins, themes and PHP libraries in one Composer project.
+- Use different database credentials and settings in development, staging and production.
+- Regenerate configuration without losing salts or your managed PHP sections.
+- Add project-specific setup with dependency-injected steps and lifecycle events.
+- Build private environment dumps and deploy a runtime that can operate on a read-only filesystem.
+- Use WPackagist, private packages and local packages with their normal Composer installers.
+
+Runtime does not require the SymPress kernel. If your application uses it, the
+[kernel integration](docs/kernel-integration.md) adds diagnostics, environment dumps
+and explicit cache maintenance to `wp console`.
+
+## Requirements
+
+PHP **8.5 or newer**, Composer **2.8 or newer** with plugin API **2.6 or newer**,
+and a Composer-managed WordPress installation. Composer resolves Runtime's Symfony
+8.1 dependencies. WordPress and your application may require additional PHP extensions.
+
+Runtime currently has no stable release tag, and its repository is private. Use an
+authorized GitHub account or a repository-scoped read credential, install `dev-main`,
+and commit the resolved lockfile. A reviewed lockfile is the version used in deployment.
+
+## Start here
+
+For a new site, follow [Getting started](docs/getting-started.md). It includes a
+complete Composer example, environment setup and the expected directory layout.
+For an existing site, start with [Adopting Runtime](docs/migration.md).
+
+Once Runtime is installed, run these commands from your project root:
 
 ```sh
-composer install
 vendor/bin/sympress-runtime validate
 vendor/bin/sympress-runtime --list-steps
-composer qa
+vendor/bin/sympress-runtime --no-interaction
+vendor/bin/sympress-runtime doctor
 ```
 
-All twelve inventoried setup steps are implemented, together with scripts/events, extension autoloading, legacy step adapters, environment dumps and cache flushing. Kernel maintenance, optional boot ownership and doctor/check support standalone, Composer and kernel-console workflows. Tests cover isolated Composer execution, independent generated configuration, real WordPress/WP-CLI/VCS fixtures and an actual compiled kernel on a read-only filesystem.
+Composer install and update already run setup when the plugin is enabled. The
+standalone command is useful for a deliberate rerun or a build with plugins disabled.
 
-- [Getting started](docs/getting-started.md)
-- [Settings cheat sheet](docs/settings-cheat-sheet.md)
-- [Environment, caches and dumps](docs/environment.md)
-- [Generated wp-config and sections](docs/wp-config.md)
-- [Setup steps](docs/steps.md)
-- [WP-CLI](docs/wp-cli.md)
-- [Deployment and payload retention](docs/deployment.md)
-- [Parity acceptance matrix](docs/parity.md)
-- [Source evidence and reproducibility](docs/source-evidence.md)
-- [Architecture decisions](docs/adr/README.md)
-- [Test and delivery plan](docs/test-plan.md)
-- [Implementation and verification record](docs/phase1-progress.md)
-- [Phase 1 review](docs/phase1-review.md)
-- [Phase 2 progress](docs/phase2-progress.md)
-- [Phase 3 review](docs/phase3-review.md)
-- [Phase 4 review](docs/phase4-review.md)
-- [Kernel integration](docs/kernel-integration.md)
-- [Configuration](docs/configuration.md)
-- [CLI](docs/cli.md)
-- [Custom steps and services](docs/custom-steps.md)
-- [Migration](docs/migration.md)
-- [Phase 6 progress](docs/phase6-progress.md)
+## Documentation
 
-All inventoried functionality remains in scope, including features not used by the current starter or demo. No `wecodemore/*` package is required. The isolated differential job installs its pinned oracles separately. See [NOTICE](NOTICE) for upstream attribution.
+| I want to… | Read |
+| --- | --- |
+| Understand how the pieces fit together | [Overview](docs/README.md) |
+| Create a site | [Getting started](docs/getting-started.md) |
+| Change a setting | [Configuration](docs/configuration.md) · [Settings cheat sheet](docs/settings-cheat-sheet.md) |
+| Configure WordPress for an environment | [Environment](docs/environment.md) · [Constants reference](docs/constants.md) |
+| Customize generated PHP | [wp-config and sections](docs/wp-config.md) |
+| Choose what runs during setup | [Steps](docs/steps.md) · [Command line](docs/cli.md) |
+| Add project automation | [Custom steps and services](docs/custom-steps.md) · [WP-CLI](docs/wp-cli.md) |
+| Prepare a production release | [Deployment](docs/deployment.md) |
+| Diagnose a problem | [Troubleshooting](docs/troubleshooting.md) |
+
+## Alternatives and existing projects
+
+[WP Starter](https://github.com/wecodemore/wpstarter) is an alternative for
+Composer-managed WordPress setup. Runtime retains an optional compatibility layer
+for existing projects; its names, profiles and migration behavior are documented
+separately in [Compatibility](docs/compatibility.md).
+
+## Contributing and security
+
+Read [CONTRIBUTING](CONTRIBUTING.md) for local development and verification, and
+[SECURITY](SECURITY.md) to report a vulnerability privately. Internal evidence and
+design decisions live in the [maintainer documentation](https://github.com/SymPress/runtime/blob/main/docs/maintainers/README.md).
+
+Licensed under [GPL-2.0-or-later](LICENSE). Third-party attribution is in [NOTICE](NOTICE).

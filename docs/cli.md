@@ -1,5 +1,21 @@
 # Command line
 
+Run these commands from the directory containing your project's `composer.json`.
+
+```sh
+# Inspect configuration without running project providers.
+vendor/bin/sympress-runtime validate
+vendor/bin/sympress-runtime --list-steps
+
+# Regenerate only the front controller and WordPress configuration.
+vendor/bin/sympress-runtime --no-interaction index wpconfig
+
+# Get machine-readable deployment diagnostics.
+vendor/bin/sympress-runtime doctor --json
+```
+
+## Commands and flags
+
 The standalone runner uses the current project directory and its Composer vendor path. `COMPOSER_VENDOR_DIR` overrides the manifest's vendor path. The Composer bridge sends the actual project root, vendor/bin paths, invocation mode, dev mode and console settings through a private, versioned context file and removes it after use.
 
 | Invocation | Meaning |
@@ -25,13 +41,21 @@ The standalone runner uses the current project directory and its Composer vendor
 | `-n`, `--no-interaction` | Use documented question defaults |
 | `-q`, `-v`, `-vv`, `-vvv`, `--ansi`, `--no-ansi` | Standard Symfony Console output controls |
 
+## Selecting steps
+
 `--skip` without names is an error. Native explicit selection wins over `skip-steps` and `--skip-custom`. Command-only steps are available only through explicit selection or listing. Unknown selected names produce diagnostics; a partial valid selection still executes, while a selection containing no valid steps fails.
+
+## Running through Composer
 
 Composer exposes `composer sympress-runtime [steps] [flags]`, `composer sympress-runtime:validate`, `composer sympress-runtime:flush-env-cache` and `composer sympress-runtime:dump-env <environment>`. Install/update events run at priority 0, before asset-compiler's documented -1000 priority. The host uses Composer APIs and PHP standard-library process launching; project Symfony services are instantiated only in the child.
 
+## Exit status
+
 Exit status is zero for successful/no-op execution, nonzero for invalid input, configuration errors or any failed step. A blocking step stops subsequent work on pure ERROR; SUCCESS|ERROR continues but the command still fails. Composer event failures stop subsequent root scripts.
 
-Legacy profiles retain their documented selection differences, including rejecting positional opt-in combined with listing. Native mode permits this combination. The test suite verifies root-script ordering; the fresh demo installation also verifies Runtime setup before asset-compiler execution.
+Legacy profiles retain their documented selection differences, including rejecting positional opt-in combined with listing. Native mode permits this combination. See [Compatibility](compatibility.md) for retained command aliases.
+
+## Kernel console and environment dumps
 
 Through the kernel console, `wp console doctor --json` and `wp console check --json` accept WP-CLI's automatic rewrite to `--format=json`. The bridge also accepts explicit `--format=text` or `--format=json`; other formats are rejected.
 

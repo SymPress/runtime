@@ -1,0 +1,48 @@
+{
+    "name": "example/wordpress-site",
+    "type": "project",
+    "require": {
+        "php": "^8.5",
+        "sympress/runtime": "dev-main",
+        "johnpbloch/wordpress-core": "^7.1",
+        "johnpbloch/wordpress-core-installer": "^2.0",
+        "composer/installers": "^2.3"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@github.com:SymPress/runtime.git"
+        },
+        {
+            "type": "composer",
+            "url": "https://wpackagist.org"
+        }
+    ],
+    "config": {
+        "allow-plugins": {
+            "sympress/runtime": true,
+            "johnpbloch/wordpress-core-installer": true,
+            "composer/installers": true
+        }
+    },
+    "extra": {
+        "wordpress-install-dir": "public/wp",
+        "wordpress-content-dir": "public/wp-content",
+        "installer-paths": {
+            "public/wp-content/plugins/{$name}/": [
+                "type:wordpress-plugin"
+            ],
+            "public/wp-content/mu-plugins/{$name}/": [
+                "type:wordpress-muplugin"
+            ],
+            "public/wp-content/themes/{$name}/": [
+                "type:wordpress-theme"
+            ]
+        },
+        "sympress-runtime": {
+            "compatibility": false,
+            "db-check": false,
+            "install-wp-cli": false
+        }
+    }
+}

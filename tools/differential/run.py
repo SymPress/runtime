@@ -394,7 +394,7 @@ echo json_encode(array_map(static fn($step) => $step->name, $selection['steps'])
     report["cases"].append({"id": baseline + "/steps/effective-default-order", "oracle": old_order, "candidate": new_order, "normalization": "documented legacy step aliases only", "differences": []})
     sections = []
     for project, binary, loader, mode in [(oracle, args.oracle_php, autoload, "oracle"), (candidate, args.candidate_php, ROOT / "vendor/autoload.php", "candidate")]:
-        sections.append(json.loads(run([binary, str(ROOT / "tools/differential/section-editor.php"), str(loader), args.composer, BASELINES[baseline][1], mode, str(ROOT / "docs/upstream-inventory.json")], project)))
+        sections.append(json.loads(run([binary, str(ROOT / "tools/differential/section-editor.php"), str(loader), args.composer, BASELINES[baseline][1], mode, str(ROOT / "docs/maintainers/upstream-inventory.json")], project)))
     if len(sections[0]) != 19 or sections[0].keys() != sections[1].keys():
         raise RuntimeError("Section editor probe must cover all nineteen inventoried sections.")
     for name, old_section in sections[0].items():
@@ -527,7 +527,7 @@ def main():
     build = ROOT / "build/differential"
     build.mkdir(parents=True, exist_ok=True)
     (build / "report.json").unlink(missing_ok=True)
-    inventory = json.loads((ROOT / "docs/upstream-inventory.json").read_text())
+    inventory = json.loads((ROOT / "docs/maintainers/upstream-inventory.json").read_text())
     candidate_types = {item["name"]: item["type"] for item in inventory["baselines"]["dev"]["constants"]}
     report = {"scope": "constant reader/definitions, environment aliases, generated index/wp-config execution, warm-cache runtime, exact content trees, package retention, WP-CLI argv, VCS marker, effective default step order, all nineteen section editor behaviors, generated MU loader execution, parsed WP-CLI YAML, active env-example values, lifecycle and extension autoload", "oracles": {}, "cases": []}
     report["php"] = {key: run([binary, "-r", "echo PHP_VERSION;"], ROOT) for key, binary in [("oracle", args.oracle_php), ("candidate", args.candidate_php)]}
