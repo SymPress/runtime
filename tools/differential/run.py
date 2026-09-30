@@ -162,6 +162,48 @@ def compare_generated(work, baseline, autoload, args, report):
             print(f"PASS {baseline}/cache/{mode}: exact runtime reports", flush=True)
 
 
+def compare_project_autoload(work, baseline, autoload, args, report):
+    oracle = autoload.parent.parent
+    candidate = work / (baseline + "-early-project-autoload")
+    candidate.mkdir()
+    options = {"db-check": False, "require-wp": False, "cache-env": False, "env-dir": ".", "env-bootstrap-dir": "configuration", "early-hook-file": "early.php"}
+    for project in [oracle, candidate]:
+        core_fixture(project, "development")
+        (project / ".env.cached.php").unlink(missing_ok=True)
+        (project / "configuration").mkdir(exist_ok=True)
+        (project / "vendor-probe.php").write_text('<?php class DifferentialVendorProbe { const VALUE = "available"; }')
+        (project / "composer-hooks.php").write_text('<?php if (function_exists("add_filter")) { $GLOBALS["autoload_trace"][] = ["composer", true, DifferentialVendorProbe::VALUE]; }')
+        (project / "configuration/development.php").write_text('<?php $GLOBALS["autoload_trace"][] = ["env", DifferentialVendorProbe::VALUE];')
+        (project / "early.php").write_text('<?php $GLOBALS["autoload_trace"][] = ["early", DifferentialVendorProbe::VALUE];')
+        manifest = json.loads((project / "composer.json").read_text()) if project == oracle else {"name": "fixture/early-autoload"}
+        files = ["composer-hooks.php"]
+        if project == candidate:
+            (project / "runtime-bootstrap.php").write_text("<?php require_once " + repr(str(ROOT / "vendor/autoload.php")) + ";")
+            files.insert(0, "runtime-bootstrap.php")
+        manifest["autoload"] = {"classmap": ["vendor-probe.php"], "files": files}
+        manifest["extra"] = {"wordpress-install-dir": "public/wp", "wordpress-content-dir": "public/content", "wpstarter" if project == oracle else "sympress-runtime": dict(options)}
+        if project == candidate:
+            manifest["extra"]["sympress-runtime"]["compatibility-profile"] = BASELINES[baseline][1]
+        write_json(project / "composer.json", manifest)
+        php = args.oracle_php if project == oracle else args.candidate_php
+        run([php, args.composer, "dump-autoload", "--no-plugins", "--no-scripts"], project)
+        if project == oracle:
+            steps = ["build-wp-config", "build-index"] if baseline == "release" else ["wpconfig", "index"]
+            run([php, args.composer, "--no-interaction", "wpstarter", *steps], project)
+        else:
+            environment = dict(os.environ)
+            environment.pop("COMPOSER", None)
+            environment.pop("COMPOSER_VENDOR_DIR", None)
+            run([php, str(ROOT / "bin/sympress-runtime"), "--no-interaction", "wpconfig", "index"], project, environment)
+    probe = 'require $argv[1] . "/public/index.php"; require_once $argv[1] . "/vendor/autoload.php"; echo json_encode($GLOBALS["autoload_trace"]);'
+    traces = [json.loads(run([php, "-r", probe, str(project)], project)) for php, project in [(args.oracle_php, oracle), (args.candidate_php, candidate)]]
+    expected = [["composer", True, "available"], ["env", "available"], ["early", "available"]]
+    if traces != [expected, expected]:
+        raise RuntimeError(f"Early project autoload differs for {baseline}: {traces}")
+    report["cases"].append({"id": baseline + "/early-project-autoload", "trace": expected, "differences": []})
+    print(f"PASS {baseline}/early-project-autoload: project classes before environment/early hooks, exactly once", flush=True)
+
+
 def compare_steps(work, baseline, autoload, args, report):
     oracle = autoload.parent.parent
     manifest = json.loads((oracle / "composer.json").read_text())
@@ -542,6 +584,7 @@ def main():
                 print(f"PASS {baseline}/environment: {len(aliases) * 3} name/variable combinations", flush=True)
             if args.scope in ["all", "generated"]:
                 compare_generated(work, baseline, autoload, args, report)
+                compare_project_autoload(work, baseline, autoload, args, report)
             if args.scope in ["all", "steps"]:
                 compare_steps(work, baseline, autoload, args, report)
             if args.scope in ["all", "artifacts"]:

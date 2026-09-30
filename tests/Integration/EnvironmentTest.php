@@ -93,6 +93,39 @@ PHP);
         self::assertSame(['production', null], $actual);
     }
 
+    #[Group('PAR-ENV-005')]
+    public function testNativeLoadedMarkerStillBypassesParsingWithCompatibilityDisabled(): void
+    {
+        $this->write('.env', 'malformed main');
+        $actual = $this->runPhp(<<<'PHP'
+$_ENV['SYMPRESS_RUNTIME_ENV_LOADED'] = false;
+$reader = new SymPress\Runtime\Env\EnvReader(compatibility: false);
+$reader->loadChain();
+echo json_encode([$reader->determineEnvType(), $reader->read('RTV_MISSING')]);
+PHP);
+        self::assertSame(['production', null], $actual);
+    }
+
+    #[Group('PAR-ENV-022')]
+    public function testCacheCannotReintroduceLegacyConstantMappingsAfterDisablingCompatibility(): void
+    {
+        $this->write('.env', "WP_STARTER_ENV_TO_CONST=RTV_OLD:string\nRTV_OLD=value\n");
+        $actual = $this->runPhp(<<<'PHP'
+$reader = new SymPress\Runtime\Env\EnvReader();
+$reader->loadChain();
+$reader->setupConstants();
+$reader->dumpCached('.env.cached.php');
+$data = require '.env.cached.php';
+try {
+    SymPress\Runtime\Env\EnvReader::buildFromCacheDump('.env.cached.php', compatibility: false);
+    echo json_encode(['incorrectly accepted']);
+} catch (RuntimeException $error) {
+    echo json_encode([$data['compatibility'], str_contains($error->getMessage(), 'compatibility mode changed')]);
+}
+PHP);
+        self::assertSame([true, true], $actual);
+    }
+
     #[Group('PAR-ENV-002')]
     public function testInterpolationIgnoresRequestHeadersAndKeepsTrustedFileValues(): void
     {

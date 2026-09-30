@@ -1,6 +1,6 @@
 # Verification and phased delivery
 
-Status: planned. No PHPUnit, differential, DDEV or Composer integration test has been executed for this new package in Phase 0.
+This is the historical Phase 0 verification plan. The phases have since been implemented and merged; [acceptance](acceptance.md) records executed evidence and remaining gates. The requirements below remain the verification contract, not a claim that the project has never been tested.
 
 ## Test identity and traceability
 
@@ -68,4 +68,4 @@ Fresh `ddev composer install`, setup and real WordPress database installation mu
 
 ## Documentation delivery
 
-Implementation phases add and maintain README, Getting Started, Configuration, Settings Cheat Sheet, Environment, wp-config/Sections, Steps, CLI, WP-CLI, Custom Steps/Extensions, SymPress Integration and Migration guides. Add CHANGELOG, SECURITY, LICENSE and actual NOTICE attribution. Code/comments/docs/commit messages remain English. Current documents describe proposals only.
+Maintain README, Getting Started, Configuration, Settings Cheat Sheet, Environment, wp-config/Sections, Steps, CLI, WP-CLI, Custom Steps/Extensions, SymPress Integration, Migration and Deployment guides. Keep CHANGELOG, SECURITY, LICENSE and NOTICE attribution current. Code/comments/docs/commit messages remain English. Phase progress/review files retain historical evidence; the README and acceptance record are the current entry points.

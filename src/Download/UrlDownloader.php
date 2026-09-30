@@ -7,6 +7,7 @@ namespace SymPress\Runtime\Download;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Filesystem\Filesystem;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 use Throwable;
 
 final class UrlDownloader
@@ -65,7 +66,7 @@ final class UrlDownloader
         }
         for ($redirects = 0; $redirects <= 5; ++$redirects) {
             $this->validateUrl($url);
-            $response = $this->http->request('GET', $url, ['max_redirects' => 0, 'timeout' => 15, 'max_duration' => 60, 'verify_peer' => true, 'verify_host' => true]);
+            $response = $this->http->request('GET', $url, ['max_redirects' => 0, 'timeout' => 15, 'max_duration' => 60, 'verify_peer' => true, 'verify_host' => true, 'buffer' => false]);
             $status = $response->getStatusCode();
             if (in_array($status, [301, 302, 303, 307, 308], true)) {
                 $next = $response->getInfo('redirect_url');
@@ -80,7 +81,7 @@ final class UrlDownloader
                 $response->cancel();
                 throw new DownloadException('Download failed with HTTP status ' . $status . '.');
             }
-            $body = $response->getContent(false);
+            $body = $this->boundedContent($response);
             if (is_string($checksum) && !hash_equals($checksum, hash('sha256', $body))) {
                 throw new DownloadException('Downloaded content does not match its SHA256 checksum.');
             }
@@ -89,6 +90,32 @@ final class UrlDownloader
         }
 
         throw new DownloadException('Download exceeded the redirect limit.');
+    }
+
+    private function boundedContent(ResponseInterface $response): string
+    {
+        try {
+            $limit = $this->config['download-max-bytes']->unwrap();
+            if (!is_int($limit) || $limit < 1) {
+                throw new DownloadException('Download byte limit must be a positive integer.');
+            }
+            $length = $response->getHeaders(false)['content-length'][0] ?? null;
+            if (is_string($length) && ctype_digit($length) && (float) $length > $limit) {
+                throw new DownloadException('Download exceeds the configured byte limit.');
+            }
+            $body = '';
+            foreach ($this->http->stream($response) as $chunk) {
+                $content = $chunk->getContent();
+                if (strlen($content) > $limit - strlen($body)) {
+                    throw new DownloadException('Download exceeds the configured byte limit.');
+                }
+                $body .= $content;
+            }
+
+            return $body;
+        } finally {
+            $response->cancel();
+        }
     }
 
     private function validateUrl(string $url): void

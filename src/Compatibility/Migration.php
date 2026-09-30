@@ -109,6 +109,7 @@ final readonly class Migration
             'provenance' => $provenance,
             'findings' => $findings,
             'next' => [
+                'wp-config-autoload preserves early project Composer autoload in legacy profiles. Keep it enabled when environment PHP files, early hooks or plugins need vendor classes or Composer files hooks; native defaults to false.',
                 'Review PHP findings, custom templates and generated files; dynamic references require manual inspection.',
                 'Remove extra.wpstarter and archive wpstarter.json after review; originals are retained by this command.',
                 'Use extra.sympress-runtime for a non-default output path; option paths remain relative to the project root.',

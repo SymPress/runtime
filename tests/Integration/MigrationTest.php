@@ -48,6 +48,9 @@ final class MigrationTest extends TemporaryProject
         self::assertSame('custom.env', $config['env-file']);
         self::assertSame('wpstarter-autoload.php', $config['autoload']);
         self::assertFalse($config['env-local-overrides']);
+        self::assertTrue($config['wp-config-autoload']);
+        self::assertSame('release-3.0.1 default', $report['provenance']['wp-config-autoload']);
+        self::assertStringContainsString('wp-config-autoload', implode(' ', $report['next']));
         self::assertFalse($config['db-check']);
         self::assertArrayNotHasKey('skip-db-check', $config);
         self::assertSame($original, file_get_contents($this->root . '/composer.json'));
@@ -79,6 +82,15 @@ final class MigrationTest extends TemporaryProject
         symlink('output/new.json', $this->root . '/linked.json');
         self::assertNotSame(0, $this->migrate(['--output=linked.json', '--force'])->getExitCode());
         self::assertTrue(is_link($this->root . '/linked.json'));
+    }
+
+    public function testMigrationPreservesExplicitProjectAutoloadOptOut(): void
+    {
+        $this->fixture(['wpstarter' => ['wp-config-autoload' => false]]);
+        $run = $this->migrate();
+        self::assertSame(0, $run->getExitCode(), $run->getErrorOutput());
+        $config = json_decode((string) file_get_contents($this->root . '/sympress-runtime.json'), true, flags: JSON_THROW_ON_ERROR);
+        self::assertFalse($config['wp-config-autoload']);
     }
 
     #[Group('PAR-SYM-008')]

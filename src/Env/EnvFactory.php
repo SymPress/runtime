@@ -27,7 +27,7 @@ final readonly class EnvFactory
         if (!is_string($profile) || !is_string($file) || !is_string($directory)) {
             throw new RuntimeException('Invalid environment loader configuration.');
         }
-        $reader = new EnvReader(profile: $profile);
+        $reader = new EnvReader(profile: $profile, compatibility: $this->config['compatibility']->is(true));
         $reader->loadChain($file, $directory, $this->config['env-local-overrides']->is(true), $environment);
 
         return $reader;

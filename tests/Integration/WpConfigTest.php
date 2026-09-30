@@ -18,6 +18,68 @@ use Symfony\Component\Process\Process;
 
 final class WpConfigTest extends TemporaryProject
 {
+    #[Group('PAR-SYM-009')]
+    public function testDisabledCompatibilityIgnoresLegacyEnvironmentControlsInGeneratedAndRunnerBoots(): void
+    {
+        $this->fixture(['compatibility' => false]);
+        $this->write('.env', "DB_NAME=from-file\nWP_ENV=stage\nWP_STARTER_ENV_TO_CONST=RTV_OLD:string\nRTV_OLD=legacy\nSYMPRESS_RUNTIME_ENV_TO_CONST=RTV_NEW:string\nRTV_NEW=native\n");
+        $generated = $this->generate(environment: ['WPSTARTER_ENV_LOADED' => '1']);
+        self::assertSame(0, $generated->getExitCode(), $generated->getErrorOutput());
+        $actual = $this->boot('echo json_encode([DB_NAME, defined("RTV_OLD"), RTV_NEW, WP_ENV, WP_ENVIRONMENT_TYPE, $GLOBALS["deprecated"] ?? []]);', environment: ['WPSTARTER_ENV_LOADED' => '1']);
+        self::assertSame(['from-file', false, 'native', 'stage', 'staging', []], $actual);
+        $dump = $this->generate(['dump-env', 'stage'], ['WPSTARTER_ENV_LOADED' => '1']);
+        self::assertSame(0, $dump->getExitCode(), $dump->getErrorOutput());
+        $this->write('.env', 'malformed file bypassed by dump');
+        self::assertSame(['from-file', false, 'native', 'stage', 'staging', []], $this->boot('echo json_encode([DB_NAME, defined("RTV_OLD"), RTV_NEW, WP_ENV, WP_ENVIRONMENT_TYPE, $GLOBALS["deprecated"] ?? []]);'));
+    }
+
+    #[Group('PAR-SYM-009')]
+    public function testEnabledLegacyEnvironmentControlsReportTheirNamesOnceWithoutValues(): void
+    {
+        $this->fixture();
+        $this->write('.env', 'malformed file bypassed by sentinel');
+        self::assertSame(0, $this->generate()->getExitCode());
+        $actual = $this->boot('echo json_encode([RTV_OLD, $GLOBALS["deprecated"] ?? []]);', environment: ['WPSTARTER_ENV_LOADED' => '1', 'WP_STARTER_ENV_TO_CONST' => 'RTV_OLD:string', 'RTV_OLD' => 'synthetic-value']);
+        self::assertSame(['synthetic-value', ['WPSTARTER_ENV_LOADED', 'WP_STARTER_ENV_TO_CONST']], $actual);
+    }
+
+    /** @return iterable<string, array{string, ?bool, bool}> */
+    public static function projectAutoloadModes(): iterable
+    {
+        yield 'native default' => ['native', null, false];
+        yield 'native opt in' => ['native', true, true];
+        yield 'release default' => ['release-3.0.1', null, true];
+        yield 'release opt out' => ['release-3.0.1', false, false];
+        yield 'dev default' => ['upstream-dev', null, true];
+        yield 'dev opt out' => ['upstream-dev', false, false];
+    }
+
+    #[DataProvider('projectAutoloadModes')]
+    #[Group('PAR-WP-002')]
+    public function testProjectAutoloadPreservesHookOrderAndHonorsProfileAndExplicitOverrides(string $profile, ?bool $option, bool $enabled): void
+    {
+        $settings = ['compatibility-profile' => $profile, 'env-bootstrap-dir' => 'configuration', 'early-hook-file' => 'early.php'];
+        if ($option !== null) {
+            $settings['wp-config-autoload'] = $option;
+        }
+        $this->fixture($settings);
+        $this->write('.env', "WP_ENV=development\nWP_ENVIRONMENT_TYPE=development\n");
+        $this->write('configuration/development.php', '<?php $GLOBALS["trace"][] = class_exists("ProjectVendorProbe") ? ProjectVendorProbe::VALUE . " env" : "env without vendor";');
+        $this->write('early.php', '<?php $GLOBALS["trace"][] = class_exists("ProjectVendorProbe") ? ProjectVendorProbe::VALUE . " early" : "early without vendor";');
+        $this->write('custom-dependencies/autoload.php', '<?php if (!function_exists("add_filter")) { return require ' . var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true) . '; } $GLOBALS["trace"][] = "autoload hooks ready"; class ProjectVendorProbe { public const VALUE = "vendor"; } add_filter("fixture_vendor", static fn () => "registered");');
+        $vendor = $this->root . '/custom-dependencies';
+        $generated = $this->generate(environment: ['COMPOSER_VENDOR_DIR' => $vendor]);
+        self::assertSame(0, $generated->getExitCode(), $generated->getErrorOutput());
+        $actual = $this->boot('echo json_encode([$GLOBALS["trace"], apply_filters("fixture_vendor", "absent"), class_exists("ProjectVendorProbe", false)]);');
+        self::assertSame($enabled
+            ? [['autoload hooks ready', 'vendor env', 'vendor early'], 'registered', true]
+            : [['env without vendor', 'early without vendor'], 'absent', false], $actual);
+        if (!$enabled) {
+            return;
+        }
+        self::assertSame([3], $this->boot('require_once __DIR__ . "/custom-dependencies/autoload.php"; echo json_encode([count($GLOBALS["trace"])]);'));
+    }
+
     #[Group('PAR-WP-010')]
     public function testDatabaseDefaultsAndExplicitValuesSurviveGeneratedBoot(): void
     {

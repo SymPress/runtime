@@ -4,6 +4,14 @@
     "title": "SymPress Runtime configuration",
     "type": "object",
     "properties": {
+        "wp-config-autoload": {
+            "$ref": "#/$defs/boolean"
+        },
+        "download-max-bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 16777216
+        },
         "cache-env": {
             "$ref": "#/$defs/boolean"
         },

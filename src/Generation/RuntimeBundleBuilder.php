@@ -79,7 +79,7 @@ final readonly class RuntimeBundleBuilder
         $process = dirname((string) (new ReflectionClass(Process::class))->getFileName());
         $environment = dirname((string) (new ReflectionClass(EnvReader::class))->getFileName());
         $sources = [];
-        foreach (['EnvReader', 'Filters', 'EnvironmentName', 'ConstantCatalog'] as $class) {
+        foreach (['EnvReader', 'Filters', 'EnvironmentName', 'ConstantCatalog', 'LegacyDeprecation'] as $class) {
             $sources['Env/' . $class . '.php'] = $this->read($environment . '/' . $class . '.php');
         }
         $sources['Dotenv/Dotenv.php'] = $this->read($dotenv . '/Dotenv.php');

@@ -43,12 +43,14 @@ final class Options
         'unknown-dropins' => false,
         'wp-cli-commands' => [],
         'wp-cli-files' => [],
+        'wp-config-autoload' => false,
         'wp-version' => null,
         'compatibility' => true,
         'compatibility-profile' => 'native',
         'env-local-overrides' => true,
         'allow-insecure-downloads' => false,
         'download-checksums' => [],
+        'download-max-bytes' => 16777216,
         'require-download-checksums' => false,
         'kernel-boot' => false,
         'kernel-build-id' => null,
@@ -68,6 +70,7 @@ final class Options
         if ($profile !== 'native') {
             $defaults['autoload'] = 'wpstarter-autoload.php';
             $defaults['env-local-overrides'] = false;
+            $defaults['wp-config-autoload'] = true;
         }
         if ($profile === 'release-3.0.1') {
             $defaults['content-dev-op'] = 'symlink';

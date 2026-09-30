@@ -19,8 +19,12 @@ Doctor exits with 0 when applicable checks pass, 1 on a failure, or 2 when a che
 
 `kernel-cache` preserves other environments and asset directories. It honors APP_CACHE_DIR and APP_BUILD_DIR and removes separately located discovery metadata. Unsafe or escaping symlink paths fail before any clearing. Align explicit SiteKernel environment overrides before running maintenance.
 
+This is an explicit command-only step: Composer update does not automatically run it. A deployment requiring a deliberate clear or new build ID must invoke it and warm the selected environment before traffic switches.
+
 To request a generated kernel MU plugin, set `kernel-boot: true`. A package that already owns boot can declare `extra.sympress-runtime.boots-kernel: true`; existing SymPress App boot entry files are also detected. The runtime never adds a second generated owner. Previously generated boot files are removed when another owner appears or the option is disabled; unmanaged files remain untouched.
 
 Set `kernel-build-id` to an explicit deployment identifier, or generate one with the command above. Normal setup does not rotate IDs. The generated configuration defines SYMPRESS_KERNEL_BUILD_ID from the environment, configured fallback or persisted deployment ID, while preserving an existing constant. Persist `var/runtime/{environment}/kernel-build-id.json` with the deployment artifacts if you use command-generated IDs.
 
 Build dumps and kernel caches are separate artifacts. Generate the environment dump and warm the kernel before making production files read-only. The runtime package's tests verify an actual compiled kernel reading a dump without writable project files; consumer deployment and admin smoke still need their own verification.
+
+The generated environment-parser payload under `var/runtime/<fingerprint>/` is another required artifact, even when the kernel is absent. It must survive cache cleanup and accompany its generated configuration. See [deployment and rollback-safe payload retention](deployment.md).

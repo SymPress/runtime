@@ -13,6 +13,20 @@ jobs:
     timeout-minutes: 20
     env:
       COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH_JSON }}
+      RUNTIME_TEST_DB_HOST: '127.0.0.1:3306'
+      RUNTIME_TEST_DB_USER: root
+      RUNTIME_TEST_DB_PASSWORD: runtime-ci-fixture
+    services:
+      database:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: runtime-ci-fixture
+          MARIADB_ROOT_HOST: '%'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Set up compatible oracle PHP
@@ -31,13 +45,13 @@ jobs:
           coverage: none
       - name: Install candidate dependencies
         run: composer install --no-interaction --no-progress --no-plugins --no-scripts
-      - name: Install VCS fixture tools
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq mercurial subversion
-      - name: Verify real VCS integrations
-        run: php vendor/bin/phpunit --filter VcsIgnoreStepTest --no-progress --fail-on-skipped
+      - name: Install VCS and database fixture tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq mercurial subversion mariadb-client
+      - name: Prepare pinned WordPress and WP-CLI fixtures
+        run: python3 tools/ci-fixtures.py
       - name: Verify executed evidence for every parity row
         run: |
-          php vendor/bin/phpunit --no-progress
+          php vendor/bin/phpunit --no-progress --fail-on-skipped
           php vendor/bin/phpunit --no-logging --list-tests-xml build/test-list.xml
           python3 -m unittest discover -s tools/tests
           python3 tools/parity-evidence.py
@@ -51,4 +65,5 @@ jobs:
             build/differential/report.json
             build/parity-evidence.json
             build/phpunit.xml
+            build/ci-fixtures/manifest.json
           if-no-files-found: error

@@ -1,8 +1,8 @@
 # SymPress Runtime agent contract
 
-## Current gate
+## Current delivery state
 
-The project owner approved Phase 0 and authorized Phase 1 on 2026-09-29. Implement the foundation according to the accepted ADRs. Consumer migration remains in Phase 6.
+The project owner approved Phase 0 on 2026-09-29 and subsequently authorized PR review and merges. Phases 1–6 are merged. Implement review corrections according to the accepted ADRs and track fresh evidence in `docs/acceptance.md`; do not treat historical phase reports as current completion claims.
 
 ## Implementation contract after approval
 

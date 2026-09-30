@@ -20,7 +20,7 @@ final class Validator
         $validated = match ($key) {
             'cache-env', 'install-wp-cli', 'require-wp', 'skip-db-check', 'compatibility',
             'env-local-overrides', 'allow-insecure-downloads', 'require-download-checksums',
-            'kernel-boot' => $this->boolean($value),
+            'kernel-boot', 'wp-config-autoload' => $this->boolean($value),
             'check-vcs-ignore', 'create-vcs-ignore-file', 'move-content',
             'register-theme-folder', 'unknown-dropins' => $this->boolOrAsk($value),
             'db-check' => is_string($value) && strtolower($value) === 'health' ? 'health' : $this->boolean($value),
@@ -42,6 +42,7 @@ final class Validator
             'wp-version' => $this->version($value),
             'compatibility-profile' => $this->profile($value),
             'download-checksums' => $this->checksums($value),
+            'download-max-bytes' => $this->positiveInteger($value),
             'kernel-build-id' => $this->buildId($value),
             default => $value,
         };
@@ -57,6 +58,15 @@ final class Validator
         }
 
         return $bool;
+    }
+
+    private function positiveInteger(mixed $value): int
+    {
+        if (!is_int($value) || $value < 1) {
+            throw new InvalidArgumentException('Expected a positive integer byte limit.');
+        }
+
+        return $value;
     }
 
     private function boolOrAsk(mixed $value): bool|string

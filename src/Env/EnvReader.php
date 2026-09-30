@@ -58,7 +58,7 @@ final class EnvReader
     private readonly Dotenv $dotenv;
     private readonly Filters $filters;
 
-    public function __construct(?Dotenv $dotenv = null, private readonly string $profile = 'native')
+    public function __construct(?Dotenv $dotenv = null, private readonly string $profile = 'native', private readonly bool $compatibility = true)
     {
         $this->dotenv = $dotenv ?? new Dotenv($profile === 'native' ? 'WP_ENVIRONMENT_TYPE' : 'WP_ENV', 'WP_DEBUG');
         $this->filters = new Filters($profile);
@@ -262,9 +262,9 @@ final class EnvReader
         return $this->fromCache && $this->cache !== [];
     }
 
-    public static function buildFromCacheDump(string $file, string $profile = 'native', ?string $environment = null): self
+    public static function buildFromCacheDump(string $file, string $profile = 'native', ?string $environment = null, bool $compatibility = true): self
     {
-        $reader = new self(profile: $profile);
+        $reader = new self(profile: $profile, compatibility: $compatibility);
         if (!is_file($file) || !is_readable($file)) {
             return $reader;
         }
@@ -296,6 +296,7 @@ final class EnvReader
         $payload = [
             'format' => 1,
             'profile' => $this->profile,
+            'compatibility' => $this->compatibility,
             'environment' => $this->determineEnvType(),
             'values' => $this->cache,
             'loaded' => array_keys($this->raw),
@@ -333,6 +334,9 @@ final class EnvReader
     {
         if (!is_array($data) || ($data['format'] ?? null) !== 1 || ($data['profile'] ?? null) !== $this->profile || !is_string($data['environment'] ?? null)) {
             throw new RuntimeException('Environment cache format or profile is invalid.');
+        }
+        if (($data['compatibility'] ?? true) !== $this->compatibility) {
+            throw new RuntimeException('Environment cache compatibility mode changed; flush the cache or rebuild the environment dump.');
         }
         if ($environment === null) {
             foreach ($this->profile === 'native' ? ['WP_ENVIRONMENT_TYPE', 'WP_ENV', 'WORDPRESS_ENV'] : self::WP_STARTER_ENV_VARS as $name) {
@@ -441,7 +445,13 @@ final class EnvReader
             $this->define($name);
         }
         foreach (['WP_STARTER_ENV_TO_CONST', 'SYMPRESS_RUNTIME_ENV_TO_CONST'] as $option) {
+            if ($option === 'WP_STARTER_ENV_TO_CONST' && !$this->compatibility) {
+                continue;
+            }
             $list = $this->read($option);
+            if ($option === 'WP_STARTER_ENV_TO_CONST' && is_string($list) && $list !== '') {
+                LegacyDeprecation::report($option, 'SYMPRESS_RUNTIME_ENV_TO_CONST');
+            }
             foreach (is_string($list) ? explode(',', $list) : [] as $item) {
                 [$name, $type] = array_pad(explode(':', trim($item), 2), 2, '');
                 if ($name === '') {
@@ -497,9 +507,16 @@ final class EnvReader
     private function sentinel(): bool
     {
         foreach (['SYMPRESS_RUNTIME_ENV_LOADED', 'WPSTARTER_ENV_LOADED'] as $name) {
-            if (array_key_exists($name, $_ENV) || array_key_exists($name, $_SERVER) || getenv($name) !== false) {
-                return true;
+            if ($name === 'WPSTARTER_ENV_LOADED' && !$this->compatibility) {
+                continue;
             }
+            if (!array_key_exists($name, $_ENV) && !array_key_exists($name, $_SERVER) && getenv($name) === false) {
+                continue;
+            }
+            if ($name === 'WPSTARTER_ENV_LOADED') {
+                LegacyDeprecation::report($name, 'SYMPRESS_RUNTIME_ENV_LOADED');
+            }
+            return true;
         }
 
         return false;

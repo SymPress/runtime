@@ -44,6 +44,8 @@ final class OptionsTest extends TemporaryProject
         yield 'PAR-OPT-031 unknown-dropins' => ['unknown-dropins', 'ask', 'ask'];
         yield 'PAR-OPT-032 wp-cli-commands' => ['wp-cli-commands', ['wp option get home'], ['wp option get home']];
         yield 'PAR-OPT-034 wp-version' => ['wp-version', '6.8', '6.8.0'];
+        yield 'project autoload option' => ['wp-config-autoload', true, true];
+        yield 'download byte limit' => ['download-max-bytes', 1024, 1024];
     }
 
     #[DataProvider('values')]
@@ -107,6 +109,14 @@ final class OptionsTest extends TemporaryProject
         $schema = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/schema/runtime.schema.json'), true, flags: JSON_THROW_ON_ERROR);
         foreach (array_keys(Options::DEFAULTS) as $option) {
             self::assertArrayHasKey($option, $schema['properties'], $option);
+        }
+    }
+
+    public function testDownloadByteLimitMustBeAPositiveInteger(): void
+    {
+        foreach ([0, -1, '1024', 1.5, false, null] as $value) {
+            $config = new Config(['download-max-bytes' => $value], new Validator(new Paths($this->root)));
+            self::assertArrayHasKey('download-max-bytes', $config->errors());
         }
     }
 }
