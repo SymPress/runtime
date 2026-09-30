@@ -1,47 +1,108 @@
 # Getting started
 
-Use PHP 8.5, Composer 2 with plugin API 2.6 or newer, and access to the private SymPress package registry/repositories. Runtime uses Symfony 8.1. There is no stable Runtime release yet: install the reviewed development revision through your existing authenticated Composer repository configuration and commit the resulting lockfile.
+This guide creates a Composer-managed WordPress site with a `public/` document root.
+You need PHP 8.5+, Composer 2.8+, a database and a web server. Runtime's private
+repository also requires GitHub read access. Keep credentials in Composer's private
+authentication configuration or an SSH agent, never in `composer.json`.
 
-For an existing WP Starter project, start with [migration](migration.md); keep its profile and generated files until the transition has been reviewed. For a new project, require `sympress/runtime` and your chosen WordPress core package. Plugins/themes continue to come from WPackagist, private repositories or Composer path repositories. Runtime does not resolve dependencies or download WordPress core.
+## 1. Describe the project
 
-Configure Composer's installer permissions and paths before installation. This is a minimal root manifest fragment; merge it into the existing project rather than replacing its requirements or scripts:
-
-```json
-{
-  "config": {
-    "allow-plugins": {
-      "sympress/runtime": true,
-      "composer/installers": true,
-      "johnpbloch/wordpress-core-installer": true
-    }
-  },
-  "extra": {
-    "wordpress-install-dir": "public/wp",
-    "wordpress-content-dir": "public/wp-content",
-    "installer-paths": {
-      "public/wp-content/plugins/{$name}/": ["type:wordpress-plugin"],
-      "public/wp-content/mu-plugins/{$name}/": ["type:wordpress-muplugin"],
-      "public/wp-content/themes/{$name}/": ["type:wordpress-theme"]
-    },
-    "sympress-runtime": {"compatibility-profile": "native"}
-  }
-}
-```
-
-Create a private `.env` with your actual database credentials and site URL. Never commit secrets. For example, the nonsecret selectors are `WP_ENVIRONMENT_TYPE=development`, `DB_HOST=127.0.0.1` and `WP_HOME=https://example.test`; set `DB_NAME`, `DB_USER` and `DB_PASSWORD` for your database. Runtime creates configuration and content artifacts, but a WordPress database installation still needs your project's installation command or WP-CLI.
+Start in an empty project directory with the complete manifest in
+[examples/site/composer.json](../examples/site/composer.json). The example includes
+Runtime, the WordPress core installer, the plugin/theme installer and WPackagist.
+It leaves database checks and automatic WP-CLI downloads disabled during the first
+build so dependency installation does not need a running database.
 
 ```sh
+mkdir my-site
+cd my-site
+# Save examples/site/composer.json here as composer.json.
 composer install
-vendor/bin/sympress-runtime validate
-vendor/bin/sympress-runtime --list-steps
-vendor/bin/sympress-runtime -n
-vendor/bin/sympress-runtime doctor --json
 ```
 
-Composer install/update already invokes setup when the Runtime plugin is enabled. The explicit standalone invocation above is useful to verify repeatability. Read `doctor` results before deployment: exit 1 means failure; exit 2 means unresolved checks without a known failure.
+The example uses a development revision of Runtime because no stable tag exists
+yet. Commit `composer.lock` and deploy with `composer install`, not an unreviewed update.
 
-Set the web document root to `public` for this layout. Commit the manifest, lockfile, application configuration and source; deploy generated configuration and its parser payload as described in [deployment](deployment.md). Native configuration does not load Composer during WordPress bootstrap unless `wp-config-autoload=true`; enable that option if early hooks or plugins need the project's Composer graph. A project with its own MU/kernel bootstrap can retain the native default.
+The resulting layout is:
 
-Set `WP_SITEURL` to the public WordPress URL your web server actually serves. In the SymPress starter/demo routing, it is `${WP_HOME}`: the existing server rules map root login/admin endpoints to the physical core directory. Do not append `/wp` merely because Composer stores core in `public/wp`.
+```text
+my-site/
+├── composer.json
+├── composer.lock
+├── .env                     # private, created in the next step
+├── wp-config.php            # generated
+├── wp-cli.yml               # generated
+├── vendor/
+├── var/runtime/             # required generated PHP payload
+└── public/                  # web document root
+    ├── index.php            # generated
+    ├── wp/                  # Composer-managed WordPress core
+    └── wp-content/
+        ├── mu-plugins/
+        ├── plugins/
+        └── themes/
+```
 
-For a plugins-disabled build, run `composer install --no-plugins` followed by the standalone binary. Recovery covers the standard installers' distinct in-project directories. Root/nested layouts and arbitrary third-party installers retain the [documented boundaries](adr/0019-standalone-wordpress-package-layout.md).
+## 2. Configure the environment
+
+Create `.env` outside `public/`. Replace these example values with your local credentials:
+
+```dotenv
+WP_ENVIRONMENT_TYPE=development
+WP_HOME=https://my-site.test
+WP_SITEURL=${WP_HOME}
+DB_HOST=127.0.0.1
+DB_NAME=my_site
+DB_USER=my_site
+DB_PASSWORD='replace-with-your-local-password'
+DB_TABLE_PREFIX=wp_
+```
+
+Keep `.env`, local overrides, caches and dumps out of version control. Runtime generates
+salts and preserves existing ones on subsequent setup runs.
+
+**The physical core directory is not the public site URL.** This example keeps both
+public URLs at the site root. Your web-server configuration must route WordPress
+endpoints such as `/wp-login.php`, `/wp-admin/` and core assets to the installed core
+directory. Runtime does not configure Nginx or Apache. Preserve existing working
+routes; do not append `/wp` merely because the files live there.
+
+## 3. Verify setup and install WordPress
+
+```sh
+vendor/bin/sympress-runtime validate
+vendor/bin/sympress-runtime --no-interaction
+vendor/bin/sympress-runtime doctor
+```
+
+The example disables database preflight, so doctor can report an **unknown** database
+status (exit 2). Once the database is available, enable `db-check` in the example's
+Runtime settings and run doctor again.
+
+Runtime prepares files; WordPress still needs its database installation. Use the
+WordPress installer in your browser, or enable `install-wp-cli` and set
+`wp-cli-commands` to `["wp cli version"]` to request the tool during setup:
+
+```sh
+vendor/bin/sympress-runtime --no-interaction wpcli
+php wp-cli.phar core install --url=https://my-site.test --title='My site' --admin_user=site-admin --admin_email=admin@example.test --prompt=admin_password
+```
+
+Enter a unique password at the prompt. Verify the homepage, root login page and
+admin dashboard before considering the site ready.
+
+## 4. Add plugins and themes
+
+The example's `installer-paths` places plugins and themes in the public content
+directory. For example:
+
+```sh
+composer require wpackagist-plugin/classic-editor
+composer require wpackagist-theme/twentytwentyfive
+```
+
+Installing a package does not activate it. Activate normal plugins/themes using
+WordPress or WP-CLI. MU plugins are discovered during setup; see [Steps](steps.md).
+
+Continue with [environment configuration](environment.md), [custom steps](custom-steps.md)
+or the [production deployment guide](deployment.md).

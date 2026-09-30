@@ -30,7 +30,7 @@ final class ArchitectureTest extends TestCase
         self::assertArrayHasKey('sympress/qa', $manifest['require-dev']);
         self::assertStringContainsString('sympress/workflows/.github/workflows/sympress-qa.yml@v1', (string) file_get_contents($root . '/.github/workflows/qa.yml'));
         $oracle = (string) file_get_contents($root . '/tools/differential/run.py');
-        $inventory = json_decode((string) file_get_contents($root . '/docs/upstream-inventory.json'), true, flags: JSON_THROW_ON_ERROR);
+        $inventory = json_decode((string) file_get_contents($root . '/docs/maintainers/upstream-inventory.json'), true, flags: JSON_THROW_ON_ERROR);
         foreach ($inventory['baselines'] as $baseline) {
             self::assertStringContainsString($baseline['commit'], $oracle);
         }
@@ -44,7 +44,7 @@ final class ArchitectureTest extends TestCase
         $notice = (string) file_get_contents($root . '/NOTICE');
         self::assertStringContainsString('Giuseppe Mazzapica', $notice);
         self::assertStringContainsString('Permission is hereby granted', $notice);
-        $inventory = json_decode((string) file_get_contents($root . '/docs/upstream-inventory.json'), true, flags: JSON_THROW_ON_ERROR);
+        $inventory = json_decode((string) file_get_contents($root . '/docs/maintainers/upstream-inventory.json'), true, flags: JSON_THROW_ON_ERROR);
         foreach (['release' => 'legacy-mu-loader.php.txt', 'dev' => 'legacy-mu-loader-dev.php.txt'] as $baseline => $template) {
             $files = array_column($inventory['baselines'][$baseline]['files'], null, 'file');
             self::assertSame($files['templates/wpstarter-mu-loader.php']['sha256'], hash_file('sha256', $root . '/resources/' . $template));

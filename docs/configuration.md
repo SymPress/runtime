@@ -1,75 +1,131 @@
 # Configuration
 
-All options are optional. Configure `extra.sympress-runtime` as an object or a JSON file path, or create `sympress-runtime.json` in the project root. Root-file values override inline/referenced values by shallow merge; arrays replace earlier arrays. Paths inside a referenced file remain relative to the project root.
+Runtime settings describe setup behavior. WordPress environment values such as
+database credentials and public URLs belong in [environment configuration](environment.md).
 
-Legacy `extra.wpstarter` and `wpstarter.json` are recognized with deprecation diagnostics. Native sources win over legacy sources. Set `compatibility: false` to reject legacy sources. `compatibility-profile: auto` selects release-3.0.1 for legacy-only sources and native otherwise; upstream-dev is explicit. Release defaults retain symlink content publishing, legacy autoload naming and the two-file env policy. See the [parity matrix](parity.md) for exact profile differences.
+## Choose a configuration file
 
-Top-level Composer extra options `wordpress-install-dir` and `wordpress-content-dir` default to `./wordpress` and `./wp-content`. Core must be inside the root; content must be below the root and within the core parent. The vendor/bin paths come from Composer's actual configuration or installed metadata.
+For most projects, use `sympress-runtime.json` in the project root:
 
-Draft 2020-12 schemas are in `schema/runtime.schema.json` and `schema/runtime-extra.schema.json`. Every run validates configuration before loading custom PHP or writing managed files. `validate` additionally checks existing file/directory paths without evaluating PHP command providers. Unknown extension keys remain available through Config and `appendValidator`; built-in validators cannot be replaced.
+```json
+{
+  "compatibility": false,
+  "db-check": false,
+  "wp-config-autoload": true,
+  "skip-steps": ["wpcli"]
+}
+```
 
-`Config` is append-only ArrayAccess returning `Result`. `unwrap()` throws stored errors; `unwrapOrFallback()` falls back only on null/error. `notEmpty()` remains true for false, zero, an empty string and an empty array. Comparison methods are strict. Only new, null or still-default settings can be replaced.
+Alternatively, put an object in `extra.sympress-runtime` in `composer.json`,
+or set that value to a JSON filename such as `"dev-ops/runtime.json"`.
+Paths inside any settings file are still relative to the project root.
 
-## Native defaults
+If both sources exist, the root `sympress-runtime.json` overrides the inline or
+referenced object. The merge is shallow: a later array replaces the earlier array.
+Older names and profile selection are documented in [Compatibility](compatibility.md).
 
-Internal context fields listed below are readable by steps but rejected in user configuration. They are populated from the actual invocation. These options are implemented; profile-dependent behavior is described below and in the linked user guides.
+## Keep Composer paths consistent
 
-| Option | Native default |
-| --- | --- |
-| `autoload` | `"sympress-runtime-autoload.php"` |
-| `cache-env` | `true` |
-| `check-vcs-ignore` | `true` |
-| `command-steps` | `null` |
-| `composer-updated-packages` | `[]` |
-| `content-dev-dir` | `"content-dev"` |
-| `content-dev-op` | `"auto"` |
-| `create-vcs-ignore-file` | `true` |
-| `custom-steps` | `null` |
-| `steps` | `null` |
-| `db-check` | `true` |
-| `dropins` | `null` |
-| `dropins-op` | `"auto"` |
-| `early-hook-file` | `""` |
-| `env-bootstrap-dir` | `null` |
-| `env-dir` | `null` |
-| `env-example` | `true` |
-| `env-file` | `".env"` |
-| `install-wp-cli` | `true` |
-| `is-composer-install` | `null` |
-| `is-composer-update` | `null` |
-| `is-wpstarter-command` | `null` |
-| `is-wpstarter-selected-command` | `null` |
-| `is-runtime-command` | `null` |
-| `is-runtime-selected-command` | `null` |
-| `move-content` | `false` |
-| `prevent-overwrite` | `null` |
-| `register-theme-folder` | `false` |
-| `require-wp` | `true` |
-| `scripts` | `[]` |
-| `skip-db-check` | `false` |
-| `skip-steps` | `null` |
-| `templates-dir` | `null` |
-| `unknown-dropins` | `false` |
-| `wp-cli-commands` | `[]` |
-| `wp-cli-files` | `[]` |
-| `wp-version` | `null` |
-| `wp-config-autoload` | `false` |
-| `compatibility` | `true` |
-| `compatibility-profile` | `"native"` |
-| `env-local-overrides` | `true` |
-| `allow-insecure-downloads` | `false` |
-| `download-checksums` | `[]` |
-| `require-download-checksums` | `false` |
-| `download-max-bytes` | `16777216` |
-| `kernel-boot` | `false` |
-| `kernel-build-id` | `null` |
+These are Composer extras, outside the Runtime settings object:
 
-Internal fields: `composer-updated-packages`, `is-composer-install`, `is-composer-update`, `is-runtime-command`, `is-runtime-selected-command`, their two `is-wpstarter-*` compatibility names, and the derived `wp-config-php-path`.
+```json
+{
+  "extra": {
+    "wordpress-install-dir": "public/wp",
+    "wordpress-content-dir": "public/wp-content"
+  }
+}
+```
 
-Ask values never block a noninteractive run. Confirmation defaults to yes unless a feature explicitly specifies no (notably unknown dropins). Five invalid answers fall back to the question's configured default. The `prevent-overwrite` list matches normalized root-relative paths using `fnmatch` without backslash escaping. Native unmarked files require confirmation or `--force`; existing directories and symlinks are never replaced by file writes.
+Defaults are `wordpress` and `wp-content`. Core must be inside the project;
+content must be below the root and within the core parent. Match the paths to
+your Composer `installer-paths`. Vendor/bin paths come from Composer's actual
+configuration. See the [complete manifest](../examples/site/composer.json).
 
-`steps` is the native DI contribution list/map. `wp-cli-files` accepts PHP paths or descriptors with `file`, `args` and `skip-wordpress`; command providers remain lazy until WP-CLI execution. [WP-CLI](wp-cli.md) describes their order and failure behavior.
+## Validate before running setup
 
-`wp-config-autoload` is false in the native profile and true in `release-3.0.1` and `upstream-dev`. It loads the configured Composer autoloader after WordPress's hook API and before environment PHP/early hooks. The independent environment parser is always shipped in the generated payload. [Migration](migration.md) explains preserving this behavior when changing profiles.
+```sh
+vendor/bin/sympress-runtime validate
+```
 
-`download-checksums` maps URLs to expected SHA-256 digests. `require-download-checksums=true` rejects downloads without a configured digest; `allow-insecure-downloads` defaults to false. `download-max-bytes` is a positive integer, defaulting to 16 MiB, and bounds downloads through the URL-download service, including WP-CLI PHARs, release metadata and checksum sidecars. Raise it explicitly for a larger trusted artifact. WP-CLI PHAR verification additionally uses its SHA-512 contract. See [the settings cheat sheet](settings-cheat-sheet.md) and [kernel integration](kernel-integration.md).
+Validation checks JSON/schema and semantic paths without executing PHP command
+providers or the setup autoload file. Ordinary setup also validates before it
+loads custom PHP or writes managed files. Schemas are available at
+[schema/runtime.schema.json](../schema/runtime.schema.json) and
+[schema/runtime-extra.schema.json](../schema/runtime-extra.schema.json).
+Extension keys can be validated with `Config::appendValidator()`.
+
+## Settings reference
+
+The table lists every user-configurable option and its native default.
+Compatibility profiles can use different defaults.
+
+| Setting | Native default | Purpose |
+| --- | --- | --- |
+| `autoload` | `"sympress-runtime-autoload.php"` | PHP file loaded only when setup runs. |
+| `cache-env` | `true` | Allow request-time environment caching. |
+| `check-vcs-ignore` | `true` | Check relevant Git, Mercurial or SVN ignore rules; also accepts `ask`. |
+| `command-steps` | `null` | Class list or name-to-class map for explicitly selected custom work. |
+| `content-dev-dir` | `"content-dev"` | Directory containing project plugins/themes to publish. |
+| `content-dev-op` | `"auto"` | Publication operation: `auto`, `copy`, `symlink` or `none`. |
+| `create-vcs-ignore-file` | `true` | Create missing ignore files; also accepts `ask`. |
+| `custom-steps` | `null` | Class list or name-to-class map included in full runs. |
+| `steps` | `null` | Native DI step contributions. |
+| `db-check` | `true` | Run database preflight; `health` additionally requests a health check. |
+| `dropins` | `null` | Map destination filenames to local files/directories or download URLs. |
+| `dropins-op` | `"auto"` | Local dropin operation: `auto`, `copy`, `symlink` or `none`. |
+| `early-hook-file` | `""` | Trusted PHP file executed before the main WordPress bootstrap. |
+| `env-bootstrap-dir` | `null` | Directory for environment-specific PHP; null resolves to the environment directory. |
+| `env-dir` | `null` | Directory containing dotenv files; null resolves to the project root. |
+| `env-example` | `true` | Generate an example; also accepts `ask`, a local template path or URL. |
+| `env-file` | `".env"` | Base dotenv filename inside the environment directory. |
+| `install-wp-cli` | `true` | Allow downloading WP-CLI when an executing command needs it. |
+| `move-content` | `false` | Move bundled core content into the configured content directory; also accepts `ask`. |
+| `prevent-overwrite` | `null` | Root-relative path/glob list, boolean or `ask` controlling overwrite protection. |
+| `register-theme-folder` | `false` | Register bundled core themes; also accepts `ask`. |
+| `require-wp` | `true` | Require installed WordPress during normal preflight. |
+| `scripts` | `[]` | Pre/post step and whole-run callbacks. |
+| `skip-db-check` | `false` | Deprecated inverse database switch; use `db-check` for new projects. |
+| `skip-steps` | `null` | List of step names to omit from full runs. |
+| `templates-dir` | `null` | Directory containing overrides for individual bundled templates. |
+| `unknown-dropins` | `false` | Allow unrecognized dropin names; also accepts `ask`. |
+| `wp-cli-commands` | `[]` | Command strings starting with `wp `, or a JSON/PHP provider path. |
+| `wp-cli-files` | `[]` | Eval-file paths/descriptors, including arguments and skip-wordpress. |
+| `wp-config-autoload` | `false` | Load the configured project Composer autoloader before early PHP hooks. |
+| `wp-version` | `null` | Override discovered core version. |
+| `compatibility` | `true` | Accept the optional older configuration/API adapters. |
+| `compatibility-profile` | `"native"` | Default behavior profile; older profiles are documented separately. |
+| `env-local-overrides` | `true` | Read `.local` environment overrides. |
+| `allow-insecure-downloads` | `false` | Permit HTTP as well as HTTPS for explicitly trusted sources. |
+| `download-checksums` | `[]` | URL-to-SHA-256 map used before publishing downloads. |
+| `download-max-bytes` | `16777216` | Positive maximum bytes per download; 16 MiB by default. |
+| `require-download-checksums` | `false` | Reject downloads without a configured SHA-256 digest. |
+| `kernel-boot` | `false` | Generate a kernel bootstrap only when no existing owner is found. |
+| `kernel-build-id` | `null` | Explicit deployment ID; otherwise use the established environment/persisted identity. |
+
+## Questions and overwrite protection
+
+Options accepting `ask` use console confirmation. A noninteractive run uses the
+question's default; it does not wait for input. Most confirmation defaults are yes;
+unknown dropins default to no. After five invalid answers the configured default
+is used.
+
+`prevent-overwrite` matches normalized root-relative paths with `fnmatch`
+without backslash escaping. Native unmarked files require confirmation or
+`--force`. Directories and symlinks are not ordinary writable files. Content
+publication may replace a symlink leaf after preparing its replacement, while
+generated configuration still rejects symlink targets.
+
+## Downloads
+
+URL downloads use HTTPS by default, verify any configured SHA-256 digest and
+enforce `download-max-bytes` while streaming. Size/checksum failures leave an
+existing destination unchanged. Set `require-download-checksums` when every
+download must be pinned. WP-CLI also checks its release SHA-512 checksum.
+
+## Values supplied by the runner
+
+Steps can read `composer-updated-packages`, `is-composer-install`,
+`is-composer-update`, `is-runtime-command`, `is-runtime-selected-command`
+and the derived `wp-config-php-path`. These are invocation context, not writable
+project settings. Older aliases are listed in [Compatibility](compatibility.md).

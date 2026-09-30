@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Env;
 
-/** Source-derived WP Starter 3.0.1/dev union; see NOTICE and docs/upstream-inventory.json. */
+/** WordPress environment types; provenance is recorded in NOTICE and the maintainer inventory. */
 final class ConstantCatalog
 {
     public const array TYPES = [

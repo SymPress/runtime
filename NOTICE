@@ -5,8 +5,8 @@ WP Starter compatibility research and source-derived material
 Behavioral contracts, WordPress salt names/character catalog and section marker
 conventions are derived from WP Starter. The implementation is maintained here;
 WP Starter is not a runtime or development dependency. Its pinned source
-revisions and individual file references are recorded in docs/source-evidence.md
-and docs/upstream-inventory.json. The upstream notice is retained for any
+revisions and individual file references are recorded in docs/maintainers/source-evidence.md
+and docs/maintainers/upstream-inventory.json. The upstream notice is retained for any
 source-derived portions, including the salt catalog, section-edit format,
 WordPress constant/type catalog and environment alias order.
 resources/legacy-mu-loader.php.txt and resources/legacy-mu-loader-dev.php.txt are

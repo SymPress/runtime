@@ -1,4 +1,4 @@
-name: Isolated WP Starter differential
+name: Compatibility integration
 
 on:
   pull_request:
@@ -60,7 +60,7 @@ jobs:
       - name: Preserve exact comparison evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: wpstarter-differential
+          name: compatibility-evidence
           path: |
             build/differential/report.json
             build/parity-evidence.json

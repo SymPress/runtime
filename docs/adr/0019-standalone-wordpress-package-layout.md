@@ -1,6 +1,6 @@
 # ADR 0019: WordPress package layouts when Composer plugins are disabled
 
-Status: implemented; consumer replay and final acceptance tracked in `docs/acceptance.md`.
+Status: implemented; consumer replay and final acceptance tracked in `docs/maintainers/acceptance.md`.
 
 ## Evidence and requirement
 

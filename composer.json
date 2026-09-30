@@ -1,6 +1,14 @@
 {
     "name": "sympress/runtime",
-    "description": "Isolated Composer project setup and WordPress runtime generation for SymPress.",
+    "description": "Composer-driven WordPress setup, environment configuration and deployment tools.",
+    "keywords": ["wordpress", "composer", "environment", "configuration", "deployment"],
+    "homepage": "https://github.com/SymPress/runtime",
+    "support": {
+        "issues": "https://github.com/SymPress/runtime/issues",
+        "source": "https://github.com/SymPress/runtime",
+        "docs": "https://github.com/SymPress/runtime/tree/main/docs"
+    },
+    "archive": {"exclude": ["/.github", "/docs/maintainers", "/tests", "/tools", "/AGENTS.md", "/phpcs.xml.dist", "/phpstan.neon.dist", "/phpunit.xml.dist", "/vendor", "/build", "/composer.lock", "/.phpunit.cache", "/.phpstan.cache", "/.subversion", "/.env", "/.env.*", "/.gitignore", "/.gitattributes"]},
     "type": "composer-plugin",
     "license": "GPL-2.0-or-later",
     "require": {

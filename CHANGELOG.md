@@ -2,15 +2,17 @@
 
 ## Unreleased
 
-- Approved source-derived WP Starter parity inventory and architecture decisions.
-- Implement isolated Composer and standalone setup, all twelve default steps, configuration validation, extension services/events, legacy API adapters and migration diagnostics.
-- Generate WordPress configuration with an independent environment-parser payload, stable salts, managed sections, environment caches and production dumps.
-- Add kernel diagnostics, cache maintenance and optional boot ownership.
-- Preserve WPackagist/private/path package installation and bounded offline recovery after Composer plugins are disabled.
-- Preserve correctly installed root and nested layouts, and replace URL-dropin symlinks only after download verification.
-- Restore early Composer autoload through `wp-config-autoload` (enabled by default in legacy profiles), and bound service downloads through `download-max-bytes`.
-- Honor disabled compatibility for legacy environment sentinels and constant mappings, including cached and dumped environments.
-- Provide deployment and user guides, explicit upstream interface attribution, and a CI suite requiring real database/WordPress/WP-CLI fixtures with no skipped tests.
-- Add real Composer fixture tests, pinned differential comparisons and PHP 8.5 / PHPUnit 13 quality gates.
+Runtime is under active development; there is no stable release tag yet.
 
-Unreleased work remains subject to the acceptance record; passing a fixture suite does not establish compatibility with every third-party extension or installer layout.
+- Generate WordPress configuration, a front controller, MU-plugin loading and WP-CLI configuration from Composer project settings.
+- Run setup after Composer install/update or through the standalone command.
+- Configure environments with typed WordPress constants, local overrides, stable salts, runtime caches and private production dumps.
+- Preserve edited configuration sections and provide custom steps, services, events and extension packages.
+- Add optional kernel diagnostics, cache maintenance and explicit boot ownership.
+- Support WPackagist, private and local packages through Composer installers, with bounded offline package placement after plugins are disabled.
+- Preserve existing projects through optional compatibility profiles and a migration command.
+- Load native MU plugins in path order, support symlinked loaders, emit WordPress loading hooks and list each plugin in the admin screen.
+- Provide a complete example project, executable custom-step example, deployment guidance and source-checked option and constant references.
+
+See the [acceptance record](https://github.com/SymPress/runtime/blob/main/docs/maintainers/acceptance.md)
+for verification evidence and the boundaries of tested layouts.

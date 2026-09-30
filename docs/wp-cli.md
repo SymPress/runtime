@@ -1,8 +1,15 @@
 # WP-CLI
 
+Use the `wpcli` step to run project automation after the generated configuration
+is ready. The `wpcliconfig` step separately writes `wp-cli.yml`.
+
+## Find or install the tool
+
 Runtime first resolves an installed WP-CLI Composer package, then the project's PHAR. `install-wp-cli` controls whether a missing PHAR can be downloaded. The built-in tool requires its release SHA-512 checksum and fails closed on verification errors. A checksum fetched from the same release origin verifies bytes against that origin; it is not an independent authenticity guarantee.
 
 The shared `download-max-bytes` limit also bounds the PHAR, release metadata and checksum sidecar downloads. Its default is 16 MiB; set an explicit larger positive byte count if a trusted release requires it. Oversized responses fail before replacing an existing artifact.
+
+## Run files and commands
 
 `wpcliconfig` generates the configured core path and any bootstrap needed by the selected profile. `wpcli` runs last and processes `wp-cli-files` before `wp-cli-commands`. Providers are evaluated only when this step executes, not during validation or listing. Commands use WP-CLI syntax including the leading `wp`, for example:
 
@@ -15,9 +22,25 @@ The shared `download-max-bytes` limit also bounds the PHAR, release metadata and
 }
 ```
 
-Each file entry can also be a simple PHP path. Paths are project-relative; descriptors supply ordered arguments and `skip-wordpress` for code that must run without loading WordPress. WP-CLI exposes eval-file arguments as `$args`. Missing or unreadable eval files are reported and skipped, preserving upstream behavior. A failed executed command fails the step and stops the remaining commands.
+Each file entry can also be a simple PHP path. Paths are project-relative; descriptors supply ordered arguments and `skip-wordpress` for code that must run without loading WordPress. WP-CLI exposes eval-file arguments as `$args`. Missing or unreadable eval files are reported and skipped. A failed executed command fails the step and stops the remaining commands.
+
+## Load commands from a provider
 
 Command lists may be inline, loaded from JSON or returned by trusted PHP providers. PHP providers receive `$services` (`SymPress\Runtime\Services`) so they can inspect the environment and DB state lazily. Do not put secrets into logged command strings. Quotes and argument boundaries are preserved by the process/tool APIs; use the documented command form rather than appending shell redirections.
+
+For example, save this as `build-scripts/wp-commands.php` and set
+`wp-cli-commands` to that path:
+
+```php
+<?php
+
+// $services is provided by Runtime when the step executes.
+return $services->dbChecker()->status()->installed === true
+    ? ['wp core version']
+    : ['wp cli version'];
+```
+
+## Run the step
 
 ```sh
 vendor/bin/sympress-runtime -n wpcliconfig wpcli

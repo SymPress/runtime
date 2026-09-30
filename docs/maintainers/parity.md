@@ -12,7 +12,7 @@ The package name is `sympress/runtime`. Test IDs below are PHPUnit groups or nam
 - **D** = upstream dev at `059bbc9198ac51dee86c5233b6b006ca4d8008a4`.
 - Bare upstream class names resolve to `src/{name}.php`; template names resolve to `templates/`. Source hashes and public methods are recorded in [the evidence manifest](upstream-inventory.json).
 - **W** = explicit work order requirement, an addition when absent upstream.
-- Difference IDs D01–D22 refer to [ADR 0005](adr/0005-compatibility-and-differences.md); D23 records the reproduced [default-directory defect](adr/0011-oracle-default-env-directory.md); D24 records [WP-CLI argument and diagnostic boundaries](adr/0012-wp-cli-argument-and-diagnostic-boundaries.md). “Parity” means no intended behavior difference; it does not mean verified.
+- Difference IDs D01–D22 refer to [ADR 0005](../adr/0005-compatibility-and-differences.md); D23 records the reproduced [default-directory defect](../adr/0011-oracle-default-env-directory.md); D24 records [WP-CLI argument and diagnostic boundaries](../adr/0012-wp-cli-argument-and-diagnostic-boundaries.md). “Parity” means no intended behavior difference; it does not mean verified.
 - Version defaults are shown literally, including null versus an empty array. Behavioral fallback and validation can differ from raw defaults.
 - Do not delete a row to get green tests. Split rows if one assertion cannot cover every branch. Every listed edge case needs a dataset.
 - The constant and section tables are part of the acceptance matrix and have their own IDs, not informal appendices.

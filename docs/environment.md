@@ -1,22 +1,108 @@
-# Environment, caches and dumps
+# Environment configuration
 
-Native environment selection uses `WP_ENVIRONMENT_TYPE`, then `WP_ENV`, then `WORDPRESS_ENV`. Legacy profiles preserve their reverse legacy selector precedence. Selection is stable for one load: a later file cannot redirect the loader into another environment chain. The raw environment is retained for environment-specific filenames; WordPress and the kernel receive the canonical local/development/staging/production value. Unknown values use the documented production fallback and diagnostics.
+Keep the same application code across environments and supply the values that
+differ: database credentials, public URLs, debugging and service settings. Runtime
+reads these values before WordPress starts.
 
-With native defaults, precedence from lowest to highest is `.env`, `.env.local`, `.env.{rawEnvironment}`, `.env.{rawEnvironment}.local`, then actual process environment. Raw `test` omits generic `.env.local`. Legacy profiles default to the two-file `.env`/`.env.{rawEnvironment}` chain until `env-local-overrides` is enabled. `env-dir` and `env-file` change the base location/name. A set `SYMPRESS_RUNTIME_ENV_LOADED` or compatible `WPSTARTER_ENV_LOADED` marker bypasses all dotenv parsing.
+## Start with a private .env file
 
-Values are made available through the environment reader and superglobals. The reader does not trust HTTP request headers as deployment selectors. Standard WordPress constants use the catalog's explicit casts; missing, empty, invalid, false and zero are distinct. `SYMPRESS_RUNTIME_ENV_TO_CONST` adds named constant conversions using comma-separated `NAME:TYPE` entries; `WP_STARTER_ENV_TO_CONST` is its deprecated compatibility control. Consult the [catalog/parity reference](parity.md#core-constant-catalog-every-constant-is-an-acceptance-row) for the supported names and tested types. Type names include `bool`, `int`, `float`, `int_or_bool`, `string_or_bool`, `string` and `octal_mod`; `raw_string` is available in upstream-dev/native but absent from the release profile. Native also accepts `int|bool`, `string|bool`, `raw-string` and `mod`. Existing constants are retained rather than redefined.
+```dotenv
+WP_ENVIRONMENT_TYPE=development
+WP_HOME=https://my-site.test
+WP_SITEURL=${WP_HOME}
+DB_HOST=127.0.0.1
+DB_NAME=my_site
+DB_USER=my_site
+DB_PASSWORD='your-local-password'
+DB_TABLE_PREFIX=wp_
+WP_DEBUG=true
+WP_DEBUG_DISPLAY=false
+```
 
-`compatibility=false` ignores both `WPSTARTER_ENV_LOADED` and `WP_STARTER_ENV_TO_CONST`; their native counterparts remain available. Cache/dump compatibility modes must match. Flush runtime caches and rebuild deployment dumps when changing that mode; see [migration](migration.md).
+Actual process environment values take priority. In native mode, files are loaded
+from lowest to highest priority:
 
-The generated configuration can execute `{rawEnvironment}.php` from `env-bootstrap-dir` and the configured `early-hook-file`. Treat them as trusted application PHP. Enable `wp-config-autoload` when these files need Composer classes; legacy profiles enable it by default. WordPress's hook API is available before project autoload, so Composer `autoload.files` can register early hooks.
+1. `.env`
+2. `.env.local`
+3. `.env.{environment}`
+4. `.env.{environment}.local`
+5. The process environment
 
-Runtime caching writes `.env.cached.php` in the environment directory when eligible. Local/development-mode requests and `sympress.runtime.skip-cache-env` can suppress caching; the filter receives the raw environment as its second parameter. Cached values never override actual process values.
+The generic `.env.local` file is skipped for the raw `test` environment. Disable
+`env-local-overrides` to use only the base and environment-specific files.
+`env-dir` and `env-file` change the directory and base filename.
+
+## Select an environment
+
+Native selection checks `WP_ENVIRONMENT_TYPE`, then `WP_ENV`, then
+`WORDPRESS_ENV`. It fixes the selected file chain for one load: a value read
+later cannot redirect the loader into another environment's files.
+
+The raw name selects files; WordPress and the kernel receive a normalized
+`local`, `development`, `staging` or `production` value. Unknown names use the
+production fallback and a diagnostic. Existing compatibility profiles retain
+their own precedence; see [Compatibility](compatibility.md).
+
+Use `SYMPRESS_RUNTIME_ENV_LOADED` only when trusted bootstrap code has already
+loaded the environment. A set marker skips dotenv parsing.
+
+## WordPress constants and types
+
+The [constants reference](constants.md) lists every supported built-in name and
+its type. Missing, empty, false and zero are distinct values. Existing PHP
+constants are retained rather than redefined.
+
+You can add your own mappings:
+
+```dotenv
+SYMPRESS_RUNTIME_ENV_TO_CONST=PROJECT_CACHE:bool,PROJECT_LIMIT:int
+PROJECT_CACHE=true
+PROJECT_LIMIT=100
+```
+
+Supported native type names include `bool`, `int`, `float`, `string`,
+`raw_string`, `int_or_bool`, `string_or_bool` and `octal_mod`.
+Their aliases and exact behavior are in the constants reference. Do not use a
+sanitizing string cast for passwords.
+
+## Early PHP configuration
+
+Set `env-bootstrap-dir` to load `{environment}.php` from a project directory.
+Use `early-hook-file` for shared boot code. These files are trusted PHP.
+
+Set `wp-config-autoload: true` if this code needs Composer classes. WordPress's
+hook API loads before that autoloader, so Composer `autoload.files` can register
+early hooks. If your MU/application bootstrap owns autoloading, keep its order
+deliberate; Runtime does not require a second application bootstrap.
+
+## Runtime cache versus deployment dump
+
+| | Runtime cache | Deployment dump |
+| --- | --- | --- |
+| File | `.env.cached.php` | `.env.dump.php` |
+| Created by | An eligible request | `dump-env <environment>` |
+| Intended use | Avoid repeated dotenv parsing | Prepare a fixed environment before deployment |
+| Request-time writes | Possible when caching is enabled | Disabled while a valid dump is present |
+| Removed by `flush-env-cache` | Yes | No |
+
+Local/development requests skip runtime caching. The
+`sympress.runtime.skip-cache-env` filter can suppress it for other environments;
+its second argument is the raw environment name. Process values always win over
+cached or dumped values.
 
 ```sh
 vendor/bin/sympress-runtime dump-env production
 vendor/bin/sympress-runtime flush-env-cache
 ```
 
-`dump-env` produces a private `.env.dump.php` for the selected raw environment. A valid dump takes precedence over `.env.cached.php` and disables request-time cache writes. Process values still override dumped values. A conflicting actual environment selector causes dump creation/loading to fail rather than silently use another environment. `flush-env-cache` removes the runtime cache only; it never removes the deployment dump. Rebuild or explicitly retire the dump when changing its environment or baked configuration.
+A dump takes precedence over the runtime cache. The explicit dump environment
+must agree with an actual process selector. A mismatch fails instead of loading
+another environment's credentials.
 
-Dumps/caches may contain database credentials and must stay outside public access and version control. Defaults use mode 0600; the deployed PHP identity must be able to read required private files. Prepare ownership and compiled kernel caches during the build, then verify a read-only production request. See [deployment](deployment.md) for the parser payload, relocation and rollback requirements.
+Caches and dumps record compatibility mode. Flush the cache and rebuild the dump
+when changing that mode; older formats without the field are treated as
+compatibility-enabled.
+
+Both files may contain secrets. Keep them outside web access and version control.
+They default to mode `0600`; provision ownership so the deployed PHP identity can
+read them. See [Deployment](deployment.md) for release and rollback steps.

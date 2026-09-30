@@ -4,7 +4,7 @@ Put settings in `extra.sympress-runtime` (an object or a root-relative JSON path
 
 | Task | Settings | Behavior |
 | --- | --- | --- |
-| Retain WP Starter semantics | `compatibility-profile: "release-3.0.1"` or `"upstream-dev"` | Retains the selected reference's defaults and ordering; keep while migrating |
+| Preserve an existing project's behavior | `compatibility-profile` | Keep its selected profile during adoption; see [Compatibility](compatibility.md) |
 | Finish legacy migration | `compatibility: false` | Rejects legacy configuration/API usage; does not itself select the native profile |
 | Early Composer classes/hooks | `wp-config-autoload: true` | Require project autoload before environment PHP and early hooks; legacy default is true |
 | Select environment files | `env-dir`, `env-file`, `env-bootstrap-dir`, `early-hook-file` | Project-relative paths; `.env` and project root are defaults |

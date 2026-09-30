@@ -418,7 +418,7 @@ PHP);
         $this->fixture();
         self::assertSame(0, $this->generate()->getExitCode());
         $sections = (new SectionMerger())->sections((string) file_get_contents($this->root . '/wp-config.php'));
-        $inventory = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/docs/upstream-inventory.json'), true, flags: JSON_THROW_ON_ERROR);
+        $inventory = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/docs/maintainers/upstream-inventory.json'), true, flags: JSON_THROW_ON_ERROR);
         $names = array_unique([...array_column($inventory['baselines']['release']['sections'], 'name'), ...array_column($inventory['baselines']['dev']['sections'], 'name')]);
         self::assertCount(19, $sections);
         self::assertEqualsCanonicalizing(array_values($names), array_keys($sections));
@@ -427,7 +427,7 @@ PHP);
     /** @return iterable<string, array{string}> */
     public static function sections(): iterable
     {
-        $inventory = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/docs/upstream-inventory.json'), true, flags: JSON_THROW_ON_ERROR);
+        $inventory = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/docs/maintainers/upstream-inventory.json'), true, flags: JSON_THROW_ON_ERROR);
         $names = array_unique([...array_column($inventory['baselines']['release']['sections'], 'name'), ...array_column($inventory['baselines']['dev']['sections'], 'name')]);
         foreach ($names as $name) {
             yield 'PAR-SECTION-' . $name => [$name];

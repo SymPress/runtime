@@ -1,29 +1,189 @@
-# Custom steps and runner services
+# Custom steps and services
 
-Use `custom-steps` for automatic/full runs and `command-steps` for explicitly selected work. Both accept class-string lists or name-to-class maps. Load their classes through Composer autoloading or the run-only `sympress-runtime-autoload.php`. That file is never executed by static validation.
+A custom step is useful when setup must do project-specific work: check a build
+artifact, prepare a directory or register a service. It runs inside Runtime's
+setup process and can use dependency injection.
 
-Implement `SymPress\Runtime\Step\StepInterface`: `name()`, `success()`, `error()`, `allowed(Config, Paths)` and `run(Config, Paths)`. Results are bit flags: ERROR=1, SUCCESS=2, NONE=4. Constructor injection supports the runner services. A step's reported name must match its registration.
+## Write a small step
 
-Native steps can use `#[AsRuntimeStep(name: 'example', priority: 20)]`. The run-only autoload file can return a callable receiving the runner's `ContainerBuilder` to register services. Enable autoconfiguration to discover step attributes, or tag a service with `sympress.runtime.step` and attributes `name`, optional integer `priority`, and optional `command-only`. Higher priorities run earlier; equal priorities retain registration order. Explicit CLI selection retains the requested order, with WP-CLI last.
+Save this class as `build-scripts/WriteBuildMarker.php` in your project. The
+[complete example](../examples/WriteBuildMarker.php) is also included in this repository.
 
-Native packages contribute class-string lists/maps through `extra.sympress-runtime.steps`. Their classes must be autoloadable. Registration conflicts are diagnosed. The runner container is separate from the application kernel container.
+```php
+<?php
 
-Optional interfaces provide blocking behavior, file targets, confirmation, skipped-condition messages and postprocessing. Eligibility checks run in this order: `allowed`, overwrite protection, optional confirmation. Native explicit selection bypasses optional confirmation; the release compatibility profile retains it. Postprocessors run once after the selected work.
+declare(strict_types=1);
 
-`Services` provides all 22 inventoried accessor names: `config`, `paths`, `io`, `composerIo`, `composerFilesystem`, `composerConfig`, `filesystem`, `urlDownloader`, `fileContentBuilder`, `overwriteHelper`, `salter`, `pharInstaller`, `packageFinder`, `wpConfigSectionEditor`, `muPluginsList`, `env`, `systemProcess`, `executableFinder`, `phpProcess`, `phpToolProcessFactory`, `wpCliProcess` and `dbChecker`. `runContext` additionally exposes the immutable execution context. `composerIo`, `composerFilesystem` and `composerConfig` expose native equivalents; they are not instances of Composer's concrete classes. Live Composer mutation cannot cross the process boundary.
+namespace Example\Build;
 
-`env()` returns a shared lazy reader. Merely constructing `Services` does not parse dotenv, connect to a database or download WP-CLI. Database checks run on demand and are memoized. Use `dbChecker()->status()` to distinguish an unknown connection state from a confirmed missing database; the legacy boolean accessors return true only for a confirmed result. Supplied `WPDB_ENV_VALID`, `WPDB_EXISTS` and `WP_INSTALLED` must be a complete, consistent set of boolean values.
+use SymPress\Runtime\Config\Config;
+use SymPress\Runtime\Filesystem\Filesystem;
+use SymPress\Runtime\Filesystem\Paths;
+use SymPress\Runtime\Step\FileCreationStepInterface;
 
-Use argv arrays with `SystemProcess` and `PhpProcess` for argument safety. The explicit string overload retains the trusted shell-command API for custom code. Never build a shell string from remote or request data. Capturing execution returns `[stdout, stderr, success, throwable]` and preserves both streams on failure.
+final class WriteBuildMarker implements FileCreationStepInterface
+{
+    public function __construct(private readonly Filesystem $files) {}
+    public function name(): string { return 'buildmarker'; }
+    public function success(): string { return 'Build marker written.'; }
+    public function error(): string { return 'Build marker could not be written.'; }
+    public function allowed(Config $config, Paths $paths): bool { return true; }
+    public function targetPath(Paths $paths): string { return $paths->root('var/build-marker.txt'); }
 
-The section editor preserves `NAME : { ... } #@@/NAME`, supports append/prepend/replace/delete and treats dollars and backslashes literally. Repeated append/prepend from the same call site is deduplicated. Each bundled template can be overridden independently with `templates-dir` or `Paths::useCustomTemplatesDir()`. The first directory containing a requested file wins; otherwise the bundled template is used. Triple-brace placeholders ignore name case and surrounding whitespace. Unknown placeholders and nonscalar values remain unchanged, and dollar/backslash values remain literal. Empty or unreadable templates fail explicitly.
+    public function run(Config $config, Paths $paths): int
+    {
+        return $this->files->writeContent("ready\n", $this->targetPath($paths))
+            ? self::SUCCESS
+            : self::ERROR;
+    }
+}
+```
 
-Scripts use `pre-<step>` / `post-<step>` and `pre-sympress-runtime` / `post-sympress-runtime`. Whole-run aliases are `wpstarter`, the bare suffix, and `runtime`; if several are configured, they execute in that order before the native name. Each value accepts a function/static-method string or a list of callbacks, including nested `["ClassName", "method"]` pairs. Programmatic configuration also accepts closures and callable objects inside the list. Callbacks receive `(int $result, StepInterface|Runner $subject, Services $services, RunContext $context)`. Before callbacks receive NONE; after callbacks receive the actual result. Exceptions are diagnosed without exception contents, later callbacks still run, and the command fails.
+Merge these entries into your project manifest:
 
-Return `ScriptHaltSignal::stopPropagation($reason)`, `haltStep($reason)` or `haltStepContinuePropagation($reason)` to stop later callbacks, halt the current action, or halt it while allowing later callbacks. Halting only affects pre events. A whole-run pre callback may add/remove steps through the runner; per-step queue mutations are ignored. Skipped steps emit no pre/post step callbacks. Post-run callbacks receive aggregate result flags, including failures.
+```json
+{
+  "autoload": {"psr-4": {"Example\\Build\\": "build-scripts/"}},
+  "extra": {
+    "sympress-runtime": {
+      "command-steps": {"buildmarker": "Example\\Build\\WriteBuildMarker"}
+    }
+  }
+}
+```
 
-The runner dispatches `PreRunEvent`, `PostRunEvent`, `PreStepEvent` and `PostStepEvent` from `SymPress\Runtime\Event`. Register Symfony subscribers with autoconfiguration, or use the runner's `EventDispatcherInterface`. Events expose `result`, `subject` and `services`, signal/propagation control and failure status. Scripts use subscriber priority 0, so larger priorities run before scripts and smaller priorities after them. No application kernel container is reused.
+Then regenerate autoloading and select the step:
 
-Packages of type `sympress-runtime-extension` or `wpstarter-extension` can supply `extra.sympress-runtime-autoload` (`psr-4` and `files`). Legacy `extra.wpstarter-autoload` is accepted when compatibility is enabled. Paths resolve relative to each actual package installation path. Root autoload runs first, then package files; a file may return a container configurator. Missing files are skipped. Native metadata is validated without executing code; malformed legacy entries are ignored. Namespace boundaries and case are respected, and missing classes fall through to other loaders. Classes are available only in the setup child process, never through the application's normal autoloader.
+```sh
+composer dump-autoload
+vendor/bin/sympress-runtime --list-steps
+vendor/bin/sympress-runtime --no-interaction buildmarker
+```
 
-With compatibility enabled, the child aliases the legacy Config/Result, Paths, IO/Question, Locator, Step and optional step interfaces, Steps and ScriptHaltSignal names. `Locator` resolves to `Services`; option-name constants and `Paths::WP_STARTER` remain usable. An untyped positional constructor receives Services and, if requested, RunContext. Typed Locator injection is supported. Mandatory Composer-object constructor dependencies require a rewrite and produce a concrete diagnostic. Runner is not StepInterface: whole-run callbacks typed as legacy Step must accept Runner instead. These aliases preserve supported operations, not arbitrary construction of old framework objects. Full PHP migration scanning and rewrite reports arrive in Phase 6.
+This writes `var/build-marker.txt`. Using `FileCreationStepInterface` lets the
+runner apply overwrite protection to the declared target.
+
+## Automatic or explicit-only?
+
+`custom-steps` contributes work to a full setup run. `command-steps` registers
+work that runs only when explicitly selected. Both accept class lists or
+name-to-class maps. A class's `name()` must match its registration.
+
+Every step implements `StepInterface`: `name()`, `success()`, `error()`,
+`allowed(Config, Paths)` and `run(Config, Paths)`. Return flags are `ERROR=1`,
+`SUCCESS=2` and `NONE=4`. A blocking step stops later work on pure ERROR;
+combined SUCCESS|ERROR continues but still fails the command.
+
+Optional interfaces support file targets, confirmation, conditional skip messages,
+blocking and postprocessing. Eligibility is checked in this order: `allowed`,
+overwrite policy, optional confirmation. Native explicit selection bypasses
+optional confirmation. Postprocessors run once after selected work.
+
+## Configure dependency injection
+
+Project Composer autoloading or `sympress-runtime-autoload.php` makes classes
+available during setup. The latter is a run-only file; static validation does
+not execute it. It may return a container configurator:
+
+```php
+<?php
+
+use Example\Build\WriteBuildMarker;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+
+return static function (ContainerBuilder $container): void {
+    $container->register(WriteBuildMarker::class)
+        ->setAutowired(true)
+        ->addTag('sympress.runtime.step', [
+            'name' => 'buildmarker',
+            'priority' => 20,
+            'command-only' => true,
+        ]);
+};
+```
+
+Choose one registration method for a step; duplicate names fail. An autoconfigured
+service can instead use `#[AsRuntimeStep(name: 'buildmarker', priority: 20)]`.
+Higher priorities run earlier, ties preserve registration order, and explicit CLI
+selection follows the requested order with WP-CLI last.
+
+The setup container is separate from your application's kernel container. Live
+Composer objects cannot cross that process boundary.
+
+## Services available to steps
+
+Prefer constructor injection for the services you use. `SymPress\Runtime\Services`
+also exposes the shared services through these accessors:
+
+| Purpose | Accessors |
+| --- | --- |
+| Settings and paths | `config`, `paths`, `runContext` |
+| Console | `io`, `composerIo` |
+| Files and templates | `filesystem`, `composerFilesystem`, `fileContentBuilder`, `overwriteHelper`, `wpConfigSectionEditor` |
+| Environment and database | `env`, `dbChecker` |
+| Packages | `packageFinder`, `muPluginsList`, `composerConfig` |
+| Downloads and salts | `urlDownloader`, `pharInstaller`, `salter` |
+| Processes | `systemProcess`, `executableFinder`, `phpProcess`, `phpToolProcessFactory`, `wpCliProcess` |
+
+The `composer*` accessors return Runtime equivalents, not live Composer objects.
+Environment parsing and database checks are lazy. `dbChecker()->status()`
+distinguishes unknown state from a confirmed missing database; a boolean accessor
+is true only for a confirmed result.
+
+`Config` is append-only ArrayAccess whose values are `Result` objects.
+`unwrap()` throws a stored error; `unwrapOrFallback()` falls back for null/error.
+False, zero, empty strings and empty arrays still count as present for `notEmpty()`.
+Comparisons are strict. Only new, null or still-default settings can be replaced.
+Use `appendValidator()` for your extension's new keys; built-in validators cannot
+be replaced.
+
+Use argv arrays for process arguments. The explicit string overload is a trusted
+shell API: do not construct it from request or remote input. Capturing process
+execution returns `[stdout, stderr, success, throwable]`.
+
+## Callbacks and events
+
+Configure `pre-<step>` / `post-<step>` or
+`pre-sympress-runtime` / `post-sympress-runtime` in `scripts`. A value may be a
+function/static-method string or a list of callbacks, including nested
+`["ClassName", "method"]` pairs. Programmatic lists can include closures or
+callable objects.
+
+Callbacks receive `(int $result, StepInterface|Runner $subject, Services $services,
+RunContext $context)`. Pre callbacks receive NONE, post callbacks receive the
+actual result. Exceptions fail the command without exposing exception contents;
+later callbacks still run.
+
+Return `ScriptHaltSignal::stopPropagation($reason)`, `haltStep($reason)` or
+`haltStepContinuePropagation($reason)` to control pre callbacks. A whole-run pre
+callback may add/remove steps; per-step queue changes are ignored. Skipped steps
+emit no step callbacks. Post-run results aggregate failures.
+
+Symfony subscribers can listen to `PreRunEvent`, `PostRunEvent`,
+`PreStepEvent` and `PostStepEvent` in `SymPress\Runtime\Event`.
+Register subscribers through autoconfiguration or the runner's
+`EventDispatcherInterface`. Script subscribers have priority 0.
+
+## Publish an extension package
+
+Use package type `sympress-runtime-extension`. Ordinary Composer-autoloadable
+classes can be contributed through `extra.sympress-runtime.steps`. For classes
+needed only during setup, supply `extra.sympress-runtime-autoload` with
+`psr-4` and `files` entries. Paths are relative to the installed package.
+Root setup autoload runs before package files; a file may return a container
+configurator. Missing files are skipped, and malformed native metadata fails validation.
+
+Setup-only classes do not become part of the application's normal autoloader.
+Older extension types and API aliases are covered in [Compatibility](compatibility.md).
+
+## Override a template
+
+Set `templates-dir` or call `Paths::useCustomTemplatesDir()`. The first directory
+containing a requested template wins; bundled templates are the fallback.
+Triple-brace placeholders ignore case and surrounding whitespace. Unknown or
+nonscalar placeholders remain unchanged. Literal dollars and backslashes are retained;
+empty or unreadable templates fail.
+
+Use the [section editor](wp-config.md) when you only need to change a small part of
+generated configuration. A custom template owns its bootstrap behavior and needs
+your own WordPress and WP-CLI verification.
