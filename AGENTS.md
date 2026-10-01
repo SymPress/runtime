@@ -22,7 +22,7 @@ and a documented decision. Do not remove a supported feature to simplify brandin
 
 Run focused behavioral tests, `composer qa` and `python3 tools/check-docs.py`.
 Integration CI provisions real database, WordPress, WP-CLI and VCS fixtures and
-rejects skips. The comparison harness is isolated from package dependencies.
+rejects skips. Tests and CI must not install or execute excluded upstream packages.
 Bootstrap changes also need a real WordPress/consumer smoke test.
 
 Keep examples executable, links valid and native option/constant references in

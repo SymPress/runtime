@@ -18,6 +18,7 @@ final class ArchitectureTest extends TestCase
         $installed = json_decode((string) file_get_contents($root . '/vendor/composer/installed.json'), true, flags: JSON_THROW_ON_ERROR);
         foreach (array_merge(array_keys($manifest['require']), array_keys($manifest['require-dev']), array_column($installed['packages'], 'name')) as $name) {
             self::assertFalse(str_starts_with($name, 'wecodemore/'), $name);
+            self::assertFalse(str_starts_with($name, 'inpsyde/'), $name);
         }
         self::assertSame('^8.5', $manifest['require']['php']);
         self::assertSame('^13.0', $manifest['require-dev']['phpunit/phpunit']);
@@ -29,12 +30,13 @@ final class ArchitectureTest extends TestCase
         }
         self::assertArrayHasKey('sympress/qa', $manifest['require-dev']);
         self::assertStringContainsString('sympress/workflows/.github/workflows/sympress-qa.yml@v1', (string) file_get_contents($root . '/.github/workflows/qa.yml'));
-        $oracle = (string) file_get_contents($root . '/tools/differential/run.py');
-        $inventory = json_decode((string) file_get_contents($root . '/docs/maintainers/upstream-inventory.json'), true, flags: JSON_THROW_ON_ERROR);
-        foreach ($inventory['baselines'] as $baseline) {
-            self::assertStringContainsString($baseline['commit'], $oracle);
+        $workflow = (string) file_get_contents($root . '/.github/workflows/differential.yml');
+        self::assertStringContainsString('--fail-on-skipped', $workflow);
+        self::assertStringContainsString('tools/parity-evidence.py', $workflow);
+        foreach (['wecodemore/', 'inpsyde/', 'tools/differential/run.py', '--oracle-php'] as $excluded) {
+            self::assertStringNotContainsString($excluded, $workflow);
         }
-        self::assertStringContainsString('TemporaryDirectory', $oracle);
+        self::assertFileDoesNotExist($root . '/tools/differential/run.py');
     }
 
     #[Group('PAR-QA-004')]

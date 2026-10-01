@@ -28,7 +28,7 @@ Moving the production constraint to a new minor requires this evidence and revie
 
 ## Release and acceptance
 
-Publish versioned tags after the matrix, full fixture suite, differential comparisons
+Publish versioned tags after the matrix, full fixture suite, native compatibility contracts
 and consumer acceptance pass. Starter and demo pin `0.1.0` exactly, including the
 resolved source reference in their locks. Future updates go through normal review.
 
