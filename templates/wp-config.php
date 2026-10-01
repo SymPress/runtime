@@ -129,21 +129,31 @@ DEFAULT_ENV : {
 } #@@/DEFAULT_ENV
 
 SSL_FIX : {
+    $runtimeProxyClass = substr($runtimeReaderClass, 0, (int) strrpos($runtimeReaderClass, '\\')) . '\\TrustedProxy';
     $runtimeSslFix = $envLoader->read('WP_FORCE_SSL_FORWARDED_PROTO')
-        && is_string($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? null)
-        && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https';
+        && $runtimeProxyClass::forwardsHttps(
+            $_SERVER['REMOTE_ADDR'] ?? null, $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? null, $envLoader->read('SYMPRESS_RUNTIME_TRUSTED_PROXIES')
+        );
     if ($runtimeSslFix) { $_SERVER['HTTPS'] = 'on'; }
     $debugInfo['ssl-fix'] = ['label' => 'Forwarded SSL', 'value' => $runtimeSslFix ? 'Yes' : 'No', 'debug' => $runtimeSslFix];
 } #@@/SSL_FIX
 
 URL_CONSTANTS : {
     if (!defined('WP_HOME')) {
+        if (in_array(WP_ENVIRONMENT_TYPE, ['staging', 'production'], true)) {
+            throw new RuntimeException('Staging and production require an explicit canonical WP_HOME.');
+        }
         $runtimePort = is_numeric($_SERVER['SERVER_PORT'] ?? '') ? (int) $_SERVER['SERVER_PORT'] : 0;
         $runtimeScheme = isset($_SERVER['HTTPS']) ? (filter_var($_SERVER['HTTPS'], FILTER_VALIDATE_BOOLEAN) ? 'https' : 'http') : ($runtimePort === 443 ? 'https' : 'http');
         $runtimeHost = is_string($_SERVER['SERVER_NAME'] ?? null) ? $_SERVER['SERVER_NAME'] : 'localhost';
+        if (!preg_match('/^(?:[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?|\\[[a-fA-F0-9:]+\\])$/D', $runtimeHost)) { $runtimeHost = 'localhost'; }
         $runtimeHome = $runtimeScheme . '://' . $runtimeHost;
         if ($runtimePort > 0 && $runtimePort !== ($runtimeScheme === 'https' ? 443 : 80)) { $runtimeHome .= ':' . $runtimePort; }
         define('WP_HOME', $runtimeHome);
+    }
+    $runtimeUrl = is_string(WP_HOME) ? parse_url(WP_HOME) : false;
+    if (!is_array($runtimeUrl) || !in_array(strtolower($runtimeUrl['scheme'] ?? ''), ['http', 'https'], true) || empty($runtimeUrl['host']) || isset($runtimeUrl['user']) || isset($runtimeUrl['pass']) || isset($runtimeUrl['query']) || isset($runtimeUrl['fragment']) || preg_match('/[\\x00-\\x20\\x7f]/', WP_HOME)) {
+        throw new RuntimeException('WP_HOME must be an absolute canonical HTTP or HTTPS URL.');
     }
     defined('WP_SITEURL') || define('WP_SITEURL', rtrim(WP_HOME, '/') . '/' . {{{CORE_URL_PATH}}});
     defined('WP_CONTENT_DIR') || define('WP_CONTENT_DIR', {{{CONTENT_PATH}}});
@@ -174,7 +184,10 @@ ADMIN_COLOR : {
 } #@@/ADMIN_COLOR
 
 ENV_CACHE : {
-    if ({{{CACHE_ENABLED}}} && !$usingEnvDump && $envLoader->isWpSetup() && $envLoader->canWriteCache($envCacheFile)) {
+    if ({{{CACHE_ENABLED}}} && !{{{CACHE_AUTO}}} && {{{PROFILE}}} === 'native' && !$usingEnvDump && !$envIsCached && $envLoader->isWpSetup() && !$envLoader->canWriteCache($envCacheFile)) {
+        throw new RuntimeException('Explicit cache-env requires a writable environment cache directory; use auto for read-only deployments.');
+    }
+    if ({{{CACHE_ENABLED}}} && !$usingEnvDump && $envLoader->isWpSetup() && (!{{{CACHE_AUTO}}} || $envLoader->canWriteCache($envCacheFile))) {
         register_shutdown_function(static function () use ($envLoader, $envType, $envCacheFile): void {
             $skip = $envType === 'local' || (defined('WP_DEVELOPMENT_MODE') && WP_DEVELOPMENT_MODE);
             if ({{{COMPATIBILITY}}} && has_filter('wpstarter.skip-cache-env')) {
@@ -214,7 +227,7 @@ BEFORE_BOOTSTRAP : {
 } #@@/BEFORE_BOOTSTRAP
 
 CLEAN_UP : {
-    unset($runtimeComposerManaged, $debugInfo, $envType, $envLoader, $sympressRuntimeEnvironment, $envCacheFile, $envDumpFile, $usingEnvDump, $envIsCached, $runtimeReaderClass, $phpEnvFile, $hasPhpEnvFile, $earlyHookFile, $hasEarlyHook, $runtimeDefaults, $runtimeName, $runtimeValue, $runtimeSslFix, $runtimePort, $runtimeScheme, $runtimeHost, $runtimeHome);
+    unset($runtimeComposerManaged, $debugInfo, $envType, $envLoader, $sympressRuntimeEnvironment, $envCacheFile, $envDumpFile, $usingEnvDump, $envIsCached, $runtimeReaderClass, $phpEnvFile, $hasPhpEnvFile, $earlyHookFile, $hasEarlyHook, $runtimeDefaults, $runtimeName, $runtimeValue, $runtimeSslFix, $runtimePort, $runtimeScheme, $runtimeHost, $runtimeHome, $runtimeUrl, $runtimeProxyClass);
 } #@@/CLEAN_UP
 
 WP_CLI_HACK : {

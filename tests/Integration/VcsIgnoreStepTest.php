@@ -68,6 +68,9 @@ final class VcsIgnoreStepTest extends TemporaryProject
         $ignore = file_get_contents($this->root . '/.gitignore');
         self::assertStringContainsString('/.env.dump.php', $ignore);
         self::assertStringContainsString('/wp-cli.yml', $ignore);
+        self::assertStringContainsString('/.sympress-runtime.lock.guard', $ignore);
+        $this->write('.sympress-runtime.lock.guard', 'created by a subsequent download');
+        self::assertSame('', $this->command(['git', 'ls-files', '--others', '--exclude-standard', '--', '.sympress-runtime.lock.guard'])->getOutput());
         $this->write('wp-cli.yml', 'created by the subsequent standard step');
         self::assertStringNotContainsString("\n/public\n", $ignore);
         self::assertStringContainsString('public/assets/site.css', $this->command(['git', 'ls-files', '--others', '--exclude-standard'])->getOutput());

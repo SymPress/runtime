@@ -104,7 +104,17 @@ Caches and dumps record compatibility mode. Flush the cache and rebuild the dump
 when changing that mode; older formats without the field are treated as
 compatibility-enabled.
 
-Both files may contain secrets. Keep them outside web access and version control.
+Native payloads persist file-owned values only; process-only values and process
+overrides are read live and never serialized. A file default remains available
+when a process override is removed. If a dotenv source references a real external
+variable through interpolation, native persistence conservatively declines the
+entire cache or dump to avoid storing derived process secrets. Runtime reads still
+work; use direct process values or file-backed secrets for such deployments.
+
+When upgrading, flush existing runtime caches and rebuild deployment dumps: older
+artifacts can already contain process values and are not rewritten implicitly.
+
+Both files may contain file-owned secrets. Keep them outside web access and version control.
 They default to mode `0600`; provision ownership so the deployed PHP identity can
 read them. See [Deployment](deployment.md) for release and rollback steps.
 
@@ -113,7 +123,11 @@ read them. See [Deployment](deployment.md) for release and rollback steps.
 Native `cache-env` defaults to `"auto"`. Eligible requests use a cache when one
 exists and create it only in a writable environment directory. An unwritable
 parent is remembered for the process, and no shutdown write is registered for
-that parent. `false` disables the runtime cache; deployment dumps still apply.
+that parent. Native `true` explicitly requires a writable cache directory when a new
+cache is needed; otherwise bootstrap fails with a value-free error. Existing caches
+and deployment dumps remain usable in read-only deployments. Legacy boolean
+profiles retain best-effort shutdown writes. `false` disables the runtime cache;
+deployment dumps still apply.
 
 Native runtime caches track size and modification time for every attempted file
 in the selected chain, including missing overrides. Creating, deleting or changing
@@ -160,3 +174,23 @@ true. Compatibility profiles default `composer-managed` to false.
 `bundle-bootstrap: true` embeds Runtime's environment classes in its generated
 bootstrap. Symfony Dotenv and Process remain lazy dependencies. The default is
 false; this option does not change parsing, cache or application-autoload rules.
+
+## Canonical URLs and TLS termination
+
+Every profile requires an explicit absolute HTTP(S) `WP_HOME` in staging and
+production, including raw names that normalize to those environments. Bootstrap
+fails before WordPress loads when it is absent or invalid. Userinfo, query strings,
+fragments and whitespace are rejected. Set the canonical URL in the environment
+or trusted PHP bootstrap; it is never derived from request host fields there.
+Local/development retains the server-name/port fallback with a bounded hostname
+syntax and localhost fallback for malformed names. Explicit canonical URLs are
+recommended there as well.
+
+For TLS termination, set `WP_FORCE_SSL_FORWARDED_PROTO=true` together with
+`SYMPRESS_RUNTIME_TRUSTED_PROXIES=192.0.2.10,2001:db8::/32` (use your real proxy
+addresses). Runtime only accepts an exact case-insensitive `https` value when
+`REMOTE_ADDR` matches a configured IP or CIDR of the same address family. Missing
+trust, malformed addresses and comma-separated scheme chains fail closed. Runtime
+never trusts X-Forwarded-For for the peer identity. Configure the ingress proxy to
+replace the forwarded scheme header, and restrict direct origin access; a trusted
+proxy that passes attacker-supplied headers unchanged breaks that contract.

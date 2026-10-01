@@ -22,7 +22,7 @@ final class WpConfigTest extends TemporaryProject
     public function testDisabledCompatibilityIgnoresLegacyEnvironmentControlsInGeneratedAndRunnerBoots(): void
     {
         $this->fixture(['compatibility' => false]);
-        $this->write('.env', "DB_NAME=from-file\nWP_ENV=stage\nWP_STARTER_ENV_TO_CONST=RTV_OLD:string\nRTV_OLD=legacy\nSYMPRESS_RUNTIME_ENV_TO_CONST=RTV_NEW:string\nRTV_NEW=native\n");
+        $this->write('.env', "WP_HOME=http://localhost\nDB_NAME=from-file\nWP_ENV=stage\nWP_STARTER_ENV_TO_CONST=RTV_OLD:string\nRTV_OLD=legacy\nSYMPRESS_RUNTIME_ENV_TO_CONST=RTV_NEW:string\nRTV_NEW=native\n");
         $generated = $this->generate(environment: ['WPSTARTER_ENV_LOADED' => '1']);
         self::assertSame(0, $generated->getExitCode(), $generated->getErrorOutput());
         $actual = $this->boot('echo json_encode([DB_NAME, defined("RTV_OLD"), RTV_NEW, WP_ENV, WP_ENVIRONMENT_TYPE, $GLOBALS["deprecated"] ?? []]);', environment: ['WPSTARTER_ENV_LOADED' => '1']);
@@ -39,7 +39,7 @@ final class WpConfigTest extends TemporaryProject
         $this->fixture();
         $this->write('.env', 'malformed file bypassed by sentinel');
         self::assertSame(0, $this->generate()->getExitCode());
-        $actual = $this->boot('echo json_encode([RTV_OLD, $GLOBALS["deprecated"] ?? []]);', environment: ['WPSTARTER_ENV_LOADED' => '1', 'WP_STARTER_ENV_TO_CONST' => 'RTV_OLD:string', 'RTV_OLD' => 'synthetic-value']);
+        $actual = $this->boot('echo json_encode([RTV_OLD, $GLOBALS["deprecated"] ?? []]);', environment: ['WP_HOME' => 'http://localhost', 'WPSTARTER_ENV_LOADED' => '1', 'WP_STARTER_ENV_TO_CONST' => 'RTV_OLD:string', 'RTV_OLD' => 'synthetic-value']);
         self::assertSame(['synthetic-value', ['WPSTARTER_ENV_LOADED', 'WP_STARTER_ENV_TO_CONST']], $actual);
     }
 
@@ -87,7 +87,7 @@ final class WpConfigTest extends TemporaryProject
         self::assertSame(0, $this->generate()->getExitCode());
         $report = 'echo json_encode([DB_HOST, DB_CHARSET, DB_COLLATE, defined("DB_NAME"), defined("DB_USER"), defined("DB_PASSWORD"), $table_prefix]);';
         self::assertSame(['localhost', 'utf8', '', false, false, false, 'wp_'], $this->boot($report, environment: ['DB_HOST' => false, 'DB_CHARSET' => false, 'DB_COLLATE' => false, 'DB_TABLE_PREFIX' => false]));
-        $this->write('.env', "DB_HOST=db:3307\nDB_CHARSET=utf8mb4\nDB_COLLATE=utf8mb4_unicode_ci\nDB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=synthetic\nDB_TABLE_PREFIX=site_\n");
+        $this->write('.env', "WP_HOME=http://localhost\nDB_HOST=db:3307\nDB_CHARSET=utf8mb4\nDB_COLLATE=utf8mb4_unicode_ci\nDB_NAME=fixture\nDB_USER=fixture\nDB_PASSWORD=synthetic\nDB_TABLE_PREFIX=site_\n");
         self::assertSame(['db:3307', 'utf8mb4', 'utf8mb4_unicode_ci', true, true, true, 'site_'], $this->boot($report));
     }
 
@@ -95,6 +95,7 @@ final class WpConfigTest extends TemporaryProject
     private function fixture(array $settings = []): void
     {
         $this->write('composer.json', json_encode(['extra' => ['wordpress-install-dir' => 'public/wp', 'wordpress-content-dir' => 'public/content', 'sympress-runtime' => array_replace(['require-wp' => false, 'db-check' => false, 'cache-env' => false], $settings)]], JSON_THROW_ON_ERROR));
+        $this->write('.env', "WP_HOME=http://localhost\n");
         $this->write('public/content/keep', 'content');
         $this->write('public/wp/wp-settings.php', '<?php $GLOBALS["settings_count"] = ($GLOBALS["settings_count"] ?? 0) + 1;');
         $this->write('public/wp/wp-includes/plugin.php', <<<'PHP'
@@ -142,7 +143,7 @@ PHP);
     public function testHttpDeprecationsAreOnceOnlyAndNeverContaminateTheResponse(): void
     {
         $this->fixture();
-        $this->write('.env', "DB_PASSWORD='private-http-test-value'\n");
+        $this->write('.env', "WP_HOME=http://localhost\nDB_PASSWORD='private-http-test-value'\n");
         $generated = $this->generate();
         self::assertSame(0, $generated->getExitCode(), $generated->getErrorOutput());
         $this->write('probe.php', <<<'PHP'
@@ -204,7 +205,7 @@ PHP);
         $this->fixture();
         $this->write('public/wp/wp-includes/plugin.php', '<?php require ' . var_export($core . '/wp-includes/plugin.php', true) . ';');
         $this->write('vendor/autoload.php', '<?php return require ' . var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true) . ';');
-        $this->write('.env', "WP_ENVIRONMENT_TYPE=production\nSYMPRESS_KERNEL_BUILD_ID=real-hook-build\n");
+        $this->write('.env', "WP_HOME=http://localhost\nWP_ENVIRONMENT_TYPE=production\nSYMPRESS_KERNEL_BUILD_ID=real-hook-build\n");
         $generated = $this->generate();
         self::assertSame(0, $generated->getExitCode(), $generated->getErrorOutput());
         $actual = $this->boot('require "vendor/autoload.php"; $kernel = new SymPress\\Kernel\\Kernel\\SiteKernel(__DIR__); $bundles = $kernel->discoverBundles(); echo json_encode([array_map(static fn ($entry) => $entry->bundle()->id(), $bundles->all()), $kernel->getEnvironment(), SYMPRESS_KERNEL_BUILD_ID]);');
@@ -292,7 +293,7 @@ PHP);
     public function testCanonicalEnvironmentDefaults(string $environment, array $expected): void
     {
         $this->fixture();
-        $this->write('.env', 'WP_ENV=' . $environment);
+        $this->write('.env', "WP_HOME=http://localhost\nWP_ENV=" . $environment);
         self::assertSame(0, $this->generate()->getExitCode());
         $actual = $this->boot('echo json_encode(array_map(static fn ($name) => defined($name) ? constant($name) : null, ["WP_DEBUG", "WP_DEBUG_DISPLAY", "WP_DEBUG_LOG", "SAVEQUERIES", "SCRIPT_DEBUG", "WP_DISABLE_FATAL_ERROR_HANDLER", "WP_LOCAL_DEV", "WP_DEVELOPMENT_MODE"]));');
         self::assertSame($expected, $actual);
@@ -306,9 +307,9 @@ PHP);
     public function testRuntimeHooksCompatibilityAndHealthAllowlist(): void
     {
         $this->fixture(['register-theme-folder' => true]);
-        $this->write('.env', "DB_PASSWORD=synthetic-secret-not-for-health\nWP_ADMIN_COLOR=coffee\nWP_FORCE_SSL_FORWARDED_PROTO=true\nRTV_CUSTOM=visible-to-getter\n");
+        $this->write('.env', "WP_ENV=development\nSYMPRESS_RUNTIME_TRUSTED_PROXIES=127.0.0.1\nDB_PASSWORD=synthetic-secret-not-for-health\nWP_ADMIN_COLOR=coffee\nWP_FORCE_SSL_FORWARDED_PROTO=true\nRTV_CUSTOM=visible-to-getter\n");
         self::assertSame(0, $this->generate()->getExitCode());
-        $actual = $this->boot('do_action("plugins_loaded"); wpstarter_getenv("RTV_CUSTOM"); wpstarter_getenv("RTV_CUSTOM"); echo json_encode([WP_HOME, apply_filters("get_user_option_admin_color", "fresh"), sympress_runtime_getenv("RTV_CUSTOM"), apply_filters("getenv", "RTV_CUSTOM"), $GLOBALS["deprecated"], count($GLOBALS["theme_paths"]), str_contains(json_encode(apply_filters("debug_information", [])), "synthetic-secret-not-for-health")]);', '$_SERVER["HTTP_X_FORWARDED_PROTO"] = "HTTPS"; $_SERVER["SERVER_NAME"] = "example.test"');
+        $actual = $this->boot('do_action("plugins_loaded"); wpstarter_getenv("RTV_CUSTOM"); wpstarter_getenv("RTV_CUSTOM"); echo json_encode([WP_HOME, apply_filters("get_user_option_admin_color", "fresh"), sympress_runtime_getenv("RTV_CUSTOM"), apply_filters("getenv", "RTV_CUSTOM"), $GLOBALS["deprecated"], count($GLOBALS["theme_paths"]), str_contains(json_encode(apply_filters("debug_information", [])), "synthetic-secret-not-for-health")]);', '$_SERVER["REMOTE_ADDR"] = "127.0.0.1"; $_SERVER["HTTP_X_FORWARDED_PROTO"] = "HTTPS"; $_SERVER["SERVER_NAME"] = "example.test"');
         self::assertSame(['https://example.test', 'coffee', 'visible-to-getter', 'visible-to-getter', ['wpstarter_getenv', 'getenv filter'], 1, false], $actual);
     }
 
@@ -326,13 +327,13 @@ PHP);
     public function testShutdownCacheRestoresInFreshRequestAndActualEnvironmentWins(string $profile, bool $staleCache): void
     {
         $this->fixture(['cache-env' => true, 'compatibility-profile' => $profile]);
-        $this->write('.env', "WP_ENV=production\nDB_NAME=fixture\nDB_USER=fixture\nRTV_CACHE=from-file\n");
+        $this->write('.env', "WP_HOME=http://localhost\nWP_ENV=production\nDB_NAME=fixture\nDB_USER=fixture\nRTV_CACHE=from-file\n");
         self::assertSame(0, $this->generate()->getExitCode());
         self::assertSame(['from-file'], $this->boot('echo json_encode([sympress_runtime_getenv("RTV_CACHE")]);'));
         self::assertFileExists($this->root . '/.env.cached.php');
         self::assertSame(0600, fileperms($this->root . '/.env.cached.php') & 0777);
         // ADR 0023 preserves stale legacy caches while native caches track source edits.
-        $this->write('.env', $staleCache ? 'malformed and bypassed' : "WP_ENV=production\nDB_NAME=fixture\nDB_USER=fixture\nRTV_CACHE=updated-file-value\n");
+        $this->write('.env', $staleCache ? 'malformed and bypassed' : "WP_HOME=http://localhost\nWP_ENV=production\nDB_NAME=fixture\nDB_USER=fixture\nRTV_CACHE=updated-file-value\n");
         self::assertSame(['actual', $staleCache ? 'Yes' : 'No'], $this->boot('echo json_encode([sympress_runtime_getenv("RTV_CACHE"), apply_filters("debug_information", [])["sympress-runtime"]["fields"]["cached-env"]["value"]]);', environment: ['RTV_CACHE' => 'actual']));
     }
 
@@ -348,7 +349,7 @@ PHP);
     public function testExplicitBuildDumpRunsReadOnlyAndRetainsActualEnvironmentPrecedence(): void
     {
         $this->fixture(['env-dir' => 'configuration', 'cache-env' => true]);
-        $this->write('configuration/.env', "WP_ENV=development\nDB_NAME=fixture\nDB_USER=fixture\nRTV_DUMP=base\n");
+        $this->write('configuration/.env', "WP_HOME=http://localhost\nWP_ENV=development\nDB_NAME=fixture\nDB_USER=fixture\nRTV_DUMP=base\n");
         $this->write('configuration/.env.production', "RTV_DUMP=production-file\n");
         self::assertSame(0, $this->generate()->getExitCode());
         $this->write('sympress-runtime-autoload.php', '<?php throw new RuntimeException("Run-only autoload executed");');
@@ -462,7 +463,7 @@ PHP);
     public static function constantCases(): iterable
     {
         foreach (ConstantCatalogTest::constants() as $id => [$name, , $raw, $value]) {
-            yield $id => [$name, $raw, $value];
+            yield $id => $name === 'WP_HOME' ? [$name, 'https://canonical.test', 'https://canonical.test'] : [$name, $raw, $value];
         }
     }
 
@@ -471,7 +472,9 @@ PHP);
     {
         $this->fixture(['cache-env' => true, 'early-hook-file' => 'early.php']);
         $this->write('early.php', '<?php add_filter("sympress.runtime.skip-cache-env", static fn () => false);');
-        $this->write('.env', "WP_ENV=production\nDB_NAME=fixture\nDB_USER=fixture\n");
+        $this->write('.env', "WP_HOME=http://localhost\nWP_ENV=production\nDB_NAME=fixture\nDB_USER=fixture\n");
+        $quoted = str_replace(['\\', '"', '$'], ['\\\\', '\\"', '\\$'], $raw);
+        file_put_contents($this->root . '/.env', $name . '="' . $quoted . '"' . "\n", FILE_APPEND);
         self::assertSame(0, $this->generate()->getExitCode());
         $key = var_export($name, true);
         $probe = '$value = sympress_runtime_getenv(' . $key . '); echo json_encode([$value, constant(' . $key . '), get_debug_type($value)], JSON_PRESERVE_ZERO_FRACTION);';
@@ -481,10 +484,10 @@ PHP);
             default => $expected,
         };
         $record = [$expected, $constant, get_debug_type($expected)];
-        self::assertSame($record, $this->boot($probe, environment: [$name => $raw]));
+        self::assertSame($record, $this->boot($probe, environment: [$name => false]));
         self::assertFileExists($this->root . '/.env.cached.php');
         self::assertSame($record, $this->boot($probe, environment: [$name => false]));
-        $dump = $this->generate(['dump-env', 'production'], [$name => $raw]);
+        $dump = $this->generate(['dump-env', 'production'], [$name => false]);
         self::assertSame(0, $dump->getExitCode(), $dump->getErrorOutput());
         self::assertFileExists($this->root . '/.env.dump.php');
         unlink($this->root . '/.env.cached.php');

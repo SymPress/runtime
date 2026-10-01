@@ -139,6 +139,16 @@ PHP);
             ];
             $hashes = [];
             if ($readOnlyDump) {
+                $fileValues = '';
+                foreach ($environment as $name => $value) {
+                    if ($value === false) {
+                        continue;
+                    }
+
+                    $fileValues .= $name . '="' . str_replace(['\\', '"', '$'], ['\\\\', '\\"', '\\$'], $value) . '"' . "\n";
+                }
+                $this->write('.env', $fileValues);
+                $environment = array_fill_keys(array_keys($environment), false);
                 $dump = new Process([PHP_BINARY, $package . '/bin/runtime', '-n', 'dump-env', 'production'], $this->root, $environment + ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
                 $dump->mustRun();
                 $this->write('.env', 'INVALID="must not be parsed');

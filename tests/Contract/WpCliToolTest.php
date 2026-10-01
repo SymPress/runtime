@@ -41,6 +41,37 @@ final class WpCliToolTest extends TemporaryProject
         return new WpCliTool($config, new UrlDownloader($http, new Filesystem(), $config), $this->io());
     }
 
+    public function testRateLimitedLatestLookupFailsOnceWithReproduciblePinGuidance(): void
+    {
+        $paths = new Paths($this->root);
+        $input = new ArrayInput([]);
+        $input->setInteractive(false);
+        $output = new BufferedOutput();
+        $io = new Io($input, $output);
+        $config = new Config([], new Validator($paths));
+        $http = new MockHttpClient(new MockResponse('{"message":"API rate limit exceeded"}', ['http_code' => 403]));
+        $tool = new WpCliTool($config, new UrlDownloader($http, new Filesystem(), $config), $io);
+        self::assertSame('', $tool->pharUrl());
+        self::assertSame('', $tool->pharUrl());
+        self::assertSame(1, $http->getRequestsCount());
+        $message = $output->fetch();
+        self::assertStringContainsString('API rate limit', $message);
+        self::assertStringContainsString('wp-cli-version and wp-cli-sha256', $message);
+    }
+
+    public function testExactReleaseAndDigestValidationRejectUnsafeOrUnreviewedValues(): void
+    {
+        $paths = new Paths($this->root);
+        foreach (['latest', '2.4.9', '2.12.0-beta1', 'v2.12.0', '2.12.0/attacker'] as $version) {
+            $config = new Config(['wp-cli-version' => $version], new Validator($paths));
+            self::assertArrayHasKey('wp-cli-version', $config->errors());
+        }
+        foreach (['abc', str_repeat('g', 64)] as $digest) {
+            $config = new Config(['wp-cli-sha256' => $digest], new Validator($paths));
+            self::assertArrayHasKey('wp-cli-sha256', $config->errors());
+        }
+    }
+
     #[Group('PAR-SVC-021')]
     #[Group('PAR-WPC-001')]
     public function testLocalDiscoveryIsOfflineAndPrefersDefaultThenHighestVersion(): void

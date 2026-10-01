@@ -23,7 +23,12 @@ final class ContextFile
         }
         // tempnam truncates its prefix to three characters on Windows.
         $file = $directory . DIRECTORY_SEPARATOR . 'sympress-context-' . bin2hex(random_bytes(16));
-        $handle = fopen($file, 'x+b');
+        $previousMask = umask(0077);
+        try {
+            $handle = fopen($file, 'x+b');
+        } finally {
+            umask($previousMask);
+        }
         if ($handle === false) {
             throw new RuntimeException('Cannot create runner context file.');
         }

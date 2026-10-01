@@ -13,6 +13,26 @@ use Symfony\Component\Process\Process;
 
 final class ContextFileTest extends TemporaryProject
 {
+    public function testContextIsPrivateAtExclusiveCreationAndRestoresPermissiveUmask(): void
+    {
+        $code = 'namespace SymPress\\Runtime\\Composer {
+            function fopen(string $path, string $mode) {
+                $handle = \\fopen($path, $mode);
+                if ((fileperms($path) & 0777) !== 0600) { throw new \\RuntimeException("Broad initial permissions"); }
+                return $handle;
+            }
+        } namespace {
+            require ' . var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true) . ';
+            umask(0000);
+            $file = SymPress\\Runtime\\Composer\\ContextFile::create(new SymPress\\Runtime\\Application\\RunContext("root", "vendor", "bin"));
+            unlink($file);
+            echo umask();
+        }';
+        $process = new Process([PHP_BINARY, '-r', $code], $this->root);
+        $process->mustRun();
+        self::assertSame('0', $process->getOutput());
+    }
+
     public function testRegularProjectFileCannotBeConsumedAsPrivateContext(): void
     {
         $this->write('composer.json', '{}');

@@ -22,6 +22,33 @@ final class ProductionEnvironmentTest extends TemporaryProject
         return $result;
     }
 
+    public function testProcessSecretInterpolationPreventsPersistenceWithoutChangingReads(): void
+    {
+        $this->write('.env', 'RTV_DERIVED=${RTV_PROCESS_SECRET}' . "\n");
+        self::assertSame(['external-secret', false, false, false, false], $this->runPhp(<<<'PHP'
+putenv('RTV_PROCESS_SECRET=external-secret');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+echo json_encode([$r->read('RTV_DERIVED'), $r->dumpCached('cache.php'), $r->dumpCached('dump.php', immutable: true), is_file('cache.php'), is_file('dump.php')]);
+PHP));
+    }
+
+    public function testRealEnvironmentSecretsAreExcludedAndFileDefaultsSurviveTheirRemoval(): void
+    {
+        $this->write('.env', "DB_PASSWORD=file-default\nRTV_VALUE=from-file\n");
+        $actual = $this->runPhp(<<<'PHP'
+putenv('DB_PASSWORD=process-secret'); putenv('RTV_PROCESS_TOKEN=process-token');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+$r->read('DB_PASSWORD'); $r->read('RTV_PROCESS_TOKEN');
+$r->dumpCached('cache.php'); $r->dumpCached('dump.php', immutable: true);
+$clean = !str_contains(file_get_contents('cache.php') . file_get_contents('dump.php'), 'process-secret')
+    && !str_contains(file_get_contents('cache.php') . file_get_contents('dump.php'), 'process-token');
+putenv('DB_PASSWORD'); putenv('RTV_PROCESS_TOKEN'); unset($_ENV['DB_PASSWORD'], $_SERVER['DB_PASSWORD'], $_ENV['RTV_PROCESS_TOKEN'], $_SERVER['RTV_PROCESS_TOKEN']);
+$r = SymPress\Runtime\Env\EnvReader::buildFromCacheDump('cache.php', validateSources: true);
+echo json_encode([$clean, $r->read('DB_PASSWORD'), $r->read('RTV_PROCESS_TOKEN')]);
+PHP);
+        self::assertSame([true, 'file-default', null], $actual);
+    }
+
     public function testCacheDetectsNewOverrideChangedSizeAndDeletedFileWhileDumpStaysImmutable(): void
     {
         $this->write('.env', "WP_ENVIRONMENT_TYPE=production\nRTV_VALUE=base\n");
