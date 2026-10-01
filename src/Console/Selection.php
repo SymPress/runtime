@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use SymPress\Runtime\Step\Definition;
 use SymPress\Runtime\Step\Registry;
 
+/** @internal */
 final readonly class Selection
 {
     /** @param list<string> $names */

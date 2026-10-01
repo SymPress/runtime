@@ -12,45 +12,56 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Question\Question as ConsoleQuestion;
 
+/** @internal */
 final readonly class Io
 {
+    /** @internal */
     public function __construct(private InputInterface $input, private OutputInterface $output)
     {
     }
 
+    /** @api */
     public function write(string $message): void
     {
         $this->output->writeln(OutputFormatter::escape($message));
     }
 
+    /** @api */
     public function success(string $message): void
     {
         $this->write($message);
     }
 
+    /** @internal */
     public function raw(string $buffer, bool $error = false): void
     {
         $output = $error && $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
         $output->write($buffer, false, OutputInterface::OUTPUT_RAW);
     }
 
+    /** @api */
     public function comment(string $message): void
     {
         $this->write($message);
     }
 
+    /** @api */
     public function error(string $message): void
     {
         $output = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
         $output->writeln(OutputFormatter::escape($message));
     }
 
+    /** @api */
     public function verbose(string $message): void
     {
         $this->output->writeln(OutputFormatter::escape($message), OutputInterface::VERBOSITY_VERBOSE);
     }
 
-    /** @param list<string>|string $question */
+    /**
+     * @param list<string>|string $question
+     * @api
+     */
     public function askConfirm(array|string $question, bool $default = true): bool
     {
         if (!$this->input->isInteractive()) {
@@ -63,6 +74,7 @@ final readonly class Io
         return (new QuestionHelper())->ask($this->input, $this->output, $prompt) === true;
     }
 
+    /** @api */
     public function ask(Question $question): ?string
     {
         $lines = $question->questionLines();
@@ -86,26 +98,31 @@ final readonly class Io
         return $question->defaultAnswerKey();
     }
 
+    /** @api */
     public function isVerbose(): bool
     {
         return $this->output->isVerbose();
     }
 
+    /** @api */
     public function isInteractive(): bool
     {
         return $this->input->isInteractive();
     }
 
+    /** @internal */
     public function writeSuccess(string $message): void
     {
         $this->success($message);
     }
 
+    /** @internal */
     public function writeError(string $line): void
     {
         $this->error($line);
     }
 
+    /** @internal */
     public function writeComment(string $message): bool
     {
         $this->comment($message);
@@ -113,11 +130,13 @@ final readonly class Io
         return true;
     }
 
+    /** @internal */
     public function writeIfVerbose(string $line): void
     {
         $this->verbose($line);
     }
 
+    /** @internal */
     public function writeCommentIfVerbose(string $line): bool
     {
         $this->verbose($line);
@@ -125,6 +144,7 @@ final readonly class Io
         return $this->isVerbose();
     }
 
+    /** @internal */
     public function writeErrorIfVerbose(string $line): void
     {
         if (!$this->isVerbose()) {
@@ -134,36 +154,43 @@ final readonly class Io
         $this->error($line);
     }
 
+    /** @internal */
     public function writeSuccessBlock(string ...$lines): void
     {
         $this->writeFilledColorBlock('green', 'black', ...$lines);
     }
 
+    /** @internal */
     public function writeCommentBlock(string ...$lines): void
     {
         $this->writeFilledColorBlock('yellow', 'black', ...$lines);
     }
 
+    /** @internal */
     public function writeErrorBlock(string ...$lines): void
     {
         $this->writeFilledErrorColorBlock('red', 'white', ...$lines);
     }
 
+    /** @internal */
     public function writeFilledColorBlock(string $background, string $frontground = 'black', string ...$lines): void
     {
         $this->block($background, $frontground, false, false, array_values($lines));
     }
 
+    /** @internal */
     public function writeCenteredColorBlock(string $background, string $frontground = 'black', string ...$lines): void
     {
         $this->block($background, $frontground, true, false, array_values($lines));
     }
 
+    /** @internal */
     public function writeFilledErrorColorBlock(string $background, string $frontground = 'black', string ...$lines): void
     {
         $this->block($background, $frontground, false, true, array_values($lines));
     }
 
+    /** @internal */
     public function writeCenteredErrorColorBlock(string $background, string $frontground = 'black', string ...$lines): void
     {
         $this->block($background, $frontground, true, true, array_values($lines));

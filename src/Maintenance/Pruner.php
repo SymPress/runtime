@@ -10,7 +10,11 @@ use SymPress\Runtime\Filesystem\ProjectBoundary;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
 
-/** Explicit retention of verified Runtime artifacts; unknown trees are preserved. */
+/**
+ * Explicit retention of verified Runtime artifacts; unknown trees are preserved.
+ *
+ * @internal
+ */
 final class Pruner
 {
     /** @return array{candidates: list<string>, removed: list<string>, retained: list<string>} */

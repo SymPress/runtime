@@ -78,9 +78,29 @@ return $services->dbChecker()->status()->installed === true
 ```sh
 vendor/bin/runtime -n wpcliconfig wpcli
 php wp-cli.phar core version
-php wp-cli.phar console doctor --json
+php wp-cli.phar runtime doctor --json
 ```
 
-The last command additionally requires the SymPress kernel console integration. It accepts WP-CLI's rewrite of `--json` to `--format=json`. WP-CLI may emit its own PHP-version deprecations; Runtime diagnostics redact their structured configuration output but do not claim to suppress all upstream messages.
+Native generated `wp-cli.yml` registers `runtime` before WordPress loads. It
+forwards commands and options to the standalone process and preserves the exit
+status. No kernel is required. This includes `validate`, `dump-env`,
+`flush-env-cache`, `env:diff`, `prune`, `migrate`, and setup step selection.
+The wrapper is noninteractive and accepts WP-CLI's `--json` rewrite to
+`--format=json`. WP-CLI global flags remain WP-CLI options.
+
+If you maintain your own YAML, preserve its existing `exec` entries and add an
+entry that evaluates this PHP (adjust paths to your installed vendor and root):
+
+```php
+(require '/srv/site/vendor/sympress/runtime/src/Bridge/WpCli/register.php')('/srv/site');
+```
+
+Compatibility profiles keep their existing YAML output; they can opt in with the
+same registration. The registration file and callable are supported bootstrap
+entry points; implementation classes below it are internal.
+
+`wp console doctor --json` additionally requires the kernel integration. WP-CLI
+may emit its own PHP-version deprecations; configure PHP to write them to stderr
+if parsing JSON output. Runtime does not suppress upstream diagnostics.
 
 Standalone and Composer execution share the same services and generated configuration. `wp-config-autoload` determines early Composer loading for WordPress requests and must agree with application/MU bootstrap ownership. See [migration](migration.md), [sections](wp-config.md) and [CLI](cli.md).

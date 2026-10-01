@@ -3,6 +3,7 @@ name: WordPress package installation
 on:
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -17,27 +18,29 @@ jobs:
         include:
           - name: stable
             composer: '2.10.3'
-            library: '2.10.3'
-          - name: next
-            composer: snapshot
-            library: 'dev-main#25612018356ea810bce1b86fba84acd4634b5a96 as 2.10.99'
-    env:
-      COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH_JSON }}
+          - name: latest
+            composer: '2'
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.5.9'
           extensions: curl, dom, mbstring, mysqli
           tools: composer:${{ matrix.composer }}
           coverage: none
+      - name: Pin the library to the actual selected stable Composer CLI
+        id: versions
+        run: |
+          composer --version --no-ansi | python3 -c 'import os,re,sys; match=re.search(r"Composer version (2\.\d+\.\d+)\b",sys.stdin.read()); assert match, "Expected a stable Composer 2 CLI"; open(os.environ["GITHUB_OUTPUT"],"a").write("library="+match.group(1)+"\n")'
       - name: Compare normal and offline placement with real repository packages
-        run: python3 tools/wpackagist-smoke.py --php php --composer "$(command -v composer)" --composer-library '${{ matrix.library }}'
+        run: python3 tools/wpackagist-smoke.py --php php --composer "$(command -v composer)" --composer-library '${{ steps.versions.outputs.library }}'
       - name: Install and exercise the documented examples
         run: python3 tools/smoke-examples.py --php php --composer "$(command -v composer)"
       - name: Install the matching Composer library for recovery contract tests
         run: |
-          composer require 'composer/composer:${{ matrix.library }}' --no-update --no-plugins --no-scripts --no-interaction
+          composer require 'composer/composer:${{ steps.versions.outputs.library }}' --no-update --no-plugins --no-scripts --no-interaction
           composer update --no-interaction --no-progress --no-plugins --no-scripts
       - name: Repeat recovery tests with warning diagnostics
         run: |

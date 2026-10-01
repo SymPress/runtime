@@ -10,7 +10,10 @@ use InvalidArgumentException;
 use LogicException;
 use Throwable;
 
-/** @implements ArrayAccess<string, mixed> */
+/**
+ * @implements ArrayAccess<string, mixed>
+ * @api
+ */
 final class Config implements ArrayAccess
 {
     public const string AUTOLOAD = 'autoload';
@@ -60,13 +63,17 @@ final class Config implements ArrayAccess
     /** @var array<string, mixed> */
     private array $defaults;
 
-    /** @param array<string, mixed> $values */
+    /**
+     * @param array<string, mixed> $values
+     * @internal
+     */
     public function __construct(array $values, private readonly Validator $validator, string $profile = 'native')
     {
         $this->defaults = Options::defaults($profile);
         $this->raw = array_replace($this->defaults, $values);
     }
 
+    /** @api */
     public function appendValidator(string $name, callable $callback): self
     {
         if (array_key_exists($name, Options::DEFAULTS)) {
@@ -78,11 +85,13 @@ final class Config implements ArrayAccess
         return $this;
     }
 
+    /** @api */
     public function offsetExists(mixed $offset): bool
     {
         return is_string($offset) && array_key_exists($offset, $this->raw);
     }
 
+    /** @api */
     public function offsetGet(mixed $offset): Result
     {
         if (!is_string($offset) || !$this->offsetExists($offset)) {
@@ -95,6 +104,7 @@ final class Config implements ArrayAccess
         return $this->resolved[$offset];
     }
 
+    /** @api */
     public function offsetSet(mixed $offset, mixed $value): void
     {
         if (!is_string($offset)) {
@@ -108,12 +118,16 @@ final class Config implements ArrayAccess
         unset($this->resolved[$offset]);
     }
 
+    /** @api */
     public function offsetUnset(mixed $offset): void
     {
         throw new LogicException('Configuration entries cannot be removed.');
     }
 
-    /** @return array<string, string> */
+    /**
+     * @return array<string, string>
+     * @api
+     */
     public function errors(): array
     {
         $errors = [];

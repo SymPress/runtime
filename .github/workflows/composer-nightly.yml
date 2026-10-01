@@ -1,0 +1,40 @@
+name: Scheduled Composer compatibility
+
+on:
+  schedule:
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scheduled-composer-compatibility
+  cancel-in-progress: false
+
+jobs:
+  compatibility:
+    uses: ./.github/workflows/package-installation.yml
+  report-failure:
+    if: ${{ always() && needs.compatibility.result == 'failure' }}
+    needs: compatibility
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Open or update one compatibility incident
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title='Scheduled Composer compatibility failed'
+          body="The minimum/latest stable Composer recovery matrix failed. Inspect $RUN_URL before widening or updating the supported Composer range. This issue is updated by the scheduled compatibility workflow."
+          number=$(gh issue list --state open --search "$title in:title" --limit 100 --json number,title --jq '.[] | select(.title == "Scheduled Composer compatibility failed") | .number' | head -n 1)
+          if [[ -n "$number" ]]; then
+            gh issue edit "$number" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi

@@ -6,6 +6,7 @@ namespace SymPress\Runtime\Tests\Contract;
 
 use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
+use SymPress\Runtime\Application\ContainerFactory;
 use SymPress\Runtime\Application\RunContext;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Config\Validator;
@@ -18,6 +19,9 @@ use SymPress\Runtime\Package\PackageFinder;
 use SymPress\Runtime\Process\PhpProcess;
 use SymPress\Runtime\Process\PhpToolProcessFactory;
 use SymPress\Runtime\Process\SystemProcess;
+use SymPress\Runtime\Services;
+use SymPress\Runtime\Step\Registry;
+use SymPress\Runtime\Tests\Extension\CustomToolConsumer;
 use SymPress\Runtime\Tests\Fixtures\PhpToolProbe;
 use SymPress\Runtime\Tests\Support\TemporaryProject;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -119,6 +123,23 @@ final class PhpToolsTest extends TemporaryProject
         self::assertTrue($this->factory($http)->create($descriptor)->executeSilently([]));
         self::assertSame(1, $http->getRequestsCount());
         self::assertFileExists($this->root . '/fixture.phar');
+    }
+
+    public function testExtensionCanExecuteCustomPhpToolThroughThePublicServiceFactory(): void
+    {
+        $this->write('fixture.phar', '<?php file_put_contents("extension-result.json", json_encode([$argv[1], getenv("TOOL_EXTENSION_VALUE")]));');
+        $paths = new Paths($this->root);
+        $config = new Config([], new Validator($paths));
+        $context = new RunContext($this->root, $paths->vendor(), $paths->bin());
+        $container = (new ContainerFactory())->create($config, $paths, $this->io(), $context, new Registry());
+        $services = $container->get(Services::class);
+        self::assertInstanceOf(Services::class, $services);
+        $descriptor = new PhpToolProbe();
+        $descriptor->url = '';
+        $argument = '$(touch injected); argument with spaces';
+        self::assertTrue((new CustomToolConsumer())->execute($services, $descriptor, $argument));
+        self::assertSame([$argument, 'public-factory'], json_decode((string) file_get_contents($this->root . '/extension-result.json'), true));
+        self::assertFileDoesNotExist($this->root . '/injected');
     }
 
     public function testMissingPhpFailsBeforeNetworkOrWriting(): void

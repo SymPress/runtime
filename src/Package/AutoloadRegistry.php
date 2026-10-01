@@ -9,6 +9,7 @@ use RuntimeException;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 
+/** @internal */
 final class AutoloadRegistry
 {
     /** @var list<callable(string): void> */

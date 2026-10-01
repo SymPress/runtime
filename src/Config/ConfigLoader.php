@@ -9,6 +9,7 @@ use JsonException;
 use Symfony\Component\Filesystem\Path;
 use stdClass;
 
+/** @internal */
 final class ConfigLoader
 {
     /** @param array<string, mixed> $extra */

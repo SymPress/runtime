@@ -14,7 +14,7 @@
     "require": {
         "php": "^8.5",
         "composer-plugin-api": "^2.6",
-        "composer/composer": "~2.10.3",
+        "composer/composer": "^2.10.3",
         "composer/semver": "^3.4",
         "opis/json-schema": "^2.6",
         "symfony/console": "^8.1",
@@ -27,14 +27,18 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^13.0",
-        "sympress/kernel": "dev-main",
-        "sympress/qa": "dev-main"
+        "sympress/kernel": "^1.1.0",
+        "sympress/qa": "^0.1.0"
+    },
+    "conflict": {
+        "symfony/event-dispatcher-contracts": "<3.4.2"
     },
     "autoload": {"psr-4": {"SymPress\\Runtime\\": "src/"}},
     "autoload-dev": {"psr-4": {"SymPress\\Runtime\\Tests\\": "tests/"}},
     "bin": ["bin/runtime"],
     "extra": {
         "class": "SymPress\\Runtime\\Composer\\Plugin",
+        "branch-alias": {"dev-main": "1.1.x-dev"},
         "kernel": {"bundle": "SymPress\\Runtime\\Bridge\\Kernel\\RuntimeBundle", "entry": "sympress/runtime"}
     },
     "suggest": {"sympress/kernel": "Enables runtime diagnostics, validation and environment dumps through wp console."},
@@ -53,7 +57,6 @@
         },
         "sort-packages": true
     },
-    "repositories": [{"type": "path", "url": "../*", "options": {"symlink": true}}],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "prefer-stable": true
 }

@@ -13,6 +13,7 @@ use SymPress\Runtime\Step\BlockingStepInterface;
 use SymPress\Runtime\Step\PostProcessStepInterface;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final class CheckPathsStep implements BlockingStepInterface, PostProcessStepInterface
 {
     private string $failure = '';

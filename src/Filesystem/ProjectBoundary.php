@@ -7,6 +7,7 @@ namespace SymPress\Runtime\Filesystem;
 use RuntimeException;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final readonly class ProjectBoundary
 {
     public function __construct(private Paths $paths)

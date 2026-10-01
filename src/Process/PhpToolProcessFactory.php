@@ -10,12 +10,15 @@ use SymPress\Runtime\Download\PharInstaller;
 use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Package\PackageFinder;
 
+/** @internal */
 final readonly class PhpToolProcessFactory
 {
+    /** @internal */
     public function __construct(private Paths $paths, private Io $io, private PharInstaller $installer, private PackageFinder $packages, private PhpProcess $php)
     {
     }
 
+    /** @api */
     public function create(PhpTool $tool, ?string $phpPath = null): PhpToolProcess
     {
         $phpPath ??= PHP_BINARY;

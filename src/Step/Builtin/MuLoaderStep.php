@@ -15,6 +15,7 @@ use SymPress\Runtime\Step\ConditionalStepInterface;
 use SymPress\Runtime\Step\FileCreationStepInterface;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final class MuLoaderStep implements FileCreationStepInterface, ConditionalStepInterface
 {
     /** @var array<string, string> */

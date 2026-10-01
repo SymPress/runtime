@@ -3,6 +3,11 @@
 Use this guide when adopting Runtime in an existing WP Starter project. New
 projects can use the native [getting-started guide](getting-started.md).
 
+The compatibility layer is deprecated before Runtime 1.0, remains supported
+throughout 1.x, and is scheduled for removal in 2.0. Configuration profiles,
+legacy environment controls, PHP aliases and extension metadata continue to
+work while you migrate. See the [compatibility policy](compatibility-policy.md).
+
 ## Prepare and preview migration
 
 During setup, `muloader` recognizes the exact stock WP Starter loader template and moves the generated file to `wpstarter-mu-loader.php.sympress-backup` only after writing its replacement. The backup preserves the original bytes and is not loaded by WordPress. This also retires a stale generated loader when no MU packages remain. Customized loaders, symlinks and an existing backup require manual review; they are never silently replaced. The recognition template retains the upstream MIT notice in `NOTICE`.

@@ -16,6 +16,7 @@ use SymPress\Runtime\Package\PackageFinder;
 use SymPress\Runtime\Step\ConditionalStepInterface;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final readonly class KernelBootStep implements ConditionalStepInterface
 {
     public function __construct(private BootOwnership $ownership, private PackageFinder $packages, private ArtifactWriter $writer, private OverwritePolicy $overwrite, private ProjectBoundary $boundary, private Selection $selection, private Io $io)

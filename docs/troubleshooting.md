@@ -7,12 +7,22 @@ not your `.env`, dump, authentication files or generated salts.
 
 ## Composer cannot fetch Runtime
 
-The repository is private. The identity running Composer needs read access.
-A developer's SSH agent is not automatically available in CI. Supply a
-repository-scoped deploy key and pinned host keys, or private Composer GitHub
-authentication. Do not put the credential in the manifest or lockfile.
+The repository is public. When using a direct Git repository, prefer
+`https://github.com/SymPress/runtime.git`. Older lockfiles can still contain SSH
+source URLs from the private-repository phase; review a targeted dependency
+update to replace them. SSH URLs need a GitHub identity even for public projects.
+Private application dependencies still need their own credentials. Keep those
+in Composer authentication or an SSH agent, never in the manifest or lockfile.
 
 ## Composer installed packages but setup did not run
+
+From 1.0.0-beta.2, `Runtime setup deferred` means the project has no installed
+WordPress core, Runtime configuration, extension opt-in or existing site markers.
+The package was installed successfully; site setup has not run. Add the project
+manifest described in [Getting started](getting-started.md), then run setup.
+Missing core in a configured or existing site remains an error. Explicit setup
+commands also retain this validation; `require-wp: false` is the intentional
+configuration for a workflow that does not need WordPress core.
 
 Check `config.allow-plugins` and whether installation used `--no-plugins`.
 The standalone binary can run explicitly:

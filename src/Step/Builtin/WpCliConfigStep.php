@@ -13,6 +13,7 @@ use SymPress\Runtime\Generation\WpConfigGenerator;
 use SymPress\Runtime\Step\FileCreationStepInterface;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final readonly class WpCliConfigStep implements FileCreationStepInterface
 {
     public function __construct(private FileContentBuilder $builder, private Filesystem $files, private ProjectBoundary $boundary, private WpConfigGenerator $configGenerator)
@@ -40,6 +41,10 @@ final readonly class WpCliConfigStep implements FileCreationStepInterface
         $relative = Path::makeRelative($paths->wp(), $paths->root());
         $target = $this->configGenerator->target();
         $exec = 'putenv(' . var_export('WP_CONFIG_PATH=' . $target, true) . ');';
+        if ($config['compatibility-profile']->is('native')) {
+            $bridge = dirname(__DIR__, 2) . '/Bridge/WpCli/register.php';
+            $exec .= ' (require ' . var_export($bridge, true) . ')(' . var_export($paths->root(), true) . ');';
+        }
         $execYaml = json_encode($exec, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
         $content = $this->builder->build($paths, 'wp-cli.yml', [
             'WP_INSTALL_PATH_YAML' => json_encode($relative, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),

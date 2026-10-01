@@ -1,0 +1,160 @@
+name: Verified release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  signature:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      commit: ${{ steps.verify.outputs.commit }}
+      tag_object: ${{ steps.verify.outputs.tag_object }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require an annotated, verified release tag
+        id: verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REF_TYPE: ${{ github.ref_type }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          [[ "$REF_TYPE" == tag ]]
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|rc)\.[0-9]+)?$ ]]
+          tag_object=$(gh api "repos/$GH_REPO/git/ref/tags/$TAG" --jq '.object | select(.type == "tag") | .sha')
+          [[ -n "$tag_object" ]]
+          [[ "$(git rev-parse "refs/tags/$TAG")" == "$tag_object" ]]
+          git -c gpg.format=ssh -c gpg.ssh.allowedSignersFile=.github/release-signers verify-tag "$tag_object"
+          gh api "repos/$GH_REPO/git/tags/$tag_object" > tag.json
+          EXPECTED_TAG_COMMIT=$(git rev-parse HEAD)
+          export EXPECTED_TAG_COMMIT
+          python3 - <<'PYTHON'
+          import json, os
+          tag = json.load(open('tag.json', encoding='utf-8'))
+          if tag['object']['type'] != 'commit':
+              raise SystemExit('Release requires a signed tag pointing directly to a commit.')
+          if not tag['verification']['verified']:
+              print('GitHub account verification is unavailable; the pinned SSH signature was verified locally.')
+          if tag['object']['sha'] != os.environ['EXPECTED_TAG_COMMIT']:
+              raise SystemExit('The release tag moved after this workflow was triggered.')
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write('commit=' + tag['object']['sha'] + '\n')
+          PYTHON
+          printf 'tag_object=%s\n' "$tag_object" >> "$GITHUB_OUTPUT"
+  qa:
+    needs: signature
+    uses: ./.github/workflows/qa.yml
+  platforms:
+    needs: signature
+    uses: ./.github/workflows/platforms.yml
+  integration:
+    needs: signature
+    uses: ./.github/workflows/differential.yml
+  packages:
+    needs: signature
+    uses: ./.github/workflows/package-installation.yml
+  security:
+    needs: signature
+    uses: ./.github/workflows/security.yml
+  publish:
+    needs: [signature, qa, platforms, integration, packages, security]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ needs.signature.outputs.commit }}
+          persist-credentials: false
+      - name: Extract reviewed release notes from the matching changelog section
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          python3 - <<'PYTHON'
+          import os, pathlib, re
+          version = os.environ['TAG'][1:]
+          text = pathlib.Path('CHANGELOG.md').read_text()
+          section = re.search(r'^## ' + re.escape(version) + r'(?:[^\S\n][^\n]*)?\n(.*?)(?=^## |\Z)', text, re.M | re.S)
+          if section is None or not section.group(1).strip() or 'No changes yet.' in section.group(1):
+              raise SystemExit('Add reviewed release notes to CHANGELOG.md for ' + version)
+          pathlib.Path('build').mkdir(exist_ok=True)
+          pathlib.Path('build/release-notes.md').write_text(section.group(1).strip() + '\n')
+          PYTHON
+      - name: Publish the verified tag after every technical gate passes
+        env:
+          EXPECTED_COMMIT: ${{ needs.signature.outputs.commit }}
+          EXPECTED_TAG_OBJECT: ${{ needs.signature.outputs.tag_object }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          [[ -n "$EXPECTED_TAG_OBJECT" ]]
+          [[ "$(gh api "repos/$GH_REPO/git/ref/tags/$TAG" --jq '.object | select(.type == "tag") | .sha')" == "$EXPECTED_TAG_OBJECT" ]]
+          [[ "$(gh api "repos/$GH_REPO/commits/$TAG" --jq .sha)" == "$EXPECTED_COMMIT" ]]
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo 'Release already exists; continue with distribution verification.'
+          elif [[ "$TAG" == *-* ]]; then
+            gh release create "$TAG" --verify-tag --title "$TAG" --notes-file build/release-notes.md --prerelease
+          else
+            gh release create "$TAG" --verify-tag --title "$TAG" --notes-file build/release-notes.md --latest
+          fi
+      - name: Refresh Packagist and verify the exact published source revision
+        env:
+          PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+          PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          EXPECTED_COMMIT: ${{ needs.signature.outputs.commit }}
+        run: |
+          python3 - <<'PYTHON'
+          import json, os, time, urllib.error, urllib.parse, urllib.request
+          username = os.environ.get('PACKAGIST_USERNAME', '')
+          token = os.environ.get('PACKAGIST_API_TOKEN', '')
+          headers = {'User-Agent': 'SymPress-runtime-release (https://github.com/SymPress/runtime)'}
+          if bool(username) != bool(token):
+              raise SystemExit('Configure both Packagist credentials, or use the GitHub update webhook.')
+          if username and token:
+              payload = json.dumps({'repository': 'https://github.com/' + os.environ['GH_REPO']}).encode()
+              auth_headers = dict(headers, **{'Content-Type': 'application/json', 'Authorization': 'Bearer ' + username + ':' + token})
+              request = urllib.request.Request('https://packagist.org/api/update-package', data=payload, headers=auth_headers)
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      result = json.load(response)
+                  if result.get('status') != 'success':
+                      raise SystemExit('Packagist did not confirm the update request.')
+              except urllib.error.HTTPError as error:
+                  raise SystemExit('Packagist update failed with HTTP ' + str(error.code)) from None
+          else:
+              print('No API credentials; waiting for GitHub-to-Packagist webhook propagation.')
+          version = os.environ['TAG'].lstrip('v')
+          for attempt in range(20):
+              try:
+                  # Package metadata may otherwise remain cached for twelve hours.
+                  query = urllib.parse.urlencode({'release': os.environ['TAG'], 'reference': os.environ['EXPECTED_COMMIT'], 'check': time.time_ns()})
+                  request = urllib.request.Request('https://packagist.org/packages/sympress/runtime.json?' + query, headers=headers)
+                  with urllib.request.urlopen(request, timeout=15) as response:
+                      versions = json.load(response)['package']['versions']
+                  published = next((value for key, value in versions.items() if key.lstrip('v') == version), None)
+                  if published and published.get('source', {}).get('reference') == os.environ['EXPECTED_COMMIT']:
+                      print('Packagist version and source revision verified: ' + version)
+                      break
+              except (urllib.error.URLError, KeyError, ValueError):
+                  pass
+              if attempt == 19:
+                  raise SystemExit('Packagist propagation not verified; check package registration and update webhook/credentials.')
+              time.sleep(15)
+          PYTHON

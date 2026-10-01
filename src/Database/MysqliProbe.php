@@ -9,6 +9,7 @@ use mysqli;
 use mysqli_result;
 use mysqli_sql_exception;
 
+/** @internal */
 final class MysqliProbe implements DatabaseProbe
 {
     public function inspect(DbCredentials $credentials): DbStatus

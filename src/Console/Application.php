@@ -12,6 +12,7 @@ use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final class Application
 {
     /**
@@ -30,24 +31,26 @@ final class Application
         $installed = is_file($installedFile) ? json_decode((string) file_get_contents($installedFile), true, 512, JSON_THROW_ON_ERROR) : [];
         $dev = !is_array($installed) || ($installed['dev'] ?? true) !== false;
         $context = $data === null ? new RunContext($root, $vendor, $bin, dev: $dev, manifest: $manifestFile) : RunContext::fromArray($data);
-        $operation = 'run';
-        foreach (array_slice($arguments, 1, preserve_keys: true) as $index => $argument) {
+        $application = new ConsoleApplication('SymPress Runtime', '1.1.1');
+        $application->setAutoExit(false);
+        foreach (['run', ...Registry::RESERVED] as $operation) {
+            $application->addCommand(new RuntimeCommand($context, $operation));
+        }
+        $application->setDefaultCommand('run');
+        $explicitCommand = false;
+        foreach (array_slice($arguments, 1) as $argument) {
             if ($argument === '--') {
                 break;
             }
             if (str_starts_with($argument, '-')) {
                 continue;
             }
-            if (in_array($argument, Registry::RESERVED, true)) {
-                $operation = $argument;
-                unset($arguments[$index]);
-            }
+            $explicitCommand = $application->has($argument);
             break;
         }
-        $application = new ConsoleApplication('SymPress Runtime', '0.2.0');
-        $application->setAutoExit(false);
-        $application->addCommand(new RuntimeCommand($context, $operation));
-        $application->setDefaultCommand($operation, true);
+        if (!$explicitCommand) {
+            array_splice($arguments, 1, 0, ['run']);
+        }
         $input = new ArgvInput(array_values($arguments));
         $output = $data === null ? new ConsoleOutput() : new ConsoleOutput($context->verbosity, $context->decorated);
         if ($data !== null) {

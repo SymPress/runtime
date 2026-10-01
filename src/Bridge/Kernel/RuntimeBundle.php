@@ -8,6 +8,7 @@ use SymPress\Kernel\Bundle\AbstractBundle;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
+/** @internal */
 final class RuntimeBundle extends AbstractBundle
 {
     public function getPath(): string

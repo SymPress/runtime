@@ -9,6 +9,7 @@ use SymPress\Runtime\Console\Io;
 use SymPress\Runtime\Console\Selection;
 use SymPress\Runtime\Database\DbChecker;
 
+/** @internal */
 final readonly class DatabasePreflight
 {
     public function __construct(private Config $config, private DbChecker $database, private Io $io)

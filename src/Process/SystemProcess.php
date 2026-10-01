@@ -10,16 +10,21 @@ use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use Throwable;
 
+/** @internal */
 final class SystemProcess
 {
     /** @var array<string, string|false> */
     private array $environment = [];
 
+    /** @internal */
     public function __construct(private readonly Paths $paths, private readonly Io $io)
     {
     }
 
-    /** @param array<string, string|false> $environment */
+    /**
+     * @param array<string, string|false> $environment
+     * @api
+     */
     public function withEnvironment(array $environment): self
     {
         $this->environment = $environment;
@@ -27,7 +32,10 @@ final class SystemProcess
         return $this;
     }
 
-    /** @param list<string>|string $command */
+    /**
+     * @param list<string>|string $command
+     * @api
+     */
     public function execute(array|string $command, ?string $cwd = null, int $verbosity = 32): bool
     {
         if ($verbosity <= 16) {
@@ -50,6 +58,7 @@ final class SystemProcess
     /**
      * @param list<string>|string $command
      * @return array{string, string, bool, Throwable|null}
+     * @api
      */
     public function executeCapturing(array|string $command, ?string $cwd = null): array
     {
@@ -71,7 +80,10 @@ final class SystemProcess
         }
     }
 
-    /** @param list<string>|string $command */
+    /**
+     * @param list<string>|string $command
+     * @api
+     */
     public function executeSilently(array|string $command, ?string $cwd = null): bool
     {
         try {

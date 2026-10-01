@@ -20,7 +20,7 @@ final class ComposerTest extends TemporaryProject
         $this->packageRoot = dirname(__DIR__, 2);
     }
 
-    private function fixture(bool $plugin = true, bool $customVendor = false): void
+    private function fixture(bool $plugin = true, bool $customVendor = false, bool $bare = false): void
     {
         $lock = json_decode((string) file_get_contents($this->packageRoot . '/composer.lock'), true, flags: JSON_THROW_ON_ERROR);
         $repositories = [['type' => 'path', 'url' => $this->packageRoot, 'options' => ['symlink' => true, 'versions' => ['sympress/runtime' => 'dev-main']]]];
@@ -43,7 +43,13 @@ final class ComposerTest extends TemporaryProject
             'config' => ['allow-plugins' => ['sympress/runtime' => $plugin], 'vendor-dir' => $customVendor ? 'dependencies' : 'vendor', 'bin-dir' => $customVendor ? 'tools' : 'vendor/bin'],
             'extra' => ['sympress-runtime' => ['require-wp' => false, 'db-check' => false, 'custom-steps' => ['fixture' => 'RuntimeFixtureStep'], 'skip-steps' => Registry::DEFAULT_ORDER]],
         ];
+        if ($bare) {
+            unset($manifest['autoload'], $manifest['scripts'], $manifest['extra']);
+        }
         $this->write('composer.json', json_encode($manifest, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+        if ($bare) {
+            return;
+        }
         $this->write('host-probe.php', <<<'PHP'
 <?php
 declare(strict_types=1);
@@ -120,6 +126,65 @@ PHP);
         return json_decode((string) file_get_contents($this->root . '/context.json'), true, flags: JSON_THROW_ON_ERROR);
     }
 
+    #[Group('PAR-CFG-001')]
+    public function testBareComposerRequireDefersOnlyAutomaticSetup(): void
+    {
+        $this->fixture(bare: true);
+        $manifest = json_decode((string) file_get_contents($this->root . '/composer.json'), true, flags: JSON_THROW_ON_ERROR);
+        unset($manifest['require']);
+        $this->write('composer.json', json_encode($manifest, JSON_THROW_ON_ERROR));
+        $require = $this->composer(['require', 'sympress/runtime:dev-main', '--no-progress']);
+        self::assertSame(0, $require->getExitCode(), $require->getOutput() . $require->getErrorOutput());
+        self::assertStringContainsString('Runtime setup deferred', $require->getErrorOutput());
+        self::assertFileExists($this->root . '/vendor/bin/runtime');
+        self::assertFileExists($this->root . '/composer.lock');
+        foreach ([['list', '--raw'], ['help', 'doctor']] as $arguments) {
+            $discovery = new Process([PHP_BINARY, $this->root . '/vendor/bin/runtime', ...$arguments], $this->root);
+            $discovery->run();
+            self::assertSame(0, $discovery->getExitCode(), $discovery->getErrorOutput());
+            self::assertStringContainsString('doctor', $discovery->getOutput());
+        }
+        $repeat = $this->composer(['install', '--no-progress']);
+        self::assertSame(0, $repeat->getExitCode(), $repeat->getErrorOutput());
+        self::assertStringContainsString('Runtime setup deferred', $repeat->getErrorOutput());
+        $standalone = new Process([PHP_BINARY, $this->root . '/vendor/bin/runtime', '-n'], $this->root);
+        $standalone->run();
+        $explicit = $this->composer(['runtime']);
+        foreach ([$standalone, $explicit] as $process) {
+            self::assertNotSame(0, $process->getExitCode());
+            self::assertStringContainsString('Exactly one installed wordpress-core package is required', $process->getErrorOutput());
+            self::assertStringNotContainsString('Runtime setup deferred', $process->getErrorOutput());
+        }
+        foreach (['wp-config.php', 'sympress-runtime.lock', '.env'] as $file) {
+            self::assertFileDoesNotExist($this->root . '/' . $file);
+        }
+        self::assertDirectoryDoesNotExist($this->root . '/var/runtime');
+        $this->write('sympress-runtime.json', json_encode(['require-wp' => false, 'db-check' => false, 'skip-steps' => Registry::DEFAULT_ORDER], JSON_THROW_ON_ERROR));
+        $configured = $this->composer(['install']);
+        self::assertSame(0, $configured->getExitCode(), $configured->getErrorOutput());
+        self::assertStringNotContainsString('Runtime setup deferred', $configured->getErrorOutput());
+    }
+
+    #[Group('PAR-CFG-001')]
+    public function testConfiguredAndExistingProjectsStillFailForMissingCore(): void
+    {
+        $this->fixture(bare: true);
+        $install = $this->composer(['install', '--no-plugins', '--no-progress']);
+        self::assertSame(0, $install->getExitCode(), $install->getErrorOutput());
+        foreach (['sympress-runtime.json', 'wpstarter.json', 'wp-config.php'] as $file) {
+            $this->write($file, '{}');
+            $run = $this->composer(['install']);
+            self::assertNotSame(0, $run->getExitCode());
+            self::assertStringContainsString('Exactly one installed wordpress-core package is required', $run->getErrorOutput());
+            self::assertStringNotContainsString('Runtime setup deferred', $run->getErrorOutput());
+            unlink($this->root . '/' . $file);
+        }
+        $this->write('sympress-runtime.json', '{invalid-json');
+        $invalid = $this->composer(['install']);
+        self::assertNotSame(0, $invalid->getExitCode());
+        self::assertStringContainsString('Invalid JSON', $invalid->getErrorOutput());
+    }
+
     #[Group('PAR-SYM-001')]
     #[Group('PAR-NATIVE-008')]
     #[Group('PAR-SYM-007')]
@@ -172,6 +237,12 @@ PHP);
         $validate = $this->composer(['sympress-runtime:validate']);
         self::assertSame(0, $validate->getExitCode(), $validate->getErrorOutput());
         self::assertStringContainsString('configuration is valid', $validate->getOutput());
+        $alias = $this->composer(['runtime:validate']);
+        self::assertSame($validate->getExitCode(), $alias->getExitCode(), $alias->getErrorOutput());
+        self::assertSame($validate->getOutput(), $alias->getOutput());
+        $setupAlias = $this->composer(['runtime', 'fixture', '--skip-custom']);
+        self::assertSame(0, $setupAlias->getExitCode(), $setupAlias->getErrorOutput());
+        self::assertTrue($this->context()['selected']);
     }
 
     #[Group('PAR-CLI-014')]

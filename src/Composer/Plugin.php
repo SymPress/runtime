@@ -18,6 +18,7 @@ use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 
+/** @internal */
 final class Plugin implements PluginInterface, EventSubscriberInterface, Capable
 {
     /** @var list<array{name: string, version: string}> */
@@ -70,6 +71,13 @@ final class Plugin implements PluginInterface, EventSubscriberInterface, Capable
     public function run(Event $event): void
     {
         if (in_array($event->getComposer()->getPackage()->getType(), ['sympress-runtime-extension', 'wpstarter-extension'], true)) {
+            return;
+        }
+        $root = getcwd();
+        if ($root !== false && !(new AutomaticSetup())->required($event->getComposer(), $root)) {
+            $this->updatedPackages = [];
+            $event->getIO()->writeError('Runtime setup deferred: no WordPress core or Runtime configuration found. Configure the project, then run vendor/bin/runtime.');
+
             return;
         }
         $mode = $event->getName() === ScriptEvents::POST_INSTALL_CMD ? 'install' : 'update';

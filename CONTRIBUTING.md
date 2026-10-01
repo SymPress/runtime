@@ -1,14 +1,18 @@
 # Contributing to Runtime
 
-Work from a branch based on `main`. Describe the behavior you want to change and
-include a small reproduction for a bug. Keep fixes focused and update the user
-guide when public behavior changes.
+Use `1.x` as the base and pull-request target for maintenance and security fixes
+to the stable 1.x line. Port applicable fixes to `main` as well. Use `main` for
+1.1 development; Composer identifies that branch as `1.1.x-dev`. It is not a
+stable release or a replacement for the documented `^1.0` installation constraint.
+
+Describe the behavior you want to change and include a small reproduction for a
+bug. Keep fixes focused and update the user guide when public behavior changes.
+New 1.1 features must preserve the published 1.x compatibility contract.
 
 ## Local setup
 
-Use PHP 8.5+, Composer 2.10.3+ and Git. The development dependencies include SymPress
-QA and the kernel integration fixture; authenticate private repositories if your
-package source requires it.
+Use PHP 8.5+, Composer 2.10.3+ and Git. All development dependencies, including
+SymPress QA and the kernel integration fixture, are publicly available.
 
 ```sh
 composer install

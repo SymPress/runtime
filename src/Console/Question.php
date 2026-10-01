@@ -6,6 +6,7 @@ namespace SymPress\Runtime\Console;
 
 use Closure;
 
+/** @internal */
 final class Question
 {
     /** @var list<string> */
@@ -21,6 +22,7 @@ final class Question
     /**
      * @param list<string> $lines
      * @param array<string, string> $answers
+     * @api
      */
     public function __construct(array $lines, array $answers = [], ?string $default = null)
     {
@@ -39,7 +41,10 @@ final class Question
         $this->default = isset($this->answers[$default]) ? $default : (array_key_first($this->answers) ?? '');
     }
 
-    /** @param list<string> $lines */
+    /**
+     * @param list<string> $lines
+     * @api
+     */
     public static function newWithValidator(array $lines, callable $validator, ?string $default = null): self
     {
         $question = new self($lines);
@@ -51,6 +56,7 @@ final class Question
         return $question;
     }
 
+    /** @internal */
     public function filterAnswer(string $answer): ?string
     {
         $answer = trim($answer);
@@ -62,17 +68,22 @@ final class Question
         return isset($this->answers[$answer]) ? $answer : null;
     }
 
+    /** @internal */
     public function defaultAnswerKey(): string
     {
         return $this->default;
     }
 
+    /** @internal */
     public function defaultAnswerText(): string
     {
         return $this->answers[$this->default] ?? $this->default;
     }
 
-    /** @return list<string> */
+    /**
+     * @return list<string>
+     * @internal
+     */
     public function questionLines(): array
     {
         if ($this->lines === []) {

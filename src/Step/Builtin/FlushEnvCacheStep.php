@@ -11,6 +11,7 @@ use SymPress\Runtime\Filesystem\Filesystem;
 use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Step\ConditionalStepInterface;
 
+/** @internal */
 final readonly class FlushEnvCacheStep implements ConditionalStepInterface
 {
     public function __construct(private Filesystem $filesystem)

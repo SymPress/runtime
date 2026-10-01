@@ -7,6 +7,10 @@ Version 0.1.0 used the executable name `sympress-runtime`. Update shell and CI
 scripts when upgrading; see the [0.2.0 upgrade notes](releases/0.2.0.md).
 
 ```sh
+# Discover commands and their options.
+vendor/bin/runtime list
+vendor/bin/runtime help doctor
+
 # Inspect configuration without running project providers.
 vendor/bin/runtime validate
 vendor/bin/runtime --list-steps
@@ -25,6 +29,9 @@ The standalone runner uses the current project directory and its Composer vendor
 | Invocation | Meaning |
 | --- | --- |
 | `vendor/bin/runtime` | Default and custom steps, respecting configured skips |
+| `list [--raw] [--format=json]` | List Console commands without loading setup configuration, running providers or recovering package layout |
+| `help [command]`, `<command> --help` | Show Symfony Console help; `help run` documents setup options |
+| `run [steps]` | Explicit form of the default setup command |
 | `vendor/bin/runtime index wpconfig` | Only the requested steps, in that order; WP-CLI is always last |
 | `vendor/bin/runtime --skip index` | Exclude the named steps in addition to configured skips |
 | `--skip-custom` | Exclude custom steps in full/opt-out mode |
@@ -55,9 +62,20 @@ The standalone runner uses the current project directory and its Composer vendor
 
 ## Selecting steps
 
+`list` lists Console commands; `--list-steps` lists your configured setup steps.
+Direct selection such as `runtime index wpconfig` still works. If a custom step
+shares a Console command name such as `list`, `help` or `run`, select it explicitly
+with `runtime run list` or `runtime -- list`. For an opt-out selection, use
+`runtime run --skip list`. Only the first positional name selects a command;
+`runtime index help` selects the two steps.
+
 `--skip` without names is an error. Native explicit selection wins over `skip-steps` and `--skip-custom`. Command-only steps are available only through explicit selection or listing. Unknown selected names produce diagnostics; a partial valid selection still executes, while a selection containing no valid steps fails.
 
 ## Running through Composer
+
+`composer runtime` aliases `composer sympress-runtime`; diagnostic aliases use
+the colon form, for example `composer runtime:doctor --json`. Existing names stay
+supported in 1.x.
 
 Composer exposes `composer sympress-runtime [steps] [flags]`, `composer sympress-runtime:validate`, `composer sympress-runtime:flush-env-cache` and `composer sympress-runtime:dump-env <environment>`. Install/update events run at priority 0, before asset-compiler's documented -1000 priority. The host uses Composer APIs and PHP standard-library process launching; project Symfony services are instantiated only in the child.
 
@@ -68,6 +86,15 @@ Exit status is zero for successful/no-op execution, nonzero for invalid input, c
 Legacy profiles retain their documented selection differences, including rejecting positional opt-in combined with listing. Native mode permits this combination. See [Compatibility](compatibility.md) for retained command aliases.
 
 ## Kernel console and environment dumps
+
+Native generated `wp-cli.yml` registers `wp runtime`. For example,
+`wp runtime doctor --json` and `wp runtime validate` run the same standalone
+application in a child process before WordPress loads, without needing the kernel.
+All Runtime subcommands and setup flags are forwarded; the wrapper is
+noninteractive. WP-CLI retains ownership of its global options. Its `--json`
+rewrite to `--format=json` is supported. Existing user-owned YAML is preserved:
+review and regenerate it with `vendor/bin/runtime --force wpcliconfig`, or add
+the registration described in [WP-CLI](wp-cli.md).
 
 Through the kernel console, `wp console doctor --json` and `wp console check --json` accept WP-CLI's automatic rewrite to `--format=json`. The bridge also accepts explicit `--format=text` or `--format=json`; other formats are rejected.
 

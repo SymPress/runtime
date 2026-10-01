@@ -6,6 +6,7 @@ namespace SymPress\Runtime\Env;
 
 use RuntimeException;
 
+/** @internal */
 final class SecretFile
 {
     public static function read(string $name, string $file): string

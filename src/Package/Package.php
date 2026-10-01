@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Package;
 
+/** @internal */
 final readonly class Package
 {
     /** @param array<string, mixed> $extra */

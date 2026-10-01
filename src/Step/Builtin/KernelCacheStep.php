@@ -14,6 +14,7 @@ use SymPress\Runtime\Kernel\KernelPaths;
 use SymPress\Runtime\Step\StepInterface;
 use Symfony\Component\Filesystem\Filesystem;
 
+/** @internal */
 final readonly class KernelCacheStep implements StepInterface
 {
     public function __construct(private KernelPaths $kernel, private ProjectBoundary $boundary, private ArtifactWriter $writer, private Io $io)

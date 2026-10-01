@@ -9,6 +9,7 @@ use Error;
 use LogicException;
 use Throwable;
 
+/** @api */
 final class Result
 {
     private bool $resolving = false;
@@ -20,6 +21,7 @@ final class Result
     ) {
     }
 
+    /** @api */
     public static function ok(mixed $value): self
     {
         return match (true) {
@@ -29,26 +31,31 @@ final class Result
         };
     }
 
+    /** @api */
     public static function none(): self
     {
         return new self();
     }
 
+    /** @api */
     public static function error(?Throwable $error = null): self
     {
         return new self(failure: $error ?? new Error('Error.'));
     }
 
+    /** @api */
     public static function errored(string $message): self
     {
         return self::error(new Error($message));
     }
 
+    /** @api */
     public static function promise(callable $provider): self
     {
         return new self(provider: Closure::fromCallable($provider));
     }
 
+    /** @api */
     public function unwrap(): mixed
     {
         $this->resolve();
@@ -59,11 +66,13 @@ final class Result
         return $this->value;
     }
 
+    /** @api */
     public function unwrapOrFallback(mixed $fallback = null): mixed
     {
         return $this->notEmpty() ? $this->value : $fallback;
     }
 
+    /** @api */
     public function notEmpty(): bool
     {
         $this->resolve();
@@ -71,6 +80,7 @@ final class Result
         return $this->failure === null && $this->value !== null;
     }
 
+    /** @api */
     public function is(mixed $compare): bool
     {
         $this->resolve();
@@ -78,11 +88,13 @@ final class Result
         return $this->failure === null && $this->value === $compare;
     }
 
+    /** @api */
     public function not(mixed $compare): bool
     {
         return !$this->is($compare);
     }
 
+    /** @api */
     public function either(mixed $thing, mixed ...$things): bool
     {
         $this->resolve();

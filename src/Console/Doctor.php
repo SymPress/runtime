@@ -24,6 +24,7 @@ use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Process\ExecutableFinder;
 use Throwable;
 
+/** @internal */
 final readonly class Doctor
 {
     public function __construct(private Config $config, private Paths $paths, private RunContext $context, private Io $io)

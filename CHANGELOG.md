@@ -1,8 +1,59 @@
 # Changelog
 
-## Unreleased
+## 1.1.1 — 2026-09-30
 
-No changes yet.
+- Describe the production and database health flags in diagnostic help, including the requirement for `--quick`, and identify `check` as an alias of `doctor` in command listings.
+- Update the README, release guides and maintainer documentation.
+
+## 1.1.0 — 2026-09-30
+
+- Support Symfony Console `list`, `help`, command-specific help and shell completion without interpreting them as setup steps.
+- List every Runtime operation with its own description; retain direct step selection and add explicit `run [steps]` syntax for command-like custom step names.
+- Keep help and command discovery read-only, including before package layout recovery and when setup configuration is invalid.
+- Verify command discovery and help through the native WP-CLI bridge.
+
+See the [1.1 upgrade notes](docs/releases/1.1.0.md).
+
+## 1.0.0 — 2026-09-30
+
+- Establish the 1.x compatibility contract for documented PHP extension APIs, configuration/defaults, command behavior, environment controls, hooks, managed sections and persisted formats.
+- Use `sympress/runtime:^1.0` from Packagist in public installation guides and the complete site example; retain exact resolved versions in project lockfiles.
+- Support `vendor/bin/runtime`, native `wp runtime` and Composer aliases without requiring the SymPress kernel.
+- Retain deprecated compatibility adapters throughout 1.x, with removal scheduled for 2.0.
+- Document upgrades from 0.x and prereleases, retained payloads for rollback, platform limits and the stable security support policy.
+- Verify Packagist propagation with a release-specific metadata URL so a cached pre-release package response cannot hide a newly published tag.
+
+See the [1.0 installation and upgrade guide](docs/releases/1.0.0.md),
+[compatibility policy](docs/compatibility-policy.md),
+[compatibility migration guide](docs/compatibility.md) and
+[parity comparison](https://github.com/SymPress/runtime/blob/main/docs/maintainers/parity.md).
+
+## 1.0.0-rc.1 — 2026-09-30
+
+- Make Runtime available directly from Packagist, with automatic GitHub updates and verification of the published source revision in the release workflow.
+- Begin release-candidate validation of the frozen 1.x API, configuration and file-format contracts, including the corrected empty-project installation path.
+- Remove the Runtime-specific VCS repository from the public site example; retain WPackagist for WordPress plugins and themes.
+
+Follow the [RC upgrade and installation guide](docs/releases/1.0.0-rc.1.md).
+
+## 1.0.0-beta.2 — 2026-09-30
+
+- Allow the Composer plugin to be installed in an unconfigured project before WordPress Core is added. Automatic setup is deferred for that initial state; explicit setup and configured projects retain missing-core validation.
+- Cover a fresh Composer installation, repeat installation and explicit setup failure in a coreless project with a regression test.
+
+This fixes the empty-project installation issue found in beta 1. See the [beta 2 upgrade notes](docs/releases/1.0.0-beta.2.md).
+
+## 1.0.0-beta.1 — 2026-09-30
+
+- Freeze the documented 1.x configuration and extension API; classify implementation details and enforce public examples in architecture tests.
+- Add `wp runtime` before WordPress bootstrap, backed by the standalone command, and `composer runtime` aliases.
+- Version download-lock files explicitly and reject unknown future cache, dump and payload formats safely.
+- Use stable Kernel and QA releases without a local path repository; widen the Composer library requirement to `^2.10.3`.
+- Deprecate legacy compatibility adapters before 1.0: supported throughout 1.x, scheduled for removal in 2.0. See the [compatibility policy](docs/compatibility-policy.md).
+- Add minimum/latest Composer checks on Linux, Windows and macOS, lowest Symfony 8.1 checks, weekly dependency updates and PHP security analysis.
+- Publish the repository under GPL-2.0-or-later with private vulnerability reporting and signed, QA-gated release automation.
+
+This is a contract-validation prerelease. Review the [upgrade notes](docs/releases/1.0.0-beta.1.md).
 
 ## 0.2.0 — 2026-09-30
 

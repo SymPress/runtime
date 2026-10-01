@@ -35,6 +35,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Throwable;
 
+/** @internal */
 final class RuntimeCommand extends Command
 {
     private bool $legacyApiEnabled = false;
@@ -46,15 +47,25 @@ final class RuntimeCommand extends Command
 
     protected function configure(): void
     {
-        $this->setDescription($this->operation === 'validate' ? 'Validate project configuration without running steps.' : 'Run project setup steps.');
+        $this->setDescription(match ($this->operation) {
+            'validate' => 'Validate project configuration without running steps.',
+            'doctor' => 'Check project configuration and deployment readiness.',
+            'check' => 'Alias of doctor: check project configuration and deployment readiness.',
+            'dump-env' => 'Dump a resolved environment for deployment.',
+            'flush-env-cache' => 'Remove the runtime environment cache.',
+            'migrate' => 'Migrate compatibility configuration to native Runtime.',
+            'prune' => 'Prune unused runtime payloads and package backups.',
+            'env:diff' => 'Compare environment variable names with the example.',
+            default => 'Run project setup steps.',
+        });
         if ($this->operation === 'dump-env') {
             $this->addArgument('environment', InputArgument::REQUIRED, 'Raw environment name to resolve and dump.');
         }
         if (in_array($this->operation, ['doctor', 'check'], true)) {
             $this->addOption('json', null, InputOption::VALUE_NONE, 'Print structured diagnostics without environment values.');
-            foreach (['production', 'database-health', 'quick'] as $flag) {
-                $this->addOption($flag, null, InputOption::VALUE_NONE);
-            }
+            $this->addOption('production', null, InputOption::VALUE_NONE, 'Run strict production deployment checks.');
+            $this->addOption('database-health', null, InputOption::VALUE_NONE, 'Run database table health checks with mysqlcheck.');
+            $this->addOption('quick', null, InputOption::VALUE_NONE, 'Use mysqlcheck --quick to reduce work; requires --database-health.');
             $this->addOption('php-user', null, InputOption::VALUE_REQUIRED, 'PHP-FPM user for POSIX access checks.');
             $this->addOption('webroot', null, InputOption::VALUE_REQUIRED, 'Actual web server document root.');
         }

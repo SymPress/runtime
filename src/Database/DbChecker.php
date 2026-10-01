@@ -11,33 +11,43 @@ use SymPress\Runtime\Process\SystemProcess;
 use Symfony\Component\Process\ExecutableFinder;
 use Throwable;
 
+/** @internal */
 final class DbChecker
 {
+    /** @api */
     public const string WP_INSTALLED = 'WP_INSTALLED';
+    /** @api */
     public const string WPDB_EXISTS = 'WPDB_EXISTS';
+    /** @api */
     public const string WPDB_ENV_VALID = 'WPDB_ENV_VALID';
+    /** @api */
     public const string HEALTH_CHECK = 'health';
     private ?DbStatus $status = null;
 
+    /** @internal */
     public function __construct(private readonly EnvReader $env, private readonly Io $io, private readonly SystemProcess $process, private readonly ExecutableFinder $finder, private readonly DatabaseProbe $probe)
     {
     }
 
+    /** @api */
     public function dbExists(): bool
     {
         return $this->status()->exists === true;
     }
 
+    /** @api */
     public function isInstalled(): bool
     {
         return $this->status()->installed === true;
     }
 
+    /** @api */
     public function isEnvValid(): bool
     {
         return $this->status()->envValid;
     }
 
+    /** @api */
     public function status(): DbStatus
     {
         $this->check();
@@ -45,6 +55,7 @@ final class DbChecker
         return $this->status ?? throw new InvalidArgumentException('Database status is unavailable.');
     }
 
+    /** @api */
     public function check(): void
     {
         if ($this->status !== null) {
@@ -79,6 +90,7 @@ final class DbChecker
         $this->io->verbose('Database status: ' . $this->status->reason . '.');
     }
 
+    /** @api */
     public function mysqlcheck(bool $quick = false): bool
     {
         if (!$this->dbExists()) {

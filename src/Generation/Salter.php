@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Generation;
 
+/** @internal */
 final class Salter
 {
     public const array KEYS = [

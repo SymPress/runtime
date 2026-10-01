@@ -20,6 +20,7 @@ use SymPress\Runtime\Step\Builtin\WpCliConfigStep;
 use SymPress\Runtime\Step\Builtin\WpCliStep;
 use SymPress\Runtime\Step\Builtin\WpConfigStep;
 
+/** @internal */
 final class Registry
 {
     public const array DEFAULT_ORDER = [

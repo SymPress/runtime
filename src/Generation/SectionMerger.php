@@ -6,6 +6,7 @@ namespace SymPress\Runtime\Generation;
 
 use RuntimeException;
 
+/** @internal */
 final class SectionMerger
 {
     private const string MARKER = '// @sympress-section-hashes: ';

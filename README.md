@@ -28,9 +28,17 @@ PHP **8.5 or newer**, Composer **2.10.3 or newer** with plugin API **2.6 or newe
 and a Composer-managed WordPress installation. Composer resolves Runtime's Symfony
 8.1 dependencies. WordPress and your application may require additional PHP extensions.
 
-Install the tagged release `0.2.0` and commit the resolved lockfile. The repository
-is private, so use an authorized GitHub account or a repository-scoped read credential.
-Review the [upgrade notes](docs/releases/0.2.0.md) before updating an existing site.
+PHP 8.5 is the intentional baseline for the 1.x contract. PHP 8.4 and older are
+not supported. Install a tagged release and commit the resolved lockfile. The
+package is available from [Packagist](https://packagist.org/packages/sympress/runtime);
+no Runtime-specific repository or read credentials are required.
+Use `sympress/runtime:^1.0` for the stable 1.x line. Review the
+[1.0 upgrade notes](docs/releases/1.0.0.md) before updating an existing site.
+
+The [compatibility policy](docs/compatibility-policy.md) defines the effective 1.x
+contract for the public PHP API, configuration, commands and persisted formats.
+Breaking a supported interface requires 2.0. See the [platform table](docs/platforms.md)
+for requirements and verification scope.
 
 ## Start here
 
@@ -40,7 +48,7 @@ For an existing site, start with [Adopting Runtime](docs/migration.md).
 
 Once Runtime is installed, run these commands from your project root:
 
-Version 0.2.0 uses the executable name `runtime`. When upgrading from 0.1.0,
+The executable is `runtime`, as introduced in 0.2.0. When upgrading from 0.1.0,
 update shell and CI scripts to use this name; see [Command line](docs/cli.md).
 
 ```sh
@@ -64,6 +72,7 @@ standalone command is useful for a deliberate rerun or a build with plugins disa
 | Customize generated PHP | [wp-config and sections](docs/wp-config.md) |
 | Choose what runs during setup | [Steps](docs/steps.md) · [Command line](docs/cli.md) |
 | Add project automation | [Custom steps and services](docs/custom-steps.md) · [WP-CLI](docs/wp-cli.md) |
+| Build a supported extension | [Public API](docs/api.md) · [Compatibility policy](docs/compatibility-policy.md) |
 | Prepare a production release | [Deployment](docs/deployment.md) |
 | Diagnose a problem | [Troubleshooting](docs/troubleshooting.md) |
 
@@ -72,7 +81,9 @@ standalone command is useful for a deliberate rerun or a build with plugins disa
 [WP Starter](https://github.com/wecodemore/wpstarter) is an alternative for
 Composer-managed WordPress setup. Runtime retains an optional compatibility layer
 for existing projects; its names, profiles and migration behavior are documented
-separately in [Compatibility](docs/compatibility.md).
+separately in [Compatibility](docs/compatibility.md). The layer is deprecated,
+supported throughout 1.x and scheduled for removal in 2.0. The
+[parity matrix](https://github.com/SymPress/runtime/blob/main/docs/maintainers/parity.md) records the compatibility comparison.
 
 ## Contributing and security
 

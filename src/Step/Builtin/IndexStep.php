@@ -14,6 +14,7 @@ use SymPress\Runtime\Step\ConditionalStepInterface;
 use SymPress\Runtime\Step\FileCreationStepInterface;
 use Symfony\Component\Filesystem\Path;
 
+/** @internal */
 final readonly class IndexStep implements BlockingStepInterface, FileCreationStepInterface, ConditionalStepInterface
 {
     public function __construct(private Filesystem $filesystem, private FileContentBuilder $builder, private ProjectBoundary $boundary)

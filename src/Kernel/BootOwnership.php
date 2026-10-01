@@ -11,6 +11,7 @@ use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Package\MuPluginList;
 use SymPress\Runtime\Package\PackageFinder;
 
+/** @internal */
 final readonly class BootOwnership
 {
     public function __construct(private PackageFinder $packages, private MuPluginList $muPlugins, private Config $config, private Paths $paths)

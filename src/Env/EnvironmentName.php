@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Env;
 
+/** @internal */
 final class EnvironmentName
 {
     public const array ALIASES = [
