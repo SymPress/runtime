@@ -8,7 +8,7 @@
         "source": "https://github.com/SymPress/runtime",
         "docs": "https://github.com/SymPress/runtime/tree/main/docs"
     },
-    "archive": {"exclude": ["/.github", "/docs/maintainers", "/tests", "/tools", "/AGENTS.md", "/phpcs.xml.dist", "/phpstan.neon.dist", "/phpunit.xml.dist", "/vendor", "/build", "/composer.lock", "/.phpunit.cache", "/.phpstan.cache", "/.subversion", "/.env", "/.env.*", "/.gitignore", "/.gitattributes"]},
+    "archive": {"exclude": ["/.github", "/docs/maintainers", "/tests", "/tools", "/AGENTS.md", "/phpcs.xml.dist", "/phpstan.neon.dist", "/phpunit.xml.dist", "/vendor", "/build", "/composer.lock", "/.phpunit.cache", "/.phpstan.cache", "/.subversion", "/.env", "/.env.*", "/.gitignore", "/.gitattributes", "/.wp-cli"]},
     "type": "composer-plugin",
     "license": "GPL-2.0-or-later",
     "require": {

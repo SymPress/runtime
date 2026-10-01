@@ -5,3 +5,4 @@
 /build/
 /.subversion/
 __pycache__/
+/.wp-cli/
