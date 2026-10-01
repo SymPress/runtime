@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Require a canonical WP_HOME in staging/production and configured trusted proxy IP/CIDRs before accepting forwarded HTTPS.
+- Create private Composer handoff files from the first byte and exclude real process values and derived process secrets from native environment persistence.
+- Implement native automatic writable-cache eligibility, preserving existing read-only cache/dump use, and ignore the download-lock guard in generated VCS files.
+- Run release orchestration from protected main with independent signer-source verification, immutable workflow references and environment-gated publishing.
+
 ## 1.1.1 — 2026-09-30
 
 - Describe the production and database health flags in diagnostic help, including the requirement for `--quick`, and identify `check` as an alias of `doctor` in command listings.

@@ -20,8 +20,8 @@ jobs:
       - name: Check documentation and public references
         run: python3 tools/check-docs.py
   workflows:
-    uses: sympress/workflows/.github/workflows/lint-workflows.yml@v1
+    uses: sympress/workflows/.github/workflows/lint-workflows.yml@b404c26ad5daf22786dbe4800b14c332d085cc95
   qa:
-    uses: sympress/workflows/.github/workflows/sympress-qa.yml@v1
+    uses: sympress/workflows/.github/workflows/sympress-qa.yml@b404c26ad5daf22786dbe4800b14c332d085cc95
     with:
       php_version: '8.5'

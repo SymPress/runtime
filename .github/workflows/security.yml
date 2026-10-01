@@ -32,12 +32,13 @@ jobs:
           "$RUNNER_TEMP/runtime-semgrep/bin/pip" install --disable-pip-version-check 'semgrep==1.178.0'
       - name: Scan source with upstream PHP security rules
         run: |
-          "$RUNNER_TEMP/runtime-semgrep/bin/semgrep" scan --no-git-ignore --metrics=off --disable-version-check --strict --error \
+          "$RUNNER_TEMP/runtime-semgrep/bin/semgrep" scan --jobs 1 --no-git-ignore --metrics=off --disable-version-check --strict --error \
             --config build/security-rules/php/lang/security/injection \
             --config build/security-rules/php/lang/security/php-ssrf.yaml \
             --config build/security-rules/php/lang/security/curl-ssl-verifypeer-off.yaml \
             --config build/security-rules/php/lang/security/deserialization.yaml \
             --sarif --output build/php-security.sarif src
+          python3 tools/check-security-sarif.py build/php-security.sarif
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

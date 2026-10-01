@@ -29,7 +29,7 @@ final class ArchitectureTest extends TestCase
             self::assertSame('^8.1', $constraint);
         }
         self::assertArrayHasKey('sympress/qa', $manifest['require-dev']);
-        self::assertStringContainsString('sympress/workflows/.github/workflows/sympress-qa.yml@v1', (string) file_get_contents($root . '/.github/workflows/qa.yml'));
+        self::assertStringContainsString('sympress/workflows/.github/workflows/sympress-qa.yml@b404c26ad5daf22786dbe4800b14c332d085cc95', (string) file_get_contents($root . '/.github/workflows/qa.yml'));
         $workflow = (string) file_get_contents($root . '/.github/workflows/differential.yml');
         self::assertStringContainsString('--fail-on-skipped', $workflow);
         self::assertStringContainsString('tools/parity-evidence.py', $workflow);
