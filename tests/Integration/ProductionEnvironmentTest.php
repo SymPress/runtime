@@ -279,6 +279,19 @@ echo json_encode([$dump, $safe, $r->read('RTV_COMMAND'), $r->read('RTV_ASSIGNED'
 PHP));
     }
 
+    public function testUnbracedDefaultAssignmentCannotPersistCommandSecret(): void
+    {
+        $this->write('.env', 'RTV_COMMAND=$RTV_ASSIGNED:=$(printf %s "$RTV_PROCESS_SECRET")' . "\n" . 'RTV_TRANSITIVE=$RTV_ASSIGNED' . "\nRTV_SAFE=static\n");
+        self::assertSame([true, true, 0, 0, false, false, 'static'], $this->runPhp(<<<'PHP'
+putenv('RTV_PROCESS_SECRET=review-unbraced-secret-c62f');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+$cache = $r->dumpCached('cache.php'); $dump = $r->dumpCached('dump.php', immutable: true);
+$bytes = static fn (string $file): int => substr_count(file_get_contents($file), 'review-unbraced-secret-c62f');
+$data = SymPress\Runtime\Env\EnvCacheFormat::read('dump.php');
+echo json_encode([$cache, $dump, $bytes('cache.php'), $bytes('dump.php'), isset($data['values']['RTV_ASSIGNED']), isset($data['values']['RTV_TRANSITIVE']), $r->read('RTV_SAFE')]);
+PHP));
+    }
+
     public function testEmptyVariableOverrideClearsEarlierCommandValue(): void
     {
         $this->write('.env', 'RTV_COMMAND=$(printf %s "$RTV_PROCESS_SECRET")' . "\n" . 'RTV_DERIVED=$RTV_COMMAND' . "\n");
