@@ -40,7 +40,7 @@ final class LayoutBootstrap
         $metadata = $pending ? [] : json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
         $packages = is_array($metadata) ? ($metadata['packages'] ?? []) : [];
         $names = is_array($packages) ? array_column($packages, 'name') : [];
-        if (!$pending && !in_array('composer/installers', $names, true) && !in_array('johnpbloch/wordpress-core-installer', $names, true)) {
+        if (!$pending && array_intersect(['composer/installers', 'johnpbloch/wordpress-core-installer', 'roots/wordpress-core-installer'], $names) === []) {
             return;
         }
         $command = [PHP_BINARY, dirname(__DIR__, 2) . '/bin/prepare-layout.php', $root, $vendor, $manifest, ...array_slice($arguments, 1)];

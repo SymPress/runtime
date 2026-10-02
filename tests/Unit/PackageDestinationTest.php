@@ -11,6 +11,24 @@ use SymPress\Runtime\Composer\PackageDestination;
 
 final class PackageDestinationTest extends TestCase
 {
+    /** @return iterable<string, array{string}> */
+    public static function coreInstallers(): iterable
+    {
+        yield 'legacy installer' => ['johnpbloch/wordpress-core-installer'];
+        yield 'Roots installer' => ['roots/wordpress-core-installer'];
+    }
+
+    #[DataProvider('coreInstallers')]
+    public function testCoreInstallerUsesConfiguredAndDefaultDestination(string $installer): void
+    {
+        $package = new Package('roots/wordpress-no-content', '7.1.1.0', '7.1.1');
+        $package->setType('wordpress-core');
+        $destination = new PackageDestination();
+        self::assertSame('public/wp', $destination->forPackage($package, ['extra' => ['wordpress-install-dir' => 'public/wp']], [$installer]));
+        self::assertSame('wordpress', $destination->forPackage($package, [], [$installer]));
+        self::assertNull($destination->forPackage($package, [], ['unrelated/core-installer']));
+    }
+
     /** @return iterable<string, array{string, array<string, mixed>, ?string}> */
     public static function paths(): iterable
     {

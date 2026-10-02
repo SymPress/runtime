@@ -25,7 +25,7 @@ final class PackageDestination
             throw new InvalidArgumentException('Composer extra must be an object.');
         }
         if ($package->getType() === 'wordpress-core') {
-            return in_array('johnpbloch/wordpress-core-installer', $installedNames, true)
+            return array_intersect(['johnpbloch/wordpress-core-installer', 'roots/wordpress-core-installer'], $installedNames) !== []
                 ? $this->path($extra['wordpress-install-dir'] ?? 'wordpress') : null;
         }
         $defaults = [
