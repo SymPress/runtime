@@ -80,7 +80,7 @@ final readonly class VcsIgnoreCheckStep implements ConditionalStepInterface, Opt
     {
         $envDir = $config['env-dir']->unwrapOrFallback('.');
         $envFile = $config['env-file']->unwrapOrFallback('.env');
-        $targets = [$paths->vendor(), $paths->wp(), $paths->wpContent(), $paths->root('wp-config.php'), $paths->wpParent('wp-config.php'), $paths->wpParent('index.php'), $paths->root('wp-cli.yml'), $paths->root('var/runtime')];
+        $targets = [$paths->vendor(), $paths->wp(), $paths->wpContent(), $paths->root('wp-config.php'), $paths->wpParent('wp-config.php'), $paths->wpParent('index.php'), $paths->root('wp-cli.yml'), $paths->root('var/runtime'), $paths->root('.sympress-runtime.lock.guard')];
         if (is_string($envDir) && is_string($envFile)) {
             $base = Path::makeAbsolute($envDir, $paths->root());
             foreach ([$envFile, $envFile . '.local', ltrim(EnvReader::CACHE_DUMP_FILE, '/'), ltrim(EnvReader::BUILD_DUMP_FILE, '/')] as $file) {
@@ -139,6 +139,9 @@ final readonly class VcsIgnoreCheckStep implements ConditionalStepInterface, Opt
         $patterns = [];
         if ($config['compatibility-profile']->is('native') && !in_array('wp-cli.yml', $targets, true)) {
             $targets[] = 'wp-cli.yml';
+        }
+        if (!in_array('.sympress-runtime.lock.guard', $targets, true)) {
+            $targets[] = '.sympress-runtime.lock.guard';
         }
         foreach ($targets as $path) {
             $patterns[] = $vcs === 'hg'

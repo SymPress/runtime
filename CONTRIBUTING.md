@@ -36,7 +36,8 @@ It complements actual example execution; it does not prove a deployment works.
 Database, real WordPress, WP-CLI, VCS and read-only filesystem tests need their
 fixtures. The [integration workflow](https://github.com/SymPress/runtime/blob/main/.github/workflows/differential.yml) provisions
 them and rejects skipped tests. See [the test plan](https://github.com/SymPress/runtime/blob/main/docs/maintainers/test-plan.md)
-for local fixture variables and the isolated compatibility comparison.
+for local fixture variables. The former upstream comparison harness is retired;
+CI verifies Runtime's own compatibility contracts without executing excluded packages.
 
 Test a generated configuration in a real WordPress process when bootstrap changes.
 Test custom steps in the standalone process, not only as direct PHP calls. Changes

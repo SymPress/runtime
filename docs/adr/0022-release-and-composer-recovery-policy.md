@@ -8,27 +8,23 @@ Use normal Composer installation with the standard installers for routine builds
 Offline placement is a bounded recovery feature, with the same documented behavior
 for supported layouts; it is not a substitute for dependency resolution.
 
-The production Composer library is constrained to `~2.10.3`. This intentionally
-excludes unreviewed minor versions. Older available minor releases are affected by
+The production Composer library is constrained to `^2.10.3`. This excludes Composer 3 and older vulnerable versions.
+Only Composer major 2 is supported; the matrix below exercises exact reviewed versions. Older available minor releases are affected by
 [Composer security advisories](https://github.com/composer/composer/security/advisories);
 security blocking remains enabled. The [2.10.3 changelog](https://getcomposer.org/changelog/2.10.3)
 records the relevant security fixes.
 
-The blocking CI matrix exercises:
-- Composer CLI 2.10.3 with library 2.10.3.
-- The Composer snapshot CLI with library `dev-main` pinned to
-  `25612018356ea810bce1b86fba84acd4634b5a96` (the upcoming 2.11 line).
-
-Only the isolated forward-compatibility fixture aliases that development library to
-`2.10.99` to satisfy the production constraint. Consumers never receive this alias.
-Reports record the actual CLI version, installed library version and source hash,
-and assert that the requested library was actually used. Both rows run real
-WPackagist normal/offline installs and repeated randomized recovery contract tests.
-Moving the production constraint to a new minor requires this evidence and review.
+The blocking CI matrix exercises the minimum supported stable Composer CLI/library
+2.10.3 and the latest stable Composer 2 CLI with its matching library. Reports
+record the actual CLI/library versions and source hashes and assert that the
+requested library was used. Both rows run real WPackagist normal/offline installs
+and randomized recovery contracts. Historical snapshot evidence remains historical;
+the current workflow does not advertise an unexecuted Composer 3 qualification.
+Supporting another major requires a separate reviewed compatibility decision.
 
 ## Release and acceptance
 
-Publish versioned tags after the matrix, full fixture suite, differential comparisons
+Publish versioned tags after the matrix, full fixture suite, native compatibility contracts
 and consumer acceptance pass. Starter and demo pin `0.1.0` exactly, including the
 resolved source reference in their locks. Future updates go through normal review.
 

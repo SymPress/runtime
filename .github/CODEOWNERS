@@ -1,0 +1,6 @@
+# Protected release-source changes require the approved repository owner.
+/.github/workflows/ @brianvarskonst
+/.github/release-signers @brianvarskonst
+/tools/verify-release.py @brianvarskonst
+/.github/CODEOWNERS @brianvarskonst
+/tools/check-security-sarif.py @brianvarskonst

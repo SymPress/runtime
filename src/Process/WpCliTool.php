@@ -76,7 +76,7 @@ final class WpCliTool implements PhpTool
             }
         }
         if ($this->config['compatibility-profile']->is('native')) {
-            $this->io->error('Latest WP-CLI release lookup failed; configure wp-cli-version for an explicit release.');
+            $this->io->error('Latest WP-CLI release lookup failed (network, API rate limit or invalid metadata); configure wp-cli-version and wp-cli-sha256 for reproducible installation.');
             $this->releaseUrl = '';
 
             return '';

@@ -41,3 +41,12 @@ $editor->append('BEFORE_BOOTSTRAP', 'define("PROJECT_BOOTSTRAPPED", true);');
 Keep section delimiters intact. Regeneration retains edited bodies, including manually maintained early autoload code; changing configuration options does not silently discard those edits. Review preservation diagnostics after template/configuration upgrades. Custom templates take responsibility for their bootstrap and must be tested with real WordPress, WP-CLI and the selected autoload policy.
 
 The generated paths are relative where the layout permits, but unchanged relative paths are only one part of relocation. Environment dumps and compiled kernel/application files can contain absolute paths. Follow [deployment](deployment.md) before moving artifacts to another root.
+
+## URL and proxy safety
+
+Staging/production requires a canonical explicit `WP_HOME`; missing or malformed
+URLs stop configuration before WordPress runs. Forwarded HTTPS requires both the
+explicit SSL flag and configured trusted proxy IP/CIDRs. See the exact
+[environment and TLS termination contract](environment.md#canonical-urls-and-tls-termination).
+Regeneration preserves user-edited sections. Review existing custom URL/SSL bodies
+when adopting this policy; preserving custom PHP does not certify it as safe.

@@ -91,4 +91,27 @@ PHP);
         self::assertSame(0, $other->getExitCode(), $other->getErrorOutput());
         self::assertSame([false, false, false], json_decode($other->getOutput(), true, flags: JSON_THROW_ON_ERROR));
     }
+    public function testAutomaticCacheUsesReadOnlyExistingFilesAndExplicitNativeCacheFailsBeforeShutdown(): void
+    {
+        if (!function_exists('posix_geteuid') || posix_geteuid() !== 0) {
+            self::markTestSkipped('Read-only bootstrap probe needs POSIX identity switching.');
+        }
+        chgrp($this->root, 65534);
+        chmod($this->root, 02750);
+        foreach (['auto', true] as $mode) {
+            $this->fixture(['generated-file-mode' => '0640', 'cache-env' => $mode, 'bundle-bootstrap' => true]);
+            $this->write('readonly-probe.php', <<<'PHP'
+<?php
+if (!posix_setgid(65534) || !posix_setuid(65534)) { throw new RuntimeException('Cannot switch probe identity.'); }
+clearstatcache();
+try { require __DIR__ . '/public/wp-config.php'; echo 'booted'; }
+catch (RuntimeException $error) { echo str_contains($error->getMessage(), 'Explicit cache-env') ? 'explicit-denied' : $error->getMessage(); }
+PHP);
+            $process = new Process([PHP_BINARY, $this->root . '/readonly-probe.php'], $this->root, $this->environment());
+            $process->mustRun();
+            self::assertSame($mode === 'auto' ? 'booted' : 'explicit-denied', $process->getOutput());
+            self::assertFileDoesNotExist($this->root . '/.env.cached.php');
+        }
+    }
+
 }

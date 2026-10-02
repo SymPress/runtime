@@ -5,6 +5,7 @@
 - [0023: Private environment writes and production payloads](0023-env-production.md)
 - [0024: Crash recovery journal and owned artifact pruning](0024-layout-journal.md)
 - [0025: Read-only operations and native deployment defaults](0025-production-operations.md)
+- [0027: Protected release orchestration and bootstrap security](0027-release-trust-and-bootstrap-security.md)
 - [0026: Console command discovery](0026-console-command-discovery.md)
 
 The project owner accepted these ADRs with explicit Phase 0 approval on 2026-09-29. The package name is `sympress/runtime`.

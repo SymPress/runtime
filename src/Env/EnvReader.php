@@ -56,6 +56,7 @@ final class EnvReader
     private array $definedConstants = [];
     private bool $loaded = false;
     private bool $fromCache = false;
+    private bool $processInterpolation = false;
     private bool $constantsSet = false;
     private bool $wordPressSetup = false;
     private ?string $environment = null;
@@ -315,7 +316,7 @@ final class EnvReader
     /** @internal */
     public function dumpCached(string $file, bool $immutable = false): bool
     {
-        if ($this->fromCache || !SecureFileWriter::canWrite($file)) {
+        if ($this->fromCache || $this->processInterpolation || !SecureFileWriter::canWrite($file)) {
             return false;
         }
         foreach (array_keys($this->raw) as $name) {
@@ -324,12 +325,15 @@ final class EnvReader
         if ($this->cache === []) {
             return false;
         }
+        $values = $this->profile === 'native'
+            ? EnvCacheValues::fileOwned($this->cache, $this->raw, self::WP_CONSTANTS + self::WP_STARTER_VARS + $this->customTypes, fn (string $name): bool => $this->externalValue($name) !== null)
+            : $this->cache;
         $payload = [
             'format' => 1,
             'profile' => $this->profile,
             'compatibility' => $this->compatibility,
             'environment' => $this->determineEnvType(),
-            'values' => array_diff_key($this->cache, $this->secretNames),
+            'values' => array_diff_key($values, $this->secretNames),
             'sources' => $immutable ? null : $this->sources,
             'loaded' => array_keys(array_diff_key($this->raw, $this->secretNames)),
             'types' => $this->customTypes,
@@ -567,6 +571,16 @@ final class EnvReader
         if ($content === false) {
             throw new RuntimeException('Cannot read environment file.');
         }
+        // Conservatively avoid persisting process secrets resolved through dotenv interpolation.
+        if ($this->profile === 'native' && preg_match_all('/\\$\\{?([A-Za-z_][A-Za-z0-9_]*)/', $content, $references)) {
+            foreach ($references[1] as $reference) {
+                if ($this->externalValue($reference) === null) {
+                    continue;
+                }
+
+                $this->processInterpolation = true;
+            }
+        }
         // Dotenv interpolation must see actual process values before resolving file variables.
         foreach ($this->external as $name => $value) {
             $_ENV[$name] = $this->externalValue($name) ?? $value;
@@ -582,6 +596,8 @@ final class EnvReader
                 throw new RuntimeException('Environment parser returned an invalid value.');
             }
             if ($this->externalValue($name) !== null) {
+                // Retain the file default without modifying the external value.
+                $this->raw[$name] = $value;
                 continue;
             }
             $this->write($name, $value);

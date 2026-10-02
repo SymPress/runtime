@@ -104,3 +104,11 @@ may emit its own PHP-version deprecations; configure PHP to write them to stderr
 if parsing JSON output. Runtime does not suppress upstream diagnostics.
 
 Standalone and Composer execution share the same services and generated configuration. `wp-config-autoload` determines early Composer loading for WordPress requests and must agree with application/MU bootstrap ownership. See [migration](migration.md), [sections](wp-config.md) and [CLI](cli.md).
+
+Latest discovery uses an unauthenticated GitHub API request and can fail because of
+rate limits or network errors. Native mode reports that failure and stops selecting
+a PHAR; it does not silently use an older version or skip SHA-512 verification.
+Configure both `wp-cli-version` and an independently verified `wp-cli-sha256` for
+reproducible unattended installs. Explicit versions skip discovery entirely, and
+SHA-256 assertions also verify existing local PHARs. An explicit version alone
+still depends on authenticated transport and the upstream sidecar for first trust.
