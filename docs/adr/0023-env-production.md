@@ -7,6 +7,15 @@ Status: implemented, 2026-09-30.
 Native runtime caching defaults to auto, checks parent writability before shutdown
 registration, and invalidates on size/mtime changes to all attempted chain paths.
 Missing paths are recorded so newly deployed overrides invalidate existing caches.
+Interpolated process values use parser-produced substitution templates and salted
+dependency fingerprints. Runtime cache hits validate those dependencies and
+expand templates without Dotenv parsing or persisted process secret bytes.
+Missing and empty dependencies remain distinct; changes invalidate the cache.
+Dotenv retains control of quoting, escaping, defaults and file-chain resolution.
+Deployment dumps and command substitutions involving process dependencies retain
+their conservative refusal to persist derived process values.
+Process-derived environment selectors decline runtime caching too, since the
+selected name and attempted source paths appear in persistent metadata.
 Deployment dumps remain explicit immutable artifacts. Legacy runtime cache
 semantics remain unchanged.
 
