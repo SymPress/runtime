@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.2 — 2026-10-02
 
 - Require a canonical WP_HOME in staging/production and configured trusted proxy IP/CIDRs before accepting forwarded HTTPS.
 - Create private Composer handoff files from the first byte and exclude real process values and derived process secrets from native environment persistence.
