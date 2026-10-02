@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Config\Validator;
+use SymPress\Runtime\Env\EnvCacheFormat;
 use SymPress\Runtime\Filesystem\Filesystem;
 use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Generation\SectionMerger;
@@ -18,6 +19,38 @@ use Symfony\Component\Process\Process;
 
 final class WpConfigTest extends TemporaryProject
 {
+    /** @return iterable<string, array{?string}> */
+    public static function oldCacheProducers(): iterable
+    {
+        yield 'cache before producer tracking' => [null];
+        yield 'previous payload identity' => ['Previous\\Payload\\EnvReader'];
+    }
+
+    #[DataProvider('oldCacheProducers')]
+    public function testNewNativePayloadReloadsOldCacheAndPreservesConfiguredFlags(?string $producer): void
+    {
+        $this->fixture(['cache-env' => true]);
+        $this->write('.env', "WP_HOME=http://localhost\nWORDPRESS_ENV=development\nDB_NAME=fixture\nDB_USER=fixture\nWPDB_ENV_VALID=1\nWPDB_EXISTS=1\nWP_INSTALLED=1\n");
+        self::assertSame(0, $this->generate()->getExitCode());
+        self::assertSame([true], $this->boot('echo json_encode([sympress_runtime_getenv("WP_INSTALLED")]);'));
+        $file = $this->root . '/.env.cached.php';
+        $payload = require $file;
+        unset($payload['producer']);
+        if ($producer !== null) {
+            $payload['producer'] = $producer;
+        }
+        // Old format-1 caches have no provenance distinguishing a probe from a file flag.
+        $payload['values']['WPDB_EXISTS'] = ['0', false];
+        $payload['values']['WP_INSTALLED'] = ['0', false];
+        $this->write('.env.cached.php', EnvCacheFormat::encode($payload));
+        self::assertSame([true, 'No'], $this->boot('echo json_encode([sympress_runtime_getenv("WP_INSTALLED"), apply_filters("debug_information", [])["sympress-runtime"]["fields"]["cached-env"]["value"]]);'));
+        $updated = require $file;
+        self::assertIsString($updated['producer']);
+        self::assertNotSame($producer, $updated['producer']);
+        self::assertSame(['1', true], $updated['values']['WP_INSTALLED']);
+        self::assertSame([true, 'Yes'], $this->boot('echo json_encode([sympress_runtime_getenv("WP_INSTALLED"), apply_filters("debug_information", [])["sympress-runtime"]["fields"]["cached-env"]["value"]]);'));
+    }
+
     #[Group('PAR-SYM-009')]
     public function testDisabledCompatibilityIgnoresLegacyEnvironmentControlsInGeneratedAndRunnerBoots(): void
     {

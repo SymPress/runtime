@@ -16,7 +16,7 @@ use Throwable;
  *
  * @internal
  */
-// phpcs:ignore SymPress.Classes.PropertyLimit.TooManyProperties -- Separate origin, cache and lifecycle state preserves environment precedence.
+// phpcs:ignore SymPress.Classes.PropertyLimit.TooManyProperties, SymPress.Classes.ClassLength.TooLong -- Origin, transient ownership and cache lifecycle must remain in this environment boundary.
 final class EnvReader
 {
     public const string CACHE_DUMP_FILE = '/.env.cached.php';
@@ -64,7 +64,7 @@ final class EnvReader
     /** @var array<string, array{int, int}|null> */
     private array $sources = [];
     /** @var array<string, true> */
-    private array $secretNames = [];
+    private array $nonPersistentNames = [];
 
     /** @internal */
     public function __construct(private ?Dotenv $dotenv = null, private readonly string $profile = 'native', private readonly bool $compatibility = true, private readonly int $fileMode = 0600)
@@ -249,7 +249,7 @@ final class EnvReader
         if (!is_string($file) || $file === '') {
             return null;
         }
-        $this->secretNames[$name] = true;
+        $this->nonPersistentNames[$name] = true;
 
         return SecretFile::read($name, $file);
     }
@@ -277,6 +277,7 @@ final class EnvReader
         if ($this->externalValue($name) !== null) {
             throw new BadMethodCallException($name . ' is not a writable environment variable.');
         }
+        unset($this->nonPersistentNames[$name]);
         $this->raw[$name] = $value;
         $_ENV[$name] = $value;
         if (!str_starts_with($name, 'HTTP_')) {
@@ -286,8 +287,23 @@ final class EnvReader
             putenv($name . '=' . $value);
             $this->ownedProcess[$name] = $value;
         }
-        $_ENV['SYMFONY_DOTENV_VARS'] = implode(',', array_keys($this->raw));
+        $_ENV['SYMFONY_DOTENV_VARS'] = implode(',', array_keys(array_diff_key($this->raw, $this->nonPersistentNames)));
         $_SERVER['SYMFONY_DOTENV_VARS'] = $_ENV['SYMFONY_DOTENV_VARS'];
+        $this->read($name);
+    }
+
+    /** @internal */
+    public function writeTransient(string $name, string $value): void
+    {
+        if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/D', $name)) {
+            throw new InvalidArgumentException('Invalid environment variable name.');
+        }
+        if ($this->externalValue($name) !== null) {
+            throw new BadMethodCallException($name . ' is not a writable environment variable.');
+        }
+        // Probe observations belong to this reader, never inherited subprocesses.
+        $this->raw[$name] = $value;
+        $this->nonPersistentNames[$name] = true;
         $this->read($name);
     }
 
@@ -298,13 +314,16 @@ final class EnvReader
     }
 
     /** @internal */
-    public static function buildFromCacheDump(string $file, string $profile = 'native', ?string $environment = null, bool $compatibility = true, bool $validateSources = false, int $fileMode = 0600): self
+    public static function buildFromCacheDump(string $file, string $profile = 'native', ?string $environment = null, bool $compatibility = true, bool $validateSources = false, int $fileMode = 0600, ?string $producer = null): self
     {
         $reader = new self(profile: $profile, compatibility: $compatibility, fileMode: $fileMode);
         if (!is_file($file) || !is_readable($file)) {
             return $reader;
         }
         $data = EnvCacheFormat::read($file);
+        if ($producer !== null && ($data['producer'] ?? null) !== $producer) {
+            return $reader;
+        }
         if ($validateSources && $profile === 'native' && !EnvCacheSources::matches($data)) {
             return $reader;
         }
@@ -333,9 +352,10 @@ final class EnvReader
             'profile' => $this->profile,
             'compatibility' => $this->compatibility,
             'environment' => $this->determineEnvType(),
-            'values' => array_diff_key($values, $this->secretNames),
+            'producer' => self::class,
+            'values' => array_diff_key($values, $this->nonPersistentNames),
             'sources' => $immutable ? null : $this->sources,
-            'loaded' => array_keys(array_diff_key($this->raw, $this->secretNames)),
+            'loaded' => array_keys(array_diff_key($this->raw, $this->nonPersistentNames)),
             'types' => $this->customTypes,
             'constants' => array_values(array_unique([...$this->definedConstants, ...array_keys(array_intersect_key($this->cache, self::WP_CONSTANTS))])),
         ];

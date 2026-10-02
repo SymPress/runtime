@@ -32,7 +32,7 @@ WPS_GETENV_FUNCTION : {
     $usingEnvDump = is_file($envDumpFile);
     global $sympressRuntimeEnvironment;
     $sympressRuntimeEnvironment = $usingEnvDump || {{{CACHE_ENABLED}}}
-        ? $runtimeReaderClass::buildFromCacheDump($usingEnvDump ? $envDumpFile : $envCacheFile, {{{PROFILE}}}, compatibility: {{{COMPATIBILITY}}}, validateSources: !$usingEnvDump && {{{PROFILE}}} === 'native', fileMode: {{{GENERATED_FILE_MODE}}})
+        ? $runtimeReaderClass::buildFromCacheDump($usingEnvDump ? $envDumpFile : $envCacheFile, {{{PROFILE}}}, compatibility: {{{COMPATIBILITY}}}, validateSources: !$usingEnvDump && {{{PROFILE}}} === 'native', fileMode: {{{GENERATED_FILE_MODE}}}, producer: !$usingEnvDump && {{{PROFILE}}} === 'native' ? $runtimeReaderClass : null)
         : new $runtimeReaderClass(profile: {{{PROFILE}}}, compatibility: {{{COMPATIBILITY}}}, fileMode: {{{GENERATED_FILE_MODE}}});
     if (!function_exists('sympress_runtime_getenv')) {
         function sympress_runtime_getenv(?string $name): bool|int|float|string|object|null

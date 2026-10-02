@@ -85,7 +85,7 @@ final class DbChecker
                 continue;
             }
 
-            $this->env->write($name, $value ? '1' : '0');
+            $this->env->writeTransient($name, $value ? '1' : '0');
         }
         $this->io->verbose('Database status: ' . $this->status->reason . '.');
     }

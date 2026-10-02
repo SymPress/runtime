@@ -10,6 +10,14 @@ Missing paths are recorded so newly deployed overrides invalidate existing cache
 Deployment dumps remain explicit immutable artifacts. Legacy runtime cache
 semantics remain unchanged.
 
+Generated native bootstrap also checks ordinary cache producer identity against
+its fingerprinted Runtime payload class. A normal setup/update therefore reloads
+configured sources after a payload change, including caches created before
+reader-local database observations were introduced. No status value is guessed
+or selectively erased from old cache data. Explicit source flags are loaded
+again. Format-1 readers remain compatible when no producer is requested, and
+immutable deployment dumps retain their existing acceptance contract.
+
 Cache, dump and generated PHP configuration writes share `SecureFileWriter`.
 It checks writable and canonical parent paths, verifies the temporary file remains
 in that parent before writing content, and remembers unwritable parents for the
