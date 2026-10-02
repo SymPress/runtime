@@ -30,15 +30,27 @@ final class EnvCacheInterpolation
         // The selected source chain cannot lose its history through later overrides.
         $this->uncacheable = $this->uncacheable || $this->expressions->hasDynamicEnvironmentSelection();
         $replacements = [];
+        $externalReferences = [];
+        $loaded = $_SERVER['SYMFONY_DOTENV_VARS'] ?? $_ENV['SYMFONY_DOTENV_VARS'] ?? '';
+        $filePrecedence = array_fill_keys(is_string($loaded) ? explode(',', $loaded) : [], true);
         foreach ($this->expressions->referencesFor($path) as $name) {
             $value = $external($name);
             $marker = $this->dependencies[$name]['marker'] ?? 'SYMPRESS_INTERPOLATION_' . bin2hex(random_bytes(16));
             $this->dependencies[$name] = ['marker' => $marker, 'fingerprint' => self::fingerprint($marker, $value)];
-            if ($value === null || $value === '') {
+            if ($value !== null && $value !== '') {
+                $externalReferences[$name] = true;
+            }
+            if (str_starts_with($name, 'HTTP_') && !isset($_ENV[$name])) {
+                $filePrecedence[$name] = true;
+            }
+            // HTTP getenv fallbacks remain live: injecting them into ENV would
+            // override trusted file definitions that Dotenv normally prefers.
+            if ($value === null || $value === '' || (str_starts_with($name, 'HTTP_') && !isset($_ENV[$name]))) {
                 continue;
             }
             $replacements[$marker] = $value;
         }
+        $this->expressions->trackExternalReferences($path, $externalReferences, $filePrecedence);
         // Commands may transform secrets and cannot be represented by substitution templates.
         if (str_contains($content, '$(')) {
             $values = self::validateValues($dotenv->parse($content, $path));
@@ -50,7 +62,7 @@ final class EnvCacheInterpolation
         }
         foreach ($this->dependencies as $name => $dependency) {
             $value = $external($name);
-            if ($value === null || $value === '') {
+            if ($value === null || $value === '' || (str_starts_with($name, 'HTTP_') && !isset($_ENV[$name]))) {
                 continue;
             }
             $replacements[$dependency['marker']] = $value;
@@ -99,7 +111,7 @@ final class EnvCacheInterpolation
         return !$this->uncacheable && array_intersect_key($dynamic, array_flip(['WP_ENVIRONMENT_TYPE', 'WP_ENV', 'WORDPRESS_ENV'])) === [];
     }
 
-    /** @return array{dependencies: array<string, array{marker: string, fingerprint: string|null}>, templates: array<string, string>, expressions: array<string, string>, dynamic: array<string, true>, transient: array<string, true>, process: array<string, true>, refresh: bool} */
+    /** @return array{dependencies: array<string, array{marker: string, fingerprint: string|null}>, templates: array<string, string>, expressions: array<string, string>, dynamic: array<string, true>, transient: array<string, true>, process: array<string, true>, replay: array<string, true>, refresh: bool} */
     public function payload(): array
     {
         $templates = [];
@@ -113,8 +125,7 @@ final class EnvCacheInterpolation
                 $needed[$reference] = true;
             }
         }
-        $external = array_fill_keys(array_keys(array_filter($this->dependencies, static fn (array $dependency): bool => $dependency['fingerprint'] !== null && $dependency['fingerprint'] !== self::fingerprint($dependency['marker'], ''))), true);
-        $expressions = $this->expressions?->payload($external) ?? ['expressions' => [], 'dynamic' => [], 'transient' => [], 'process' => [], 'needed' => []];
+        $expressions = $this->expressions?->payload() ?? ['expressions' => [], 'dynamic' => [], 'transient' => [], 'process' => [], 'needed' => [], 'replay' => []];
         $dependencies = array_intersect_key($this->dependencies, $needed + $expressions['needed']);
         unset($expressions['needed']);
 
