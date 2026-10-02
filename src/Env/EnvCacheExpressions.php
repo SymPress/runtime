@@ -198,7 +198,7 @@ final class EnvCacheExpressions
                 continue;
             }
             $references[] = $match[1];
-            if (!preg_match('/^\{([A-Za-z_][A-Za-z0-9_]*):=/', $tail, $assignment)) {
+            if (!preg_match('/^\{?([A-Za-z_][A-Za-z0-9_]*):=/', $tail, $assignment)) {
                 continue;
             }
             $assigned[] = $assignment[1];
