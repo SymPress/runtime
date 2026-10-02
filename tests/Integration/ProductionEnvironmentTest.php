@@ -107,6 +107,22 @@ echo json_encode([$cached, $r->read('RTV_DERIVED')]);
 PHP));
     }
 
+    public function testExplicitWriteRetainsSafeCacheAndDumpAfterUnusedProcessDependencyRotates(): void
+    {
+        $this->write('.env', "RTV_SAFE=original\n" . 'RTV_DERIVED=$RTV_PROCESS_SECRET' . "\n");
+        self::assertSame([true, true], $this->runPhp(<<<'PHP'
+putenv('RTV_PROCESS_SECRET=first-process');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+$r->write('RTV_DERIVED', 'explicit');
+echo json_encode([$r->dumpCached('cache.php'), $r->dumpCached('dump.php', immutable: true)]);
+PHP));
+        foreach (['cache.php', 'dump.php'] as $file) {
+            self::assertSame([true, 'original', 'explicit', false], $this->runPhp('putenv("RTV_PROCESS_SECRET=rotated-process");$r = SymPress\\Runtime\\Env\\EnvReader::buildFromCacheDump(' . var_export($file, true) . ', validateSources: ' . ($file === 'cache.php' ? 'true' : 'false') . ');' . <<<'PHP'
+echo json_encode([$r->hasCachedValues(), $r->read('RTV_SAFE'), $r->read('RTV_DERIVED'), class_exists(Symfony\Component\Dotenv\Dotenv::class, false)]);
+PHP));
+        }
+    }
+
     public function testCommandOverridesReplaceTemplatesBeforeLaterFileInterpolation(): void
     {
         $this->write('.env', 'RTV_BASE=$RTV_EXTERNAL' . "\n");
@@ -203,6 +219,47 @@ PHP));
             self::assertSame([false, false], $this->runPhp(<<<'PHP'
 $r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
 echo json_encode([$r->dumpCached('cache.php'), $r->dumpCached('dump.php', immutable: true)]);
+PHP));
+        }
+    }
+
+    public function testHistoricalCommandSelectorCannotPersistSecretStageAfterStaticOverride(): void
+    {
+        $stage = 'review-private-stage-9b7a4d2e';
+        $this->write('.env', 'WP_ENVIRONMENT_TYPE=$(printf %s "$RTV_PROCESS_SECRET")' . "\nRTV_SAFE=static\n");
+        $this->write('.env.' . $stage, "WP_ENVIRONMENT_TYPE=production\n");
+        self::assertSame([false, false, 0, 0, 'production', $stage], $this->runPhp(<<<'PHP'
+putenv('RTV_PROCESS_SECRET=review-private-stage-9b7a4d2e');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+$cache = $r->dumpCached('cache.php'); $dump = $r->dumpCached('dump.php', immutable: true);
+$bytes = static fn (string $file): int => is_file($file) ? substr_count(file_get_contents($file), 'review-private-stage-9b7a4d2e') : 0;
+echo json_encode([$cache, $dump, $bytes('cache.php'), $bytes('dump.php'), $r->read('WP_ENVIRONMENT_TYPE'), $r->determineEnvType()]);
+PHP));
+    }
+
+    public function testStaticEnvironmentSelectorOverrideRetainsCacheAndDump(): void
+    {
+        $this->write('.env', "WP_ENVIRONMENT_TYPE=review-public-stage\nRTV_SAFE=static\n");
+        $this->write('.env.review-public-stage', "WP_ENVIRONMENT_TYPE=production\nRTV_SAFE=override\n");
+        self::assertSame([true, true, true, 'override', 'production'], $this->runPhp(<<<'PHP'
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+$cache = $r->dumpCached('cache.php'); $dump = $r->dumpCached('dump.php', immutable: true);
+$r = SymPress\Runtime\Env\EnvReader::buildFromCacheDump('dump.php');
+echo json_encode([$cache, $dump, $r->hasCachedValues(), $r->read('RTV_SAFE'), $r->read('WP_ENVIRONMENT_TYPE')]);
+PHP));
+    }
+
+    public function testLiteralCommentAndEscapedAssignmentsCannotRemoveCommandTaint(): void
+    {
+        foreach (["RTV_LITERAL='\${RTV_COMMAND:=safe}'", 'RTV_LITERAL=static # ${RTV_COMMAND:=safe}', 'RTV_LITERAL=\${RTV_COMMAND:=safe}'] as $literal) {
+            $this->write('.env', 'RTV_COMMAND=$(printf %s "$RTV_PROCESS_SECRET")' . "\n" . $literal . "\n" . 'RTV_DERIVED=$RTV_COMMAND' . "\nRTV_SAFE=static\n");
+            self::assertSame([true, true, 0, 0, false, false, 'static'], $this->runPhp(<<<'PHP'
+putenv('RTV_PROCESS_SECRET=review-private-secret-b5c9d3');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+$cache = $r->dumpCached('cache.php'); $dump = $r->dumpCached('dump.php', immutable: true);
+$bytes = static fn (string $file): int => substr_count(file_get_contents($file), 'review-private-secret-b5c9d3');
+$data = SymPress\Runtime\Env\EnvCacheFormat::read('dump.php');
+echo json_encode([$cache, $dump, $bytes('cache.php'), $bytes('dump.php'), isset($data['values']['RTV_COMMAND']), isset($data['values']['RTV_DERIVED']), $r->read('RTV_SAFE')]);
 PHP));
         }
     }
