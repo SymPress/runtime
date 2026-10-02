@@ -82,7 +82,7 @@ jobs:
           php --version > build/platform-evidence/php.txt
           composer --version > build/platform-evidence/composer.txt
           composer show --format=json > build/platform-evidence/packages.json
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: platform-${{ matrix.os }}-composer-${{ matrix.composer }}
@@ -117,7 +117,7 @@ jobs:
           # shellcheck disable=SC2016 # PHP variables must not be expanded by Bash.
           php -r '$manifest = json_decode(file_get_contents("composer.json"), true, flags: JSON_THROW_ON_ERROR); $lock = json_decode(file_get_contents("composer.lock"), true, flags: JSON_THROW_ON_ERROR); $versions = array_column($lock["packages"], "version", "name"); foreach ($manifest["require"] as $name => $constraint) { if (str_starts_with($name, "symfony/") && !str_starts_with(ltrim($versions[$name], "v"), "8.1.")) { throw new RuntimeException("Lowest Symfony 8.1 boundary was not resolved: " . $name); } }'
           composer qa
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: lowest-stable-lock
