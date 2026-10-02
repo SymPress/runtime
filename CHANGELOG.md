@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.3 — Unreleased
+
+- Keep probed database status reader-local and out of environment caches so a cold WordPress install cannot retain pre-install status in later diagnostics.
+- Reload native ordinary caches after a generated Runtime payload change, preserving explicitly configured flags and existing format-1 deployment dumps.
+
 ## 1.1.2 — 2026-10-02
 
 - Require a canonical WP_HOME in staging/production and configured trusted proxy IP/CIDRs before accepting forwarded HTTPS.

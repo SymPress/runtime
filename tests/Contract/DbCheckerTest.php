@@ -25,11 +25,68 @@ use SymPress\Runtime\Tests\Support\TemporaryProject;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Process\ExecutableFinder;
+use Symfony\Component\Process\Process;
 
 #[PreserveGlobalState(false)]
 #[RunTestsInSeparateProcesses]
 final class DbCheckerTest extends TemporaryProject
 {
+    /** @return iterable<string, array{string, bool}> */
+    public static function persistenceModes(): iterable
+    {
+        foreach (['native', 'release', 'dev'] as $profile) {
+            foreach ([false, true] as $immutable) {
+                yield $profile . ($immutable ? ' dump' : ' cache') => [$profile, $immutable];
+            }
+        }
+    }
+
+    #[DataProvider('persistenceModes')]
+    public function testProbeStatusDoesNotPersistOrLeakIntoFreshProcesses(string $profile, bool $immutable): void
+    {
+        $this->write('.env', "DB_NAME=fixture\nDB_USER=fixture\nDB_HOST=localhost\n");
+        $environment = new EnvReader(profile: $profile);
+        $environment->load(path: $this->root);
+        $io = new Io(new ArrayInput([]), new BufferedOutput());
+        $checker = new DbChecker($environment, $io, new SystemProcess(new Paths($this->root), $io), new ExecutableFinder(), new DatabaseProbeStub(new DbStatus(true, false, false, 'absent')));
+        self::assertFalse($checker->isInstalled());
+        self::assertFalse($environment->read(DbChecker::WP_INSTALLED));
+        $file = $this->root . '/.env.cached.php';
+        self::assertTrue($environment->dumpCached($file, immutable: $immutable));
+        $payload = require $file;
+        foreach ([DbChecker::WPDB_ENV_VALID, DbChecker::WPDB_EXISTS, DbChecker::WP_INSTALLED] as $name) {
+            self::assertArrayNotHasKey($name, $payload['values']);
+            self::assertNotContains($name, $payload['loaded']);
+        }
+        $code = 'require ' . var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true) . '; ';
+        $code .= '$r = SymPress\\Runtime\\Env\\EnvReader::buildFromCacheDump(' . var_export($file, true) . ', profile: ' . var_export($profile, true) . '); ';
+        $code .= '$io = new SymPress\\Runtime\\Console\\Io(new Symfony\\Component\\Console\\Input\\ArrayInput([]), new Symfony\\Component\\Console\\Output\\BufferedOutput()); ';
+        $code .= '$probe = new SymPress\\Runtime\\Tests\\Fixtures\\DatabaseProbeStub(new SymPress\\Runtime\\Database\\DbStatus(true, true, true, "installed")); ';
+        $code .= '$db = new SymPress\\Runtime\\Database\\DbChecker($r, $io, new SymPress\\Runtime\\Process\\SystemProcess(new SymPress\\Runtime\\Filesystem\\Paths(' . var_export($this->root, true) . '), $io), new Symfony\\Component\\Process\\ExecutableFinder(), $probe); echo json_encode([$db->isInstalled(), $probe->calls]);';
+        $process = new Process([PHP_BINARY, '-r', $code], $this->root);
+        $process->mustRun();
+        self::assertSame([true, 1], json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR));
+    }
+
+    #[DataProvider('persistenceModes')]
+    public function testExplicitFileStatusRemainsAuthoritativeAndPersisted(string $profile, bool $immutable): void
+    {
+        $this->write('.env', "WPDB_ENV_VALID=1\nWPDB_EXISTS=1\nWP_INSTALLED=0\n");
+        $environment = new EnvReader(profile: $profile);
+        $environment->load(path: $this->root);
+        $io = new Io(new ArrayInput([]), new BufferedOutput());
+        $probe = new DatabaseProbeStub(new DbStatus(true, true, true, 'installed'));
+        $checker = new DbChecker($environment, $io, new SystemProcess(new Paths($this->root), $io), new ExecutableFinder(), $probe);
+        self::assertFalse($checker->isInstalled());
+        self::assertSame(0, $probe->calls);
+        self::assertSame('provided', $checker->status()->reason);
+        $file = $this->root . '/.env.cached.php';
+        self::assertTrue($environment->dumpCached($file, immutable: $immutable));
+        $payload = require $file;
+        self::assertSame(['0', false], $payload['values'][DbChecker::WP_INSTALLED]);
+        self::assertContains(DbChecker::WP_INSTALLED, $payload['loaded']);
+    }
+
     /**
      * @param array<string, string> $values
      * @return array{DbChecker, EnvReader, DatabaseProbeStub, BufferedOutput}
