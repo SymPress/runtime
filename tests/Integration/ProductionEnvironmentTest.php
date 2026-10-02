@@ -25,7 +25,7 @@ final class ProductionEnvironmentTest extends TemporaryProject
     public function testProcessSecretInterpolationCachesTemplatesWithoutPersistingSecrets(): void
     {
         $this->write('.env', 'RTV_DERIVED=${RTV_PROCESS_SECRET}' . "\n");
-        self::assertSame(['external-secret', true, false, true, false, false, 0600], $this->runPhp(<<<'PHP'
+        self::assertSame(['external-secret', true, true, true, true, false, 0600], $this->runPhp(<<<'PHP'
 putenv('RTV_PROCESS_SECRET=external-secret');
 $r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
 $cached = $r->dumpCached('cache.php');
@@ -33,7 +33,7 @@ echo json_encode([$r->read('RTV_DERIVED'), $cached, $r->dumpCached('dump.php', i
 PHP));
     }
 
-    public function testInterpolationCacheHitAvoidsParserAndInvalidatesChangedMissingOrRemovedProcessValues(): void
+    public function testInterpolationRefreshPreservesSafeCacheForChangedMissingOrRemovedProcessValues(): void
     {
         $this->write('.env', 'WP_HOME=https://file.example' . "\n" . 'WP_SITEURL=${WP_HOME}/wp' . "\n" . 'RTV_CHAIN=${WP_SITEURL}/admin' . "\n" . 'RTV_DEFAULT=${RTV_OPTIONAL:-fallback}' . "\n");
         $this->write('.env.production', 'RTV_APPENDED=${RTV_CHAIN}/tail' . "\n");
@@ -48,9 +48,9 @@ $cached = $r->hasCachedValues(); $r->loadChain();
 echo json_encode([$cached, class_exists(Symfony\Component\Dotenv\Dotenv::class, false), $r->read('WP_SITEURL'), $r->read('RTV_APPENDED'), $r->read('RTV_DEFAULT')]);
 PHP;
         self::assertSame([true, false, 'https://process.example/wp', 'https://process.example/wp/admin/tail', 'fallback'], $this->runPhp("putenv('WP_HOME=https://process.example');" . $load));
-        self::assertSame([false, true, 'https://changed.example/wp', 'https://changed.example/wp/admin/tail', 'fallback'], $this->runPhp("putenv('WP_HOME=https://changed.example');" . $load));
-        self::assertSame([false, true, 'https://process.example/wp', 'https://process.example/wp/admin/tail', 'present'], $this->runPhp("putenv('WP_HOME=https://process.example'); putenv('RTV_OPTIONAL=present');" . $load));
-        self::assertSame([false, true, 'https://file.example/wp', 'https://file.example/wp/admin/tail', 'fallback'], $this->runPhp("putenv('WP_HOME'); unset(\$_ENV['WP_HOME'], \$_SERVER['WP_HOME']);" . $load));
+        self::assertSame([true, true, 'https://changed.example/wp', 'https://changed.example/wp/admin/tail', 'fallback'], $this->runPhp("putenv('WP_HOME=https://changed.example');" . $load));
+        self::assertSame([true, true, 'https://process.example/wp', 'https://process.example/wp/admin/tail', 'present'], $this->runPhp("putenv('WP_HOME=https://process.example'); putenv('RTV_OPTIONAL=present');" . $load));
+        self::assertSame([true, true, 'https://file.example/wp', 'https://file.example/wp/admin/tail', 'fallback'], $this->runPhp("putenv('WP_HOME'); unset(\$_ENV['WP_HOME'], \$_SERVER['WP_HOME']);" . $load));
     }
 
     public function testRealEnvironmentSecretsAreExcludedAndFileDefaultsSurviveTheirRemoval(): void
@@ -112,7 +112,7 @@ PHP));
         $this->write('.env', 'RTV_BASE=$RTV_EXTERNAL' . "\n");
         $this->write('.env.local', 'RTV_BASE=$(printf changed)' . "\n");
         $this->write('.env.production', 'RTV_DERIVED=$RTV_BASE' . "\n");
-        self::assertSame(['changed', 'changed', false], $this->runPhp(<<<'PHP'
+        self::assertSame(['changed', 'changed', true], $this->runPhp(<<<'PHP'
 putenv('RTV_EXTERNAL=external-secret');
 $r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
 echo json_encode([$r->read('RTV_BASE'), $r->read('RTV_DERIVED'), $r->dumpCached('cache.php')]);
@@ -126,6 +126,113 @@ PHP));
 putenv('RTV_PROCESS_SECRET=private-stage');
 $r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
 echo json_encode([$r->dumpCached('cache.php'), $r->dumpCached('dump.php', immutable: true), is_file('cache.php')]);
+PHP));
+    }
+
+    public function testPartialDumpFreezesSafeValuesAndResolvesOnlyProcessExpressionsLive(): void
+    {
+        $this->write('.env', 'RTV_SAFE=original' . "\n" . 'RTV_DERIVED=${RTV_PROCESS_SECRET:-fallback}' . "\n");
+        self::assertSame([true, true, true, true], $this->runPhp(<<<'PHP'
+putenv('RTV_PROCESS_SECRET=first-secret');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+$cache = $r->dumpCached('cache.php'); $dump = $r->dumpCached('dump.php', immutable: true);
+$data = SymPress\Runtime\Env\EnvCacheFormat::read('dump.php');
+echo json_encode([$cache, $dump, isset($data['values']['RTV_SAFE']) && !isset($data['values']['RTV_DERIVED']), !str_contains(file_get_contents('dump.php'), 'first-secret')]);
+PHP));
+        $this->write('.env', "RTV_SAFE=replaced\n");
+        $load = <<<'PHP'
+$r = SymPress\Runtime\Env\EnvReader::buildFromCacheDump('dump.php');
+echo json_encode([$r->hasCachedValues(), $r->read('RTV_SAFE'), $r->read('RTV_DERIVED')]);
+PHP;
+        self::assertSame([true, 'original', 'rotated-secret'], $this->runPhp("putenv('RTV_PROCESS_SECRET=rotated-secret');" . $load));
+        self::assertSame([true, 'original', 'fallback'], $this->runPhp("putenv('RTV_PROCESS_SECRET');" . $load));
+    }
+
+    public function testCommandResultsAndTransitiveResultsStayLiveWhileUnrelatedKeysAreCached(): void
+    {
+        $this->write('.env', 'RTV_SAFE=original' . "\n" . 'RTV_COMMAND=$(printf %s "$RTV_PROCESS_SECRET")' . "\n" . 'RTV_DERIVED=${RTV_COMMAND}/suffix' . "\n");
+        self::assertSame([true, true, true], $this->runPhp(<<<'PHP'
+putenv('RTV_PROCESS_SECRET=first-secret');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+$cached = $r->dumpCached('cache.php'); $dumped = $r->dumpCached('dump.php', immutable: true);
+$data = SymPress\Runtime\Env\EnvCacheFormat::read('cache.php');
+echo json_encode([$cached, $dumped, !isset($data['values']['RTV_COMMAND']) && !isset($data['values']['RTV_DERIVED']) && isset($data['values']['RTV_SAFE']) && !str_contains(file_get_contents('cache.php') . file_get_contents('dump.php'), 'first-secret')]);
+PHP));
+        self::assertSame([true, 'original', 'rotated-secret', 'rotated-secret/suffix'], $this->runPhp(<<<'PHP'
+putenv('RTV_PROCESS_SECRET=rotated-secret');
+$r = SymPress\Runtime\Env\EnvReader::buildFromCacheDump('cache.php', validateSources: true);
+echo json_encode([$r->hasCachedValues(), $r->read('RTV_SAFE'), $r->read('RTV_COMMAND'), $r->read('RTV_DERIVED')]);
+PHP));
+    }
+
+    public function testDynamicRefreshPreservesEarlierFileDefaultsAndMultilineQuoting(): void
+    {
+        $this->write('.env', 'RTV_BASE=first' . "\n" . 'RTV_MULTILINE="line1' . "\n" . 'RTV_FAKE=inside $RTV_PROCESS_SECRET' . "\n" . 'line3"' . "\n" . 'RTV_DERIVED=$RTV_BASE/$RTV_PROCESS_SECRET' . "\n");
+        $this->write('.env.production', "RTV_BASE=second\n");
+        self::assertSame([true], $this->runPhp(<<<'PHP'
+putenv('RTV_PROCESS_SECRET=old');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+echo json_encode([$r->dumpCached('cache.php')]);
+PHP));
+        self::assertSame(['second', 'first/new', "line1\nRTV_FAKE=inside new\nline3"], $this->runPhp(<<<'PHP'
+putenv('RTV_PROCESS_SECRET=new');
+$r = SymPress\Runtime\Env\EnvReader::buildFromCacheDump('cache.php', validateSources: true);
+echo json_encode([$r->read('RTV_BASE'), $r->read('RTV_DERIVED'), $r->read('RTV_MULTILINE')]);
+PHP));
+    }
+
+    public function testLaterSafeCommandOverrideDoesNotPersistEarlierDerivedSecret(): void
+    {
+        $this->write('.env', 'RTV_COMMAND=$(printf %s "$RTV_PROCESS_SECRET")' . "\n" . 'RTV_DERIVED=$RTV_COMMAND' . "\n");
+        $this->write('.env.production', "RTV_COMMAND=safe\nRTV_UNRELATED=static\n");
+        self::assertSame([true, true, 'safe', 'rotated'], $this->runPhp(<<<'PHP'
+putenv('RTV_PROCESS_SECRET=initial-secret');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+$dump = $r->dumpCached('dump.php', immutable: true);
+$safe = !str_contains(file_get_contents('dump.php'), 'initial-secret');
+putenv('RTV_PROCESS_SECRET=rotated');
+$r = SymPress\Runtime\Env\EnvReader::buildFromCacheDump('dump.php');
+echo json_encode([$dump, $safe, $r->read('RTV_COMMAND'), $r->read('RTV_DERIVED')]);
+PHP));
+    }
+
+    public function testDynamicEnvironmentSelectorsCannotPersistASelectedChain(): void
+    {
+        foreach (['WP_ENVIRONMENT_TYPE=${RTV_OPTIONAL:-production}', 'WP_ENVIRONMENT_TYPE=$(printf production)'] as $content) {
+            $this->write('.env', $content . "\nRTV_SAFE=static\n");
+            self::assertSame([false, false], $this->runPhp(<<<'PHP'
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+echo json_encode([$r->dumpCached('cache.php'), $r->dumpCached('dump.php', immutable: true)]);
+PHP));
+        }
+    }
+
+    public function testMixedCommandsAndImplicitDefaultAssignmentsNeverPersistDerivedBytes(): void
+    {
+        $this->write('.env', 'RTV_SAFE=static' . "\n" . 'RTV_COMMAND=${RTV_ASSIGNED:=$(printf %s "$RTV_PROCESS_SECRET")}' . "\n" . 'RTV_OTHER=$RTV_PROCESS_SECRET' . "\n" . 'RTV_TRANSITIVE=$RTV_ASSIGNED' . "\n");
+        self::assertSame([true, true, 'rotated', 'rotated', 'rotated', 'rotated'], $this->runPhp(<<<'PHP'
+putenv('RTV_PROCESS_SECRET=initial-secret');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+$dump = $r->dumpCached('dump.php', immutable: true);
+$safe = !str_contains(file_get_contents('dump.php'), 'initial-secret');
+unset($_ENV['RTV_ASSIGNED'], $_SERVER['RTV_ASSIGNED']);
+putenv('RTV_PROCESS_SECRET=rotated');
+$r = SymPress\Runtime\Env\EnvReader::buildFromCacheDump('dump.php');
+echo json_encode([$dump, $safe, $r->read('RTV_COMMAND'), $r->read('RTV_ASSIGNED'), $r->read('RTV_OTHER'), $r->read('RTV_TRANSITIVE')]);
+PHP));
+    }
+
+    public function testEmptyVariableOverrideClearsEarlierCommandValue(): void
+    {
+        $this->write('.env', 'RTV_COMMAND=$(printf %s "$RTV_PROCESS_SECRET")' . "\n" . 'RTV_DERIVED=$RTV_COMMAND' . "\n");
+        $this->write('.env.production', "RTV_COMMAND=\nRTV_SAFE=static\n");
+        self::assertSame([true, '', 'rotated'], $this->runPhp(<<<'PHP'
+putenv('RTV_PROCESS_SECRET=initial-secret');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+$dump = $r->dumpCached('dump.php', immutable: true);
+putenv('RTV_PROCESS_SECRET=rotated');
+$r = SymPress\Runtime\Env\EnvReader::buildFromCacheDump('dump.php');
+echo json_encode([$dump, $r->read('RTV_COMMAND'), $r->read('RTV_DERIVED')]);
 PHP));
     }
 
@@ -230,7 +337,7 @@ $parser = str_replace('Env\\EnvReader', 'Dotenv\\Dotenv', $class);
 echo json_encode([$cached, $r->read('WP_SITEURL'), class_exists($parser, false)]);
 PHP;
         self::assertSame([true, 'https://process.example/wp', false], $this->runPhp("putenv('WP_HOME=https://process.example');" . $load));
-        self::assertSame([false, 'https://changed.example/wp', true], $this->runPhp("putenv('WP_HOME=https://changed.example');" . $load));
+        self::assertSame([true, 'https://changed.example/wp', true], $this->runPhp("putenv('WP_HOME=https://changed.example');" . $load));
     }
 
     public function testUnprivilegedReadOnlyDirectoryNeverReceivesOrSpillsSecrets(): void

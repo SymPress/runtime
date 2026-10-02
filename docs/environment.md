@@ -108,13 +108,17 @@ Native payloads persist file-owned values only; process-only values and process
 overrides are read live and never serialized. A file default remains available
 when a process override is removed. Native runtime caches store interpolation
 templates and salted dependency fingerprints, excluding derived process bytes.
-An unchanged dependency resolves the template without loading the dotenv parser;
-changed, newly set or removed dependencies invalidate the cache. Quoting,
-escaping and defaults are interpreted by Dotenv when the source is first loaded.
-Deployment dumps still decline real external interpolation, and command
-substitution involving external dependencies remains ineligible for caching.
-Process-derived environment selectors also decline caching because the selected
-environment and attempted source paths are persistent metadata.
+An unchanged dependency resolves the template without loading the dotenv parser.
+Changed, newly set or removed dependencies reparse only the original affected
+expressions and their file-owned dependencies, retaining unrelated cached values.
+Quoting, escaping, defaults and source ordering remain Dotenv behavior.
+Deployment dumps also retain safe values and non-secret expressions;
+process-derived result bytes are excluded from their persisted value map.
+Command results and their dependent values are excluded and evaluated live on
+each request, while unrelated values remain cached. Original expressions can
+contain file-owned secrets, just like ordinary dump values.
+Dynamic environment selectors decline persistence because changing the selected
+environment changes the entire source chain and its persistent metadata.
 
 When upgrading, flush existing runtime caches and rebuild deployment dumps: older
 artifacts can already contain process values and are not rewritten implicitly.
@@ -137,7 +141,8 @@ deployment dumps still apply.
 Native runtime caches track size and modification time for every attempted file
 in the selected chain, including missing overrides. Creating, deleting or changing
 one of those files invalidates the cache on the next request. Referenced external
-variables are checked as well, including previously absent ones. Changes that preserve
+variables are checked as well, including previously absent ones; only their affected
+expressions are refreshed. Changes that preserve
 both size and modification time require `flush-env-cache`. Deployment dumps remain
 fixed until explicitly rebuilt; compatibility profiles retain their existing cache
 behavior.

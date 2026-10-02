@@ -8,6 +8,7 @@ use PhpToken;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Env\EnvReader;
 use SymPress\Runtime\Env\EnvironmentName;
+use SymPress\Runtime\Env\TrustedProxy;
 use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Generation\SectionMerger;
 use Symfony\Component\Filesystem\Path;
@@ -40,6 +41,8 @@ final readonly class ProductionChecks
         $record('production.debug-display', $this->effectiveBoolean($env, 'WP_DEBUG_DISPLAY', false, $defaults && in_array($canonical, ['staging', 'production'], true), $predefined, $opaque), 'Effective WP_DEBUG_DISPLAY must be false.');
         $record('production.debug', $this->effectiveBoolean($env, 'WP_DEBUG', false, $defaults && $canonical === 'production', $predefined, $opaque), 'Effective WP_DEBUG must be false for production.');
         $record('production.dump', $dump, 'A readable deployment environment dump is required.');
+        $record('production.env-cache', !$this->config['cache-env']->is(false), 'Production must not explicitly disable environment caching.');
+        $record('production.proxy-trust', $this->hasProxyTrust($env), 'A forwarded scheme header or enabled forwarded SSL requires explicit trusted proxy addresses or CIDRs.');
         $record('production.file-mods', $this->effectiveBoolean($env, 'DISALLOW_FILE_MODS', true, $managedDefaults, $predefined, $opaque), 'Effective DISALLOW_FILE_MODS must be true, explicitly or through the generated Composer-managed defaults.');
         $record('production.auto-updates', $this->both($this->effectiveBoolean($env, 'AUTOMATIC_UPDATER_DISABLED', true, $managedDefaults, $predefined, $opaque), $this->effectiveBoolean($env, 'WP_AUTO_UPDATE_CORE', false, $managedDefaults, $predefined, $opaque)), 'Effective automatic updates must be disabled, explicitly or through Composer-managed defaults.');
         $record('production.commands', !(new EnvironmentFiles($this->config, $this->paths))->containsCommands(), 'Environment source files must not contain shell command substitutions.');
@@ -74,6 +77,27 @@ final readonly class ProductionChecks
         }
 
         return $checks;
+    }
+
+    private function hasProxyTrust(EnvReader $env): bool
+    {
+        // phpcs:ignore SlevomatCodingStandard.Variables.DisallowSuperGlobalVariable.DisallowedSuperGlobalVariable -- Read-only diagnostic of the current request's proxy header.
+        $header = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? null;
+        if ($header === null && $env->read('WP_FORCE_SSL_FORWARDED_PROTO') !== true) {
+            return true;
+        }
+        $trusted = $env->rawValue('SYMPRESS_RUNTIME_TRUSTED_PROXIES');
+        if ($trusted === null) {
+            return false;
+        }
+        foreach (explode(',', $trusted) as $entry) {
+            $peer = explode('/', trim($entry))[0];
+            if (TrustedProxy::forwardsHttps($peer, 'https', $entry)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function hasPrivateSalts(string $content, EnvReader $env): bool

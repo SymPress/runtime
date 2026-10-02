@@ -65,7 +65,7 @@ final readonly class Doctor
                 throw new RuntimeException('Invalid compatibility profile.');
             }
             $env = $dump
-                ? EnvReader::buildFromCacheDump($environmentDirectory . '/.env.dump.php', $profile, compatibility: $this->config['compatibility']->is(true))
+                ? EnvReader::buildFromCacheDump($environmentDirectory . '/.env.dump.php', $profile, compatibility: $this->config['compatibility']->is(true), refreshInterpolation: false)
                 : (new EnvFactory($this->config, $this->paths))->create();
             $kernel = new KernelPaths($env, $this->paths);
             $canonical = $kernel->environment();

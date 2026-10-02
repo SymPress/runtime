@@ -10,12 +10,15 @@ Missing paths are recorded so newly deployed overrides invalidate existing cache
 Interpolated process values use parser-produced substitution templates and salted
 dependency fingerprints. Runtime cache hits validate those dependencies and
 expand templates without Dotenv parsing or persisted process secret bytes.
-Missing and empty dependencies remain distinct; changes invalidate the cache.
+Missing and empty dependencies remain distinct; changes refresh the original
+affected expressions and their file-owned dependencies. Unrelated values stay cached.
 Dotenv retains control of quoting, escaping, defaults and file-chain resolution.
-Deployment dumps and command substitutions involving process dependencies retain
-their conservative refusal to persist derived process values.
-Process-derived environment selectors decline runtime caching too, since the
-selected name and attempted source paths appear in persistent metadata.
+Deployment dumps preserve safe values and non-secret expressions too. Command
+results and transitive results remain outside the value map and run live on hits.
+Dynamic environment selectors decline persistence because their source-chain
+selection cannot be updated through a partial cache. Doctor never executes
+persisted dynamic commands. This supersedes the previous whole-dump refusal for
+external interpolation and whole-cache refusal for command substitution.
 Deployment dumps remain explicit immutable artifacts. Legacy runtime cache
 semantics remain unchanged.
 
