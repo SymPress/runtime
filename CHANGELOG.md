@@ -6,6 +6,9 @@
 - Resolve unchanged interpolation caches without loading the parser and selectively refresh affected expressions when referenced process variables change, appear or disappear.
 - Preserve safe unrelated values in runtime caches and deployment dumps; exclude process-derived and command-derived result bytes and keep dynamic source-chain selection ineligible for persistence.
 - Include interpolation support in the independently generated and optionally bundled bootstrap without changing private cache permissions.
+- Preserve each expression's external origin through source-chain overrides and cache replay, including inherited Dotenv ownership markers and HTTP-prefixed process inputs; keep native process precedence and trusted file defaults consistent.
+- Ignore inactive quoted/comment/escaped default assignments, handle braced and unbraced assignments, and prune dependencies after explicit writes without discarding unrelated cached values.
+- Recover offline WordPress-core layouts installed by either Roots or johnpbloch without requiring Composer lifecycle plugins in the standalone Runtime command.
 - Fail production diagnostics for explicitly disabled environment caching or forwarded scheme use without valid trusted proxies; never execute persisted dynamic commands during diagnostics.
 - Remove the accidentally tracked WordPress download ZIP; the existing `.wp-cli/` ignore and archive exclusion prevent its inclusion in ordinary commits and packages.
 
