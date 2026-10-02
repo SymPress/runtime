@@ -27,6 +27,8 @@ final class EnvCacheInterpolation
     public function parse(Dotenv $dotenv, string $content, string $path, callable $external): array
     {
         ($this->expressions ??= new EnvCacheExpressions())->record($content, $path);
+        // The selected source chain cannot lose its history through later overrides.
+        $this->uncacheable = $this->uncacheable || $this->expressions->hasDynamicEnvironmentSelection();
         $replacements = [];
         foreach ($this->expressions->referencesFor($path) as $name) {
             $value = $external($name);
@@ -101,19 +103,22 @@ final class EnvCacheInterpolation
     public function payload(): array
     {
         $templates = [];
+        $needed = [];
         foreach ($this->templates as $name => $template) {
-            foreach ($this->dependencies as $dependency) {
+            foreach ($this->dependencies as $reference => $dependency) {
                 if (!str_contains($template, $dependency['marker'])) {
                     continue;
                 }
                 $templates[$name] = $template;
-                break;
+                $needed[$reference] = true;
             }
         }
         $external = array_fill_keys(array_keys(array_filter($this->dependencies, static fn (array $dependency): bool => $dependency['fingerprint'] !== null && $dependency['fingerprint'] !== self::fingerprint($dependency['marker'], ''))), true);
-        $expressions = $this->expressions?->payload($external) ?? ['expressions' => [], 'dynamic' => [], 'transient' => [], 'process' => []];
+        $expressions = $this->expressions?->payload($external) ?? ['expressions' => [], 'dynamic' => [], 'transient' => [], 'process' => [], 'needed' => []];
+        $dependencies = array_intersect_key($this->dependencies, $needed + $expressions['needed']);
+        unset($expressions['needed']);
 
-        return ['dependencies' => $this->dependencies, 'templates' => $templates, 'refresh' => array_diff_key($expressions['process'], $templates) !== []] + $expressions;
+        return ['dependencies' => $dependencies, 'templates' => $templates, 'refresh' => array_diff_key($expressions['process'], $templates) !== []] + $expressions;
     }
 
     /**

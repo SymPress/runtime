@@ -17,9 +17,8 @@ final class EnvCacheExpressions
             if (!preg_match('/^\s*(?:export[ \t]+)?([A-Za-z_][A-Za-z0-9_]*)(?:=|[ \t]*(?:#[^\n]*)?$)/', $statement, $match)) {
                 continue;
             }
-            [$references, $command] = $this->references($statement);
-            preg_match_all('/\$\{([A-Za-z_][A-Za-z0-9_]*):=/', $statement, $assigned);
-            $definitions[] = ['name' => $match[1], 'source' => $statement, 'references' => $references, 'assigns' => $assigned[1], 'command' => $command];
+            [$references, $command, $assigned] = $this->references($statement);
+            $definitions[] = ['name' => $match[1], 'source' => $statement, 'references' => $references, 'assigns' => $assigned, 'command' => $command];
         }
         $this->sources[$path] = $definitions;
     }
@@ -37,9 +36,25 @@ final class EnvCacheExpressions
         return array_values(array_unique(array_merge(...array_column($this->sources[$path] ?? [], 'references'))));
     }
 
+    public function hasDynamicEnvironmentSelection(): bool
+    {
+        foreach ($this->sources as $definitions) {
+            foreach ($definitions as $definition) {
+                if ($definition['references'] === [] && !$definition['command']) {
+                    continue;
+                }
+                if (array_intersect([$definition['name'], ...$definition['assigns']], ['WP_ENVIRONMENT_TYPE', 'WP_ENV', 'WORDPRESS_ENV']) !== []) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     /**
      * @param array<string, true> $external
-     * @return array{expressions: array<string, string>, dynamic: array<string, true>, transient: array<string, true>, process: array<string, true>}
+     * @return array{expressions: array<string, string>, dynamic: array<string, true>, transient: array<string, true>, process: array<string, true>, needed: array<string, true>}
      */
     public function payload(array $external = []): array
     {
@@ -96,7 +111,7 @@ final class EnvCacheExpressions
             $expressions[$path] = implode("\n", array_column($selected, 'source')) . "\n";
         }
 
-        return ['expressions' => $expressions, 'dynamic' => $dynamic, 'transient' => $transient, 'process' => $process];
+        return ['expressions' => $expressions, 'dynamic' => $dynamic, 'transient' => $transient, 'process' => $process, 'needed' => $needed];
     }
 
     /** @return list<string> */
@@ -146,10 +161,11 @@ final class EnvCacheExpressions
         return $statements;
     }
 
-    /** @return array{list<string>, bool} */
+    /** @return array{list<string>, bool, list<string>} */
     private function references(string $statement): array
     {
         $references = [];
+        $assigned = [];
         $command = false;
         $quote = null;
         $length = strlen($statement);
@@ -182,8 +198,12 @@ final class EnvCacheExpressions
                 continue;
             }
             $references[] = $match[1];
+            if (!preg_match('/^\{([A-Za-z_][A-Za-z0-9_]*):=/', $tail, $assignment)) {
+                continue;
+            }
+            $assigned[] = $assignment[1];
         }
 
-        return [array_values(array_unique($references)), $command];
+        return [array_values(array_unique($references)), $command, array_values(array_unique($assigned))];
     }
 }
