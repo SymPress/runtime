@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.4 — 2026-10-02
+
+- Cache native process interpolation as Dotenv-produced templates with validated dependency fingerprints, keeping derived process secrets out of persisted values.
+- Resolve unchanged interpolation caches without loading the parser and invalidate them when referenced process variables change, appear or disappear.
+- Preserve quoting, escaping, defaults, typed values, appended-file overrides and explicit reader writes; keep external-dependent deployment dumps and command substitutions out of persistence.
+- Include interpolation support in the independently generated and optionally bundled bootstrap without changing private cache permissions.
+
 ## 1.1.3 — 2026-10-02
 
 - Keep probed database status reader-local and out of environment caches so a cold WordPress install cannot retain pre-install status in later diagnostics.

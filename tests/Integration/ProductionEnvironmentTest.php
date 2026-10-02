@@ -22,14 +22,35 @@ final class ProductionEnvironmentTest extends TemporaryProject
         return $result;
     }
 
-    public function testProcessSecretInterpolationPreventsPersistenceWithoutChangingReads(): void
+    public function testProcessSecretInterpolationCachesTemplatesWithoutPersistingSecrets(): void
     {
         $this->write('.env', 'RTV_DERIVED=${RTV_PROCESS_SECRET}' . "\n");
-        self::assertSame(['external-secret', false, false, false, false], $this->runPhp(<<<'PHP'
+        self::assertSame(['external-secret', true, false, true, false, false, 0600], $this->runPhp(<<<'PHP'
 putenv('RTV_PROCESS_SECRET=external-secret');
 $r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
-echo json_encode([$r->read('RTV_DERIVED'), $r->dumpCached('cache.php'), $r->dumpCached('dump.php', immutable: true), is_file('cache.php'), is_file('dump.php')]);
+$cached = $r->dumpCached('cache.php');
+echo json_encode([$r->read('RTV_DERIVED'), $cached, $r->dumpCached('dump.php', immutable: true), is_file('cache.php'), is_file('dump.php'), $cached && str_contains(file_get_contents('cache.php'), 'external-secret'), $cached ? fileperms('cache.php') & 0777 : null]);
 PHP));
+    }
+
+    public function testInterpolationCacheHitAvoidsParserAndInvalidatesChangedMissingOrRemovedProcessValues(): void
+    {
+        $this->write('.env', 'WP_HOME=https://file.example' . "\n" . 'WP_SITEURL=${WP_HOME}/wp' . "\n" . 'RTV_CHAIN=${WP_SITEURL}/admin' . "\n" . 'RTV_DEFAULT=${RTV_OPTIONAL:-fallback}' . "\n");
+        $this->write('.env.production', 'RTV_APPENDED=${RTV_CHAIN}/tail' . "\n");
+        self::assertSame([true], $this->runPhp(<<<'PHP'
+putenv('WP_HOME=https://process.example');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+echo json_encode([$r->dumpCached('cache.php')]);
+PHP));
+        $load = <<<'PHP'
+$r = SymPress\Runtime\Env\EnvReader::buildFromCacheDump('cache.php', validateSources: true);
+$cached = $r->hasCachedValues(); $r->loadChain();
+echo json_encode([$cached, class_exists(Symfony\Component\Dotenv\Dotenv::class, false), $r->read('WP_SITEURL'), $r->read('RTV_APPENDED'), $r->read('RTV_DEFAULT')]);
+PHP;
+        self::assertSame([true, false, 'https://process.example/wp', 'https://process.example/wp/admin/tail', 'fallback'], $this->runPhp("putenv('WP_HOME=https://process.example');" . $load));
+        self::assertSame([false, true, 'https://changed.example/wp', 'https://changed.example/wp/admin/tail', 'fallback'], $this->runPhp("putenv('WP_HOME=https://changed.example');" . $load));
+        self::assertSame([false, true, 'https://process.example/wp', 'https://process.example/wp/admin/tail', 'present'], $this->runPhp("putenv('WP_HOME=https://process.example'); putenv('RTV_OPTIONAL=present');" . $load));
+        self::assertSame([false, true, 'https://file.example/wp', 'https://file.example/wp/admin/tail', 'fallback'], $this->runPhp("putenv('WP_HOME'); unset(\$_ENV['WP_HOME'], \$_SERVER['WP_HOME']);" . $load));
     }
 
     public function testRealEnvironmentSecretsAreExcludedAndFileDefaultsSurviveTheirRemoval(): void
@@ -47,6 +68,65 @@ $r = SymPress\Runtime\Env\EnvReader::buildFromCacheDump('cache.php', validateSou
 echo json_encode([$clean, $r->read('DB_PASSWORD'), $r->read('RTV_PROCESS_TOKEN')]);
 PHP);
         self::assertSame([true, 'file-default', null], $actual);
+    }
+
+    public function testInterpolationTemplatesPreserveQuotingEscapesEmptyDefaultsAndTypedValues(): void
+    {
+        $this->write('.env', <<<'ENV'
+RTV_DERIVED="$RTV_PROCESS_SECRET/suffix"
+RTV_LITERAL='$RTV_PROCESS_SECRET'
+RTV_ESCAPED=\$RTV_PROCESS_SECRET
+RTV_EMPTY=${RTV_EMPTY_EXTERNAL:-fallback}
+WP_DEBUG=$RTV_PROCESS_BOOL
+ENV);
+        $setup = <<<'PHP'
+putenv('RTV_PROCESS_SECRET=backslash\and$dollar');
+putenv('RTV_PROCESS_BOOL=true'); putenv('RTV_EMPTY_EXTERNAL=');
+PHP;
+        self::assertSame([true, false], $this->runPhp($setup . <<<'PHP'
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+echo json_encode([$r->dumpCached('cache.php'), str_contains(file_get_contents('cache.php'), 'backslash')]);
+PHP));
+        self::assertSame([true, 'backslash\and$dollar/suffix', '$RTV_PROCESS_SECRET', '$RTV_PROCESS_SECRET', 'fallback', true, false], $this->runPhp($setup . <<<'PHP'
+$r = SymPress\Runtime\Env\EnvReader::buildFromCacheDump('cache.php', validateSources: true);
+$r->loadChain();
+echo json_encode([$r->hasCachedValues(), $r->read('RTV_DERIVED'), $r->read('RTV_LITERAL'), $r->read('RTV_ESCAPED'), $r->read('RTV_EMPTY'), $r->read('WP_DEBUG'), class_exists(Symfony\Component\Dotenv\Dotenv::class, false)]);
+PHP));
+    }
+
+    public function testExplicitWritesReplacePreviouslyInterpolatedCacheTemplates(): void
+    {
+        $this->write('.env', 'RTV_DERIVED=$RTV_PROCESS_SECRET' . "\n");
+        self::assertSame([true, 'explicit'], $this->runPhp(<<<'PHP'
+putenv('RTV_PROCESS_SECRET=external-secret');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+$r->write('RTV_DERIVED', 'explicit');
+$cached = $r->dumpCached('cache.php');
+$r = SymPress\Runtime\Env\EnvReader::buildFromCacheDump('cache.php', validateSources: true);
+echo json_encode([$cached, $r->read('RTV_DERIVED')]);
+PHP));
+    }
+
+    public function testCommandOverridesReplaceTemplatesBeforeLaterFileInterpolation(): void
+    {
+        $this->write('.env', 'RTV_BASE=$RTV_EXTERNAL' . "\n");
+        $this->write('.env.local', 'RTV_BASE=$(printf changed)' . "\n");
+        $this->write('.env.production', 'RTV_DERIVED=$RTV_BASE' . "\n");
+        self::assertSame(['changed', 'changed', false], $this->runPhp(<<<'PHP'
+putenv('RTV_EXTERNAL=external-secret');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+echo json_encode([$r->read('RTV_BASE'), $r->read('RTV_DERIVED'), $r->dumpCached('cache.php')]);
+PHP));
+    }
+
+    public function testProcessDerivedEnvironmentSelectionDoesNotPersistSecretsInMetadata(): void
+    {
+        $this->write('.env', 'WP_ENVIRONMENT_TYPE=$RTV_PROCESS_SECRET' . "\n");
+        self::assertSame([false, false, false], $this->runPhp(<<<'PHP'
+putenv('RTV_PROCESS_SECRET=private-stage');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+echo json_encode([$r->dumpCached('cache.php'), $r->dumpCached('dump.php', immutable: true), is_file('cache.php')]);
+PHP));
     }
 
     public function testCacheDetectsNewOverrideChangedSizeAndDeletedFileWhileDumpStaysImmutable(): void
@@ -127,6 +207,30 @@ PHP));
 $r = SymPress\Runtime\Env\EnvReader::buildFromCacheDump('cache.php', validateSources: true);
 echo json_encode([$r->hasCachedValues(), $r->read('WP_DEBUG'), (new ReflectionProperty($r, 'dotenv'))->getValue($r), (new ReflectionProperty($r, 'filters'))->getValue($r)]);
 PHP));
+    }
+
+    public function testBundledInterpolationCacheUsesLiveProcessDependenciesWithoutLoadingParser(): void
+    {
+        $this->write('.env', 'WP_HOME=https://file.example' . "\n" . 'WP_SITEURL=${WP_HOME}/wp' . "\n");
+        self::assertSame([true], $this->runPhp(<<<'PHP'
+putenv('WP_HOME=https://process.example');
+$paths = new SymPress\Runtime\Filesystem\Paths(getcwd());
+$boundary = new SymPress\Runtime\Filesystem\ProjectBoundary($paths);
+$bundle = (new SymPress\Runtime\Generation\RuntimeBundleBuilder($paths, $boundary, true))->build();
+file_put_contents('loader-path.txt', $bundle->loader);
+$class = require $bundle->loader;
+$r = new $class(); $r->loadChain();
+echo json_encode([$r->dumpCached('cache.php')]);
+PHP));
+        $load = <<<'PHP'
+$class = require file_get_contents('loader-path.txt');
+$r = $class::buildFromCacheDump('cache.php', validateSources: true, producer: $class);
+$cached = $r->hasCachedValues(); $r->loadChain();
+$parser = str_replace('Env\\EnvReader', 'Dotenv\\Dotenv', $class);
+echo json_encode([$cached, $r->read('WP_SITEURL'), class_exists($parser, false)]);
+PHP;
+        self::assertSame([true, 'https://process.example/wp', false], $this->runPhp("putenv('WP_HOME=https://process.example');" . $load));
+        self::assertSame([false, 'https://changed.example/wp', true], $this->runPhp("putenv('WP_HOME=https://changed.example');" . $load));
     }
 
     public function testUnprivilegedReadOnlyDirectoryNeverReceivesOrSpillsSecrets(): void
