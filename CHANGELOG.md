@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.3 — Unreleased
+## 1.1.3 — 2026-10-02
 
 - Keep probed database status reader-local and out of environment caches so a cold WordPress install cannot retain pre-install status in later diagnostics.
 - Reload native ordinary caches after a generated Runtime payload change, preserving explicitly configured flags and existing format-1 deployment dumps.
