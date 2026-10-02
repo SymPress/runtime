@@ -17,8 +17,8 @@ final class EnvCacheInterpolation
     private array $templates = [];
     /** @var array<string, string> */
     private array $resolved = [];
-    private bool $external = false;
     private bool $uncacheable = false;
+    private ?EnvCacheExpressions $expressions = null;
 
     /**
      * @param callable(string): ?string $external
@@ -26,28 +26,23 @@ final class EnvCacheInterpolation
      */
     public function parse(Dotenv $dotenv, string $content, string $path, callable $external): array
     {
+        ($this->expressions ??= new EnvCacheExpressions())->record($content, $path);
         $replacements = [];
-        if (preg_match_all('/\\$\\{?([A-Za-z_][A-Za-z0-9_]*)/', $content, $references)) {
-            foreach ($references[1] as $name) {
-                $value = $external($name);
-                $marker = $this->dependencies[$name]['marker'] ?? 'SYMPRESS_INTERPOLATION_' . bin2hex(random_bytes(16));
-                $this->dependencies[$name] = ['marker' => $marker, 'fingerprint' => self::fingerprint($marker, $value)];
-                if ($value === null) {
-                    continue;
-                }
-                $this->external = true;
-                if ($value === '') {
-                    continue;
-                }
-                $replacements[$marker] = $value;
+        foreach ($this->expressions->referencesFor($path) as $name) {
+            $value = $external($name);
+            $marker = $this->dependencies[$name]['marker'] ?? 'SYMPRESS_INTERPOLATION_' . bin2hex(random_bytes(16));
+            $this->dependencies[$name] = ['marker' => $marker, 'fingerprint' => self::fingerprint($marker, $value)];
+            if ($value === null || $value === '') {
+                continue;
             }
+            $replacements[$marker] = $value;
         }
         // Commands may transform secrets and cannot be represented by substitution templates.
         if (str_contains($content, '$(')) {
-            $this->uncacheable = $this->uncacheable || $this->external;
             $values = self::validateValues($dotenv->parse($content, $path));
             foreach (array_keys($values) as $name) {
-                unset($this->templates[$name], $this->resolved[$name]);
+                unset($this->templates[$name]);
+                $this->resolved[$name] = $values[$name];
             }
             return $values;
         }
@@ -92,14 +87,17 @@ final class EnvCacheInterpolation
             return;
         }
         unset($this->templates[$name], $this->resolved[$name]);
+        $this->expressions?->forget($name);
     }
 
     public function canPersist(bool $immutable): bool
     {
-        return !$this->uncacheable && (!$immutable || !$this->external);
+        $dynamic = $this->expressions?->payload()['dynamic'] ?? [];
+
+        return !$this->uncacheable && array_intersect_key($dynamic, array_flip(['WP_ENVIRONMENT_TYPE', 'WP_ENV', 'WORDPRESS_ENV'])) === [];
     }
 
-    /** @return array{dependencies: array<string, array{marker: string, fingerprint: string|null}>, templates: array<string, string>} */
+    /** @return array{dependencies: array<string, array{marker: string, fingerprint: string|null}>, templates: array<string, string>, expressions: array<string, string>, dynamic: array<string, true>, transient: array<string, true>, process: array<string, true>, refresh: bool} */
     public function payload(): array
     {
         $templates = [];
@@ -112,7 +110,10 @@ final class EnvCacheInterpolation
                 break;
             }
         }
-        return ['dependencies' => $this->dependencies, 'templates' => $templates];
+        $external = array_fill_keys(array_keys(array_filter($this->dependencies, static fn (array $dependency): bool => $dependency['fingerprint'] !== null && $dependency['fingerprint'] !== self::fingerprint($dependency['marker'], ''))), true);
+        $expressions = $this->expressions?->payload($external) ?? ['expressions' => [], 'dynamic' => [], 'transient' => [], 'process' => []];
+
+        return ['dependencies' => $this->dependencies, 'templates' => $templates, 'refresh' => array_diff_key($expressions['process'], $templates) !== []] + $expressions;
     }
 
     /**
@@ -144,7 +145,7 @@ final class EnvCacheInterpolation
             }
             $values[$name] = strtr($template, $replacements);
         }
-        return $changed ? null : $values;
+        return $changed || ($payload['transient'] ?? []) !== [] || ($payload['refresh'] ?? false) ? null : $values;
     }
 
     private static function fingerprint(string $marker, ?string $value): ?string

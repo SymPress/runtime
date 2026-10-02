@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SymPress\Runtime\Tests\Integration;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use SymPress\Runtime\Env\EnvCacheFormat;
 use SymPress\Runtime\Generation\SectionMerger;
 use SymPress\Runtime\Tests\Support\TemporaryProject;
 use Symfony\Component\Process\Process;
@@ -79,6 +80,52 @@ final class ProductionDoctorTest extends TemporaryProject
         foreach (['production.home', 'production.debug', 'production.debug-display', 'production.file-mods'] as $name) {
             self::assertSame('fail', $checks[$name]);
         }
+    }
+
+    public function testExplicitlyDisabledEnvironmentCacheFailsProductionCheck(): void
+    {
+        $this->fixture();
+        $this->write('composer.json', '{"extra":{"sympress-runtime":{"wordpress-parent-dir":"public","cache-env":false}}}');
+        [$exit, $checks] = $this->diagnose();
+        self::assertSame(1, $exit);
+        self::assertSame('fail', $checks['production.env-cache']);
+    }
+
+    public function testConfiguredForwardedSslRequiresValidTrustedProxyConfiguration(): void
+    {
+        $this->fixture();
+        file_put_contents($this->root . '/.env', "WP_FORCE_SSL_FORWARDED_PROTO=true\n", FILE_APPEND);
+        $this->dump();
+        [$exit, $checks] = $this->diagnose();
+        self::assertSame(1, $exit);
+        self::assertSame('fail', $checks['production.proxy-trust']);
+        file_put_contents($this->root . '/.env', "SYMPRESS_RUNTIME_TRUSTED_PROXIES=invalid/999\n", FILE_APPEND);
+        $this->dump();
+        self::assertSame('fail', $this->diagnose()[1]['production.proxy-trust']);
+        file_put_contents($this->root . '/.env', "SYMPRESS_RUNTIME_TRUSTED_PROXIES=192.0.2.0/24,2001:db8::/32\n", FILE_APPEND);
+        $this->dump();
+        self::assertSame('pass', $this->diagnose()[1]['production.proxy-trust']);
+    }
+
+    public function testObservedForwardedProtoHeaderRequiresTrustEvenWhenFixIsDisabled(): void
+    {
+        $this->fixture();
+        $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', '-n', 'doctor', '--production', '--json', '--webroot=public'], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false, 'HTTP_X_FORWARDED_PROTO' => 'https']);
+        $process->run();
+        $report = json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame(1, $process->getExitCode());
+        self::assertSame('fail', array_column($report['checks'], 'status', 'id')['production.proxy-trust']);
+    }
+
+    public function testDoctorNeverExecutesPersistedDynamicCommands(): void
+    {
+        $this->fixture();
+        $file = $this->root . '/.env.dump.php';
+        $data = EnvCacheFormat::read($file);
+        $data['interpolation'] = ['dependencies' => [], 'templates' => [], 'transient' => ['RTV_COMMAND' => true], 'expressions' => [$this->root . '/.env' => 'RTV_COMMAND=$(touch ' . $this->root . "/shell-executed)\n"]];
+        file_put_contents($file, EnvCacheFormat::encode($data));
+        $this->diagnose();
+        self::assertFileDoesNotExist($this->root . '/shell-executed');
     }
 
     public function testMissingDumpPublicSecretsAndInsecurePermissionsFail(): void

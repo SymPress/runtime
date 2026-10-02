@@ -3,9 +3,11 @@
 ## 1.1.4 — 2026-10-02
 
 - Cache native process interpolation as Dotenv-produced templates with validated dependency fingerprints, keeping derived process secrets out of persisted values.
-- Resolve unchanged interpolation caches without loading the parser and invalidate them when referenced process variables change, appear or disappear.
-- Preserve quoting, escaping, defaults, typed values, appended-file overrides and explicit reader writes; keep external-dependent deployment dumps and command substitutions out of persistence.
+- Resolve unchanged interpolation caches without loading the parser and selectively refresh affected expressions when referenced process variables change, appear or disappear.
+- Preserve safe unrelated values in runtime caches and deployment dumps; exclude process-derived and command-derived result bytes and keep dynamic source-chain selection ineligible for persistence.
 - Include interpolation support in the independently generated and optionally bundled bootstrap without changing private cache permissions.
+- Fail production diagnostics for explicitly disabled environment caching or forwarded scheme use without valid trusted proxies; never execute persisted dynamic commands during diagnostics.
+- Remove the accidentally tracked WordPress download ZIP; the existing `.wp-cli/` ignore and archive exclusion prevent its inclusion in ordinary commits and packages.
 
 ## 1.1.3 — 2026-10-02
 

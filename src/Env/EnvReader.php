@@ -315,7 +315,7 @@ final class EnvReader
     }
 
     /** @internal */
-    public static function buildFromCacheDump(string $file, string $profile = 'native', ?string $environment = null, bool $compatibility = true, bool $validateSources = false, int $fileMode = 0600, ?string $producer = null): self
+    public static function buildFromCacheDump(string $file, string $profile = 'native', ?string $environment = null, bool $compatibility = true, bool $validateSources = false, int $fileMode = 0600, ?string $producer = null, bool $refreshInterpolation = true): self
     {
         $reader = new self(profile: $profile, compatibility: $compatibility, fileMode: $fileMode);
         if (!is_file($file) || !is_readable($file)) {
@@ -330,6 +330,24 @@ final class EnvReader
         }
         $interpolated = $profile === 'native' ? EnvCacheInterpolation::resolve($data['interpolation'] ?? null, static fn (string $name): ?string => $reader->externalValue($name)) : [];
         if ($interpolated === null) {
+            $payload = $data['interpolation'] ?? null;
+            $expressions = is_array($payload) ? ($payload['expressions'] ?? null) : null;
+            if (!is_array($expressions) || $expressions === []) {
+                return $reader;
+            }
+            $reader->restoreCache($data, $environment, []);
+            if (!$refreshInterpolation) {
+                return $reader;
+            }
+            foreach ($expressions as $path => $content) {
+                if (!is_string($path) || !is_string($content)) {
+                    throw new RuntimeException('Environment cache expressions are invalid.');
+                }
+                $reader->parseContent($content, $path);
+            }
+            $reader->fromCache = $reader->cache !== [];
+            $reader->loaded = true;
+
             return $reader;
         }
         $reader->restoreCache($data, $environment, $interpolated);
@@ -362,12 +380,12 @@ final class EnvReader
             'compatibility' => $this->compatibility,
             'environment' => $this->determineEnvType(),
             'producer' => self::class,
-            'values' => array_diff_key($values, $this->nonPersistentNames, $interpolation['templates'] ?? []),
-            'interpolation' => $immutable ? null : $interpolation,
+            'values' => array_diff_key($values, $this->nonPersistentNames, $interpolation['templates'] ?? [], $interpolation['transient'] ?? [], $interpolation['process'] ?? []),
+            'interpolation' => $interpolation,
             'sources' => $immutable ? null : $this->sources,
             'loaded' => array_keys(array_diff_key($this->raw, $this->nonPersistentNames)),
             'types' => $this->customTypes,
-            'constants' => array_values(array_unique([...$this->definedConstants, ...array_keys(array_intersect_key($this->cache, self::WP_CONSTANTS))])),
+            'constants' => array_values(array_diff(array_unique([...$this->definedConstants, ...array_keys(array_intersect_key($this->cache, self::WP_CONSTANTS))]), array_keys($interpolation['dynamic'] ?? []))),
         ];
         if (!EnvCacheFormat::canReplace($file)) {
             return false;
@@ -608,6 +626,11 @@ final class EnvReader
         if ($content === false) {
             throw new RuntimeException('Cannot read environment file.');
         }
+        $this->parseContent($content, $path);
+    }
+
+    private function parseContent(string $content, string $path): void
+    {
         // Dotenv interpolation must see actual process values before resolving file variables.
         foreach ($this->external as $name => $value) {
             $_ENV[$name] = $this->externalValue($name) ?? $value;
