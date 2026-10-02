@@ -85,6 +85,10 @@ final class EnvReader
             }
             if (isset($owned[$name])) {
                 $this->raw[$name] = (string) $value;
+                if ($profile === 'native') {
+                    // An inherited ownership marker cannot prove selected-file provenance.
+                    $this->nonPersistentNames[$name] = true;
+                }
                 if (isset($process[$name])) {
                     $this->ownedProcess[$name] = $process[$name];
                 }
@@ -288,7 +292,7 @@ final class EnvReader
             putenv($name . '=' . $value);
             $this->ownedProcess[$name] = $value;
         }
-        $_ENV['SYMFONY_DOTENV_VARS'] = implode(',', array_keys(array_diff_key($this->raw, $this->nonPersistentNames)));
+        $_ENV['SYMFONY_DOTENV_VARS'] = implode(',', array_keys(array_diff_key($this->raw, $this->nonPersistentNames, $this->profile === 'native' ? $this->external : [])));
         $_SERVER['SYMFONY_DOTENV_VARS'] = $_ENV['SYMFONY_DOTENV_VARS'];
         $this->read($name);
     }
@@ -328,17 +332,20 @@ final class EnvReader
         if ($validateSources && $profile === 'native' && !EnvCacheSources::matches($data)) {
             return $reader;
         }
-        $interpolated = $profile === 'native' ? EnvCacheInterpolation::resolve($data['interpolation'] ?? null, static fn (string $name): ?string => $reader->externalValue($name)) : [];
+        $interpolated = $profile === 'native' ? EnvCacheInterpolation::resolve($data['interpolation'] ?? null, static fn (string $name): ?string => $reader->interpolationExternalValue($name)) : [];
         if ($interpolated === null) {
             $payload = $data['interpolation'] ?? null;
             $expressions = is_array($payload) ? ($payload['expressions'] ?? null) : null;
-            if (!is_array($expressions) || $expressions === []) {
+            if (!is_array($payload) || !is_array($expressions) || $expressions === []) {
                 return $reader;
             }
+            $inputEnvironment = $_ENV;
+            $inputServer = $_SERVER;
             $reader->restoreCache($data, $environment, []);
             if (!$refreshInterpolation) {
                 return $reader;
             }
+            $reader->prepareInterpolationReplay($payload, $inputEnvironment, $inputServer);
             foreach ($expressions as $path => $content) {
                 if (!is_string($path) || !is_string($content)) {
                     throw new RuntimeException('Environment cache expressions are invalid.');
@@ -615,6 +622,60 @@ final class EnvReader
         return $this->external[$name] ?? null;
     }
 
+    private function interpolationExternalValue(string $name): ?string
+    {
+        // Track the external sources Dotenv actually consumes without changing
+        // direct-read trust. Its getenv fallback also includes SAPI values.
+        $value = $this->externalValue($name);
+        if ($value !== null) {
+            return $value;
+        }
+        if (isset($this->raw[$name]) && !isset($this->nonPersistentNames[$name]) && ($_ENV[$name] ?? null) === $this->raw[$name]) {
+            return null;
+        }
+        $value = $_ENV[$name] ?? (!str_starts_with($name, 'HTTP_') ? ($_SERVER[$name] ?? null) : null);
+        if (is_scalar($value)) {
+            return (string) $value;
+        }
+        $value = getenv($name);
+
+        return is_string($value) ? $value : null;
+    }
+
+    /**
+     * @param array<array-key, mixed> $payload
+     * @param array<array-key, mixed> $inputEnvironment
+     * @param array<array-key, mixed> $inputServer
+     */
+    private function prepareInterpolationReplay(array $payload, array $inputEnvironment, array $inputServer): void
+    {
+        $replay = $payload['replay'] ?? [];
+        if (!is_array($replay)) {
+            throw new RuntimeException('Environment cache replay data is invalid.');
+        }
+        foreach ($replay as $name => $enabled) {
+            if (!is_string($name) || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/D', $name) || $enabled !== true) {
+                throw new RuntimeException('Environment cache replay name is invalid.');
+            }
+            if (!isset($this->cache[$name]) || $this->externalValue($name) !== null) {
+                continue;
+            }
+            // Replay sees the original external input before later file definitions.
+            unset($this->raw[$name], $this->cache[$name], $_ENV[$name]);
+            if (array_key_exists($name, $inputEnvironment)) {
+                $_ENV[$name] = $inputEnvironment[$name];
+            }
+            if (str_starts_with($name, 'HTTP_')) {
+                continue;
+            }
+            if (array_key_exists($name, $inputServer)) {
+                $_SERVER[$name] = $inputServer[$name];
+                continue;
+            }
+            unset($_SERVER[$name]);
+        }
+    }
+
     private function parseFile(string $path): void
     {
         $absolute = str_starts_with($path, '/') ? $path : (getcwd() ?: '.') . '/' . $path;
@@ -638,7 +699,7 @@ final class EnvReader
         try {
             $this->dotenv ??= new Dotenv($this->profile === 'native' ? 'WP_ENVIRONMENT_TYPE' : 'WP_ENV', 'WP_DEBUG');
             $values = $this->profile === 'native'
-                ? ($this->interpolation ??= new EnvCacheInterpolation())->parse($this->dotenv, $content, $path, fn (string $name): ?string => $this->externalValue($name))
+                ? ($this->interpolation ??= new EnvCacheInterpolation())->parse($this->dotenv, $content, $path, fn (string $name): ?string => $this->interpolationExternalValue($name))
                 : $this->dotenv->parse($content, $path);
         } catch (Throwable) {
             throw new RuntimeException('Cannot parse environment file: ' . $path);

@@ -7,7 +7,7 @@ namespace SymPress\Runtime\Env;
 /** Keeps original expressions, never their process-derived results. @internal */
 final class EnvCacheExpressions
 {
-    /** @var array<string, list<array{name: string, source: string, references: list<string>, assigns: list<string>, command: bool}>> */
+    /** @var array<string, list<array{name: string, source: string, references: list<string>, assigns: list<string>, external: list<string>, command: bool}>> */
     private array $sources = [];
 
     public function record(string $content, string $path): void
@@ -18,7 +18,7 @@ final class EnvCacheExpressions
                 continue;
             }
             [$references, $command, $assigned] = $this->references($statement);
-            $definitions[] = ['name' => $match[1], 'source' => $statement, 'references' => $references, 'assigns' => $assigned, 'command' => $command];
+            $definitions[] = ['name' => $match[1], 'source' => $statement, 'references' => $references, 'assigns' => $assigned, 'external' => [], 'command' => $command];
         }
         $this->sources[$path] = $definitions;
     }
@@ -27,6 +27,22 @@ final class EnvCacheExpressions
     {
         foreach ($this->sources as $path => $definitions) {
             $this->sources[$path] = array_values(array_filter($definitions, static fn (array $definition): bool => $definition['name'] !== $name));
+        }
+    }
+
+    /**
+     * @param array<string, true> $external
+     * @param array<string, true> $filePrecedence
+     */
+    public function trackExternalReferences(string $path, array $external, array $filePrecedence): void
+    {
+        $defined = [];
+        foreach ($this->sources[$path] as $index => $definition) {
+            $active = array_diff_key($external, array_intersect_key($defined, $filePrecedence));
+            $this->sources[$path][$index]['external'] = array_values(array_intersect($definition['references'], array_keys($active)));
+            foreach ([$definition['name'], ...$definition['assigns']] as $name) {
+                $defined[$name] = true;
+            }
         }
     }
 
@@ -52,11 +68,8 @@ final class EnvCacheExpressions
         return false;
     }
 
-    /**
-     * @param array<string, true> $external
-     * @return array{expressions: array<string, string>, dynamic: array<string, true>, transient: array<string, true>, process: array<string, true>, needed: array<string, true>}
-     */
-    public function payload(array $external = []): array
+    /** @return array{expressions: array<string, string>, dynamic: array<string, true>, transient: array<string, true>, process: array<string, true>, needed: array<string, true>, replay: array<string, true>} */
+    public function payload(): array
     {
         $definitions = [];
         $transient = [];
@@ -66,7 +79,7 @@ final class EnvCacheExpressions
             $definitions[$definition['name']] = $definition;
             $references = array_flip($definition['references']);
             $command = $definition['command'] || array_intersect_key($transient, $references) !== [];
-            $derived = array_intersect_key($external + $process, $references) !== [];
+            $derived = array_intersect_key(array_fill_keys($definition['external'], true) + $process, $references) !== [];
             foreach ([$definition['name'], ...$definition['assigns']] as $name) {
                 unset($transient[$name], $process[$name]);
                 if ($command) {
@@ -103,15 +116,21 @@ final class EnvCacheExpressions
             }
         } while ($previous !== $needed);
         $expressions = [];
+        $replay = [];
         foreach ($this->sources as $path => $source) {
             $selected = array_filter($source, static fn (array $definition): bool => isset($needed[$definition['name']]));
             if ($selected === []) {
                 continue;
             }
             $expressions[$path] = implode("\n", array_column($selected, 'source')) . "\n";
+            foreach ($selected as $definition) {
+                foreach ([$definition['name'], ...$definition['assigns']] as $name) {
+                    $replay[$name] = true;
+                }
+            }
         }
 
-        return ['expressions' => $expressions, 'dynamic' => $dynamic, 'transient' => $transient, 'process' => $process, 'needed' => $needed];
+        return ['expressions' => $expressions, 'dynamic' => $dynamic, 'transient' => $transient, 'process' => $process, 'needed' => $needed, 'replay' => $replay];
     }
 
     /** @return list<string> */
