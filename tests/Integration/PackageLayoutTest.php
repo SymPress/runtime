@@ -13,7 +13,7 @@ use Symfony\Component\Process\Process;
 final class PackageLayoutTest extends TemporaryProject
 {
     /** @return array<string, mixed> */
-    private function fixture(string $vendor = 'vendor', bool $dev = true): array
+    private function fixture(string $vendor = 'vendor', bool $dev = true, string $coreInstaller = 'johnpbloch/wordpress-core-installer', bool $coreOnly = false): array
     {
         $manifest = [
             'name' => 'fixture/site',
@@ -31,7 +31,10 @@ final class PackageLayoutTest extends TemporaryProject
         $this->write('composer.json', json_encode($manifest, JSON_THROW_ON_ERROR));
         $this->write('root-autoload.php', '<?php file_put_contents(__DIR__ . "/autoload-ran", "yes", FILE_APPEND);');
         $packages = [];
-        foreach (['composer/installers' => 'composer-plugin', 'johnpbloch/wordpress-core-installer' => 'composer-plugin', 'private/core' => 'wordpress-core', 'private/plugin' => 'wordpress-plugin', 'private/mu' => 'wordpress-muplugin', 'private/theme' => 'wordpress-theme', 'private/dropin' => 'wordpress-dropin'] as $name => $type) {
+        $types = $coreOnly
+            ? [$coreInstaller => 'composer-plugin', 'private/core' => 'wordpress-core']
+            : ['composer/installers' => 'composer-plugin', $coreInstaller => 'composer-plugin', 'private/core' => 'wordpress-core', 'private/plugin' => 'wordpress-plugin', 'private/mu' => 'wordpress-muplugin', 'private/theme' => 'wordpress-theme', 'private/dropin' => 'wordpress-dropin'];
+        foreach ($types as $name => $type) {
             $package = ['name' => $name, 'version' => '1.0.0', 'type' => $type, 'install-path' => '../' . $name];
             $this->write($vendor . '/' . $name . '/marker', $name . ':1.0.0');
             if ($name === 'private/plugin') {
@@ -56,6 +59,44 @@ final class PackageLayoutTest extends TemporaryProject
         $this->write($vendor . '/autoload.php', '<?php throw new RuntimeException("obsolete loader");');
 
         return $data;
+    }
+
+    public function testRootsCorePlacementPreservesProjectAutoloadAndRepeatedMetadata(): void
+    {
+        $this->fixture(dev: false, coreInstaller: 'roots/wordpress-core-installer');
+        $this->prepare();
+        self::assertSame('private/core:1.0.0', file_get_contents($this->root . '/public/wp/marker'));
+        self::assertDirectoryDoesNotExist($this->root . '/vendor/private/core');
+        self::assertFileDoesNotExist($this->root . '/autoload-ran');
+        $metadata = file_get_contents($this->root . '/vendor/composer/installed.json');
+        $this->prepare();
+        self::assertSame($metadata, file_get_contents($this->root . '/vendor/composer/installed.json'));
+    }
+
+    public function testRootsOnlyInstallerTriggersStandaloneBootstrapBeforeProjectAutoload(): void
+    {
+        $data = $this->fixture(dev: false, coreInstaller: 'roots/wordpress-core-installer', coreOnly: true);
+        $packageRoot = dirname(__DIR__, 2);
+        $vendor = $packageRoot . '/vendor';
+        $dependencies = json_decode((string) file_get_contents($vendor . '/composer/installed.json'), true, flags: JSON_THROW_ON_ERROR)['packages'];
+        foreach ($dependencies as &$dependency) {
+            unset($dependency['bin']);
+        }
+        unset($dependency);
+        $data['packages'] = [...$dependencies, ...$data['packages']];
+        self::assertNotContains('composer/installers', array_column($data['packages'], 'name'));
+        (new Filesystem())->mirror($vendor . '/composer', $this->root . '/vendor/composer', null, ['override' => true]);
+        foreach (new \DirectoryIterator($vendor) as $entry) {
+            if ($entry->isDot() || !$entry->isDir() || in_array($entry->getFilename(), ['composer', 'bin'], true)) {
+                continue;
+            }
+            symlink($entry->getPathname(), $this->root . '/vendor/' . $entry->getFilename());
+        }
+        symlink($packageRoot . '/src', $this->root . '/src');
+        $this->write('vendor/composer/installed.json', json_encode($data, JSON_THROW_ON_ERROR));
+        $this->composerProcess('SymPress\\Runtime\\Composer\\LayoutBootstrap::prepare(getcwd(), getcwd() . "/vendor", getcwd() . "/composer.json", ["runtime", "--no-interaction"]);');
+        self::assertSame('private/core:1.0.0', file_get_contents($this->root . '/public/wp/marker'));
+        self::assertFileDoesNotExist($this->root . '/autoload-ran');
     }
 
     private function prepare(string $vendor = 'vendor'): void
