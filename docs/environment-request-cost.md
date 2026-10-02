@@ -7,7 +7,9 @@ is instrumented to count parse calls and input bytes; installed dependencies are
 left untouched. Each phase measures 20 requests after one initial request.
 No database or customer application is used, and the fixture/server are removed.
 
-PHP 8.5.9 on 2026-10-02 produced these results before and after selective refresh:
+PHP 8.5.9 on 2026-10-02 produced these results before and after selective refresh.
+The final-code replay uses revision `f6b591d`, including the independent review's
+expression-origin fixes; it ran while full QA was active:
 
 | Measurement | Previous whole-cache invalidation | Selective expression refresh |
 | --- | ---: | ---: |
@@ -16,10 +18,10 @@ PHP 8.5.9 on 2026-10-02 produced these results before and after selective refres
 | Safe deployment dump created | No | Yes |
 | Rotated process cache hits | 0/20 | 20/20 |
 | Rotated process parser calls / input bytes | 1 / 77,956 | 1 / 32 |
-| Rotated environment p50 / p95, ms | 19.843 / 20.177 | 10.790 / 11.695 |
-| Rotated HTTP p50 / p95, ms | 20.954 / 21.750 | 12.083 / 13.182 |
+| Rotated environment p50 / p95, ms | 19.843 / 20.177 | 11.973 / 12.872 |
+| Rotated HTTP p50 / p95, ms | 20.954 / 21.750 | 13.359 / 14.418 |
 
-These are local fixture timings, not production latency guarantees. Unrelated
+These are local fixture timings subject to concurrent QA load, not production latency guarantees. Unrelated
 keys remain cached; affected process expressions are resolved from non-secret
 templates or reparsed when their dependency fingerprint changes. Command results
 and transitive results run live and never enter the persisted value map. Dynamic
@@ -29,5 +31,7 @@ the same private location and permissions as all environment artifacts.
 
 `ProductionEnvironmentTest` covers secret-byte exclusion, partial immutable dumps,
 process rotation/removal, missing defaults, commands, transitive command results,
-source order and multiline quotes. `ProductionDoctorTest` covers forwarded scheme
+source order and multiline quotes. `ProcessInterpolationBoundaryTest` additionally
+covers inherited ENV/SERVER origins, real process priority, historical overrides,
+rotation and replay without persisting secret bytes. `ProductionDoctorTest` covers forwarded scheme
 trust, explicit cache disablement and read-only command diagnostics.
