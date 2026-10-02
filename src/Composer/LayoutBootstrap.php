@@ -39,7 +39,7 @@ final class LayoutBootstrap
         }
         $metadata = $pending ? [] : json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
         $packages = is_array($metadata) ? ($metadata['packages'] ?? []) : [];
-        $names = is_array($packages) ? array_column($packages, 'name') : [];
+        $names = is_array($packages) ? array_filter(array_column($packages, 'name'), 'is_string') : [];
         if (!$pending && array_intersect(['composer/installers', 'johnpbloch/wordpress-core-installer', 'roots/wordpress-core-installer'], $names) === []) {
             return;
         }
