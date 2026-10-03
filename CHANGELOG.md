@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 — 2026-10-03
+
+- Enable WordPress hardening, disallow unfiltered HTML/uploads and block outbound WordPress HTTP by default in Composer-managed production. Only `api.wordpress.org,downloads.wordpress.org` are admitted until an operator supplies a complete project-specific allowlist.
+- Preserve explicit supported overrides and the native profile; production doctor rejects unsafe hardening, upload, HTML and outbound-HTTP overrides.
+- Includes the previously unreleased 1.1.4 interpolation-cache, offline Roots installation and production diagnostics fixes listed below.
+- Upgrade note: review API-host needs before deploying. Starter now separates its optional legacy content cleanup from hardening; templates that copy older MU hooks must make the equivalent split before enabling production hardening.
+
 ## 1.1.4 — 2026-10-02
 
 - Cache native process interpolation as Dotenv-produced templates with validated dependency fingerprints, keeping derived process secrets out of persisted values.
