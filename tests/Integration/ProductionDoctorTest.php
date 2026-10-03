@@ -63,7 +63,7 @@ final class ProductionDoctorTest extends TemporaryProject
         chmod($this->root . '/.env.example', 0644);
         [$exit, $checks, $output] = $this->diagnose();
         self::assertSame(0, $exit, $output);
-        foreach (['production.home', 'production.debug', 'production.debug-display', 'production.file-mods', 'production.auto-updates', 'production.salts'] as $name) {
+        foreach (['production.home', 'production.debug', 'production.debug-display', 'production.file-mods', 'production.auto-updates', 'production.salts', 'production.wordpress-hardening', 'production.unfiltered-html', 'production.unfiltered-uploads', 'production.external-http'] as $name) {
             self::assertSame('pass', $checks[$name]);
         }
         self::assertFileDoesNotExist($this->root . '/executed');
@@ -73,11 +73,11 @@ final class ProductionDoctorTest extends TemporaryProject
     public function testBadHttpsDebugAndExplicitHardeningOverridesFail(): void
     {
         $this->fixture();
-        file_put_contents($this->root . '/.env', "WP_HOME=http://example.test\nWP_DEBUG=true\nWP_DEBUG_DISPLAY=true\nDISALLOW_FILE_MODS=false\n", FILE_APPEND);
+        file_put_contents($this->root . '/.env', "WP_HOME=http://example.test\nWP_DEBUG=true\nWP_DEBUG_DISPLAY=true\nDISALLOW_FILE_MODS=false\nSYMPRESS_ENABLE_WORDPRESS_HARDENING=false\nDISALLOW_UNFILTERED_HTML=false\nALLOW_UNFILTERED_UPLOADS=true\nWP_HTTP_BLOCK_EXTERNAL=false\n", FILE_APPEND);
         $this->dump();
         [$exit, $checks] = $this->diagnose();
         self::assertSame(1, $exit);
-        foreach (['production.home', 'production.debug', 'production.debug-display', 'production.file-mods'] as $name) {
+        foreach (['production.home', 'production.debug', 'production.debug-display', 'production.file-mods', 'production.wordpress-hardening', 'production.unfiltered-html', 'production.unfiltered-uploads', 'production.external-http'] as $name) {
             self::assertSame('fail', $checks[$name]);
         }
     }

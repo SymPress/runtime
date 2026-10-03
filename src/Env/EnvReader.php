@@ -40,6 +40,7 @@ final class EnvReader
         'WP_INSTALLED' => 'bool',
         'WPDB_ENV_VALID' => 'bool',
         'WPDB_EXISTS' => 'bool',
+        'SYMPRESS_ENABLE_WORDPRESS_HARDENING' => 'bool',
     ];
 
     /** @var array<string, string> */

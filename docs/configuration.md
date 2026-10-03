@@ -71,7 +71,7 @@ Compatibility profiles can use different defaults.
 | `autoload` | `"sympress-runtime-autoload.php"` | PHP file loaded only when setup runs. |
 | `cache-env` | `"auto"` | Automatic writable-only caching; explicit native `true` requires writability for new caches. `false` disables cache reads and writes. Native caches invalidate when source paths, sizes or modification times change. |
 | `generated-file-mode` | `"0600"` | Private generated PHP/cache/dump permissions; `"0640"` permits a shared deployment/PHP group. No world access is accepted. |
-| `composer-managed` | `"auto"` | Protect Composer-managed files from dashboard updates in staging/production; `true` enables it everywhere, `false` disables the section. |
+| `composer-managed` | `"auto"` | Protect Composer-managed files and apply WordPress hardening/upload/outbound HTTP defaults in staging/production; `true` enables it everywhere, `false` disables the section. |
 | `required-env` | `{}` | Required nonempty environment names mapped to `string`, `int`, `bool` or `float`, checked by validate, doctor and dump-env. |
 | `download-lock` | `true` | Pin URL-download SHA-256 hashes in `sympress-runtime.lock`; see [Downloads](downloads.md). |
 | `wp-cli-version` | `null` | Exact WP-CLI download release (at least 2.5.0); an installed Composer bundle takes priority. |
