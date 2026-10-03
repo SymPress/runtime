@@ -8,6 +8,8 @@ Native configuration uses automatic writable-only environment caching and
 Composer-managed staging/production defaults. Legacy profiles retain boolean
 cache defaults, explicit invalidation and automatic health scans when configured;
 their file-update defaults are unchanged. ADR 0023 covers environment payloads.
+The additional unfiltered-content/upload and outbound HTTP defaults are defined
+in [ADR 0028](0028-production-wordpress-hardening.md).
 
 Table scanning moves to explicit native `doctor --database-health`, with optional
 `--quick`. Normal preflight still checks connectivity and installation state.

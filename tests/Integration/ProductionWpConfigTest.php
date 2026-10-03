@@ -46,7 +46,7 @@ PHP);
     /** @return array<string, false> */
     private function environment(): array
     {
-        return array_fill_keys(['WP_ENV', 'WP_ENVIRONMENT_TYPE', 'WORDPRESS_ENV', 'SYMFONY_DOTENV_VARS', 'WPSTARTER_ENV_LOADED', 'SYMPRESS_RUNTIME_ENV_LOADED', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'WP_HOME', 'WP_DEBUG', 'WP_DEVELOPMENT_MODE', 'DISALLOW_FILE_MODS', 'AUTOMATIC_UPDATER_DISABLED', 'WP_AUTO_UPDATE_CORE', 'FORCE_SSL_ADMIN'], false);
+        return array_fill_keys(['WP_ENV', 'WP_ENVIRONMENT_TYPE', 'WORDPRESS_ENV', 'SYMFONY_DOTENV_VARS', 'WPSTARTER_ENV_LOADED', 'SYMPRESS_RUNTIME_ENV_LOADED', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'WP_HOME', 'WP_DEBUG', 'WP_DEVELOPMENT_MODE', 'DISALLOW_FILE_MODS', 'AUTOMATIC_UPDATER_DISABLED', 'WP_AUTO_UPDATE_CORE', 'FORCE_SSL_ADMIN', 'SYMPRESS_ENABLE_WORDPRESS_HARDENING', 'DISALLOW_UNFILTERED_HTML', 'ALLOW_UNFILTERED_UPLOADS', 'WP_HTTP_BLOCK_EXTERNAL', 'WP_ACCESSIBLE_HOSTS'], false);
     }
 
     /** @return array<array-key, mixed> */
@@ -74,11 +74,13 @@ PHP);
     }
 
     #[DataProvider('managedModes')]
+    #[Group('PAR-WP-018')]
     public function testComposerManagedModesSetGeneratedBootstrapDefaults(bool|string $mode, string $environment, bool $protected): void
     {
         $this->fixture(['composer-managed' => $mode], $environment);
         $result = $this->boot('echo json_encode([defined("DISALLOW_FILE_MODS") ? DISALLOW_FILE_MODS : null, defined("AUTOMATIC_UPDATER_DISABLED") ? AUTOMATIC_UPDATER_DISABLED : null, defined("WP_AUTO_UPDATE_CORE") ? WP_AUTO_UPDATE_CORE : null, defined("FORCE_SSL_ADMIN") ? FORCE_SSL_ADMIN : null, $GLOBALS["settings_loaded"]]);');
         self::assertSame([$protected ? true : null, $protected ? true : null, $protected ? false : null, $environment === 'production' ? true : null, true], $result);
+        self::assertSame([$protected ? true : null, $protected ? true : null, $protected ? false : null, $protected ? true : null, $protected ? 'api.wordpress.org,downloads.wordpress.org' : null], $this->boot('echo json_encode([defined("SYMPRESS_ENABLE_WORDPRESS_HARDENING") ? SYMPRESS_ENABLE_WORDPRESS_HARDENING : null, defined("DISALLOW_UNFILTERED_HTML") ? DISALLOW_UNFILTERED_HTML : null, defined("ALLOW_UNFILTERED_UPLOADS") ? ALLOW_UNFILTERED_UPLOADS : null, defined("WP_HTTP_BLOCK_EXTERNAL") ? WP_HTTP_BLOCK_EXTERNAL : null, defined("WP_ACCESSIBLE_HOSTS") ? WP_ACCESSIBLE_HOSTS : null]);'));
     }
 
     public function testExplicitEnvironmentAndPredefinedConstantsOverrideManagedDefaults(): void
@@ -86,6 +88,15 @@ PHP);
         $this->fixture(['composer-managed' => true], extraEnv: "DISALLOW_FILE_MODS=false\nAUTOMATIC_UPDATER_DISABLED=false\nWP_AUTO_UPDATE_CORE=true\nFORCE_SSL_ADMIN=false\n");
         self::assertSame([false, false, true, false], $this->boot('echo json_encode([DISALLOW_FILE_MODS, AUTOMATIC_UPDATER_DISABLED, WP_AUTO_UPDATE_CORE, FORCE_SSL_ADMIN]);'));
         self::assertSame([false, false, true, false], $this->boot('echo json_encode([DISALLOW_FILE_MODS, AUTOMATIC_UPDATER_DISABLED, WP_AUTO_UPDATE_CORE, FORCE_SSL_ADMIN]);', 'define("DISALLOW_FILE_MODS", false); define("AUTOMATIC_UPDATER_DISABLED", false); define("WP_AUTO_UPDATE_CORE", true); define("FORCE_SSL_ADMIN", false);'));
+    }
+
+    #[Group('PAR-WP-018')]
+    public function testHardeningOverridesAndOperatorOutboundHostsSurviveGeneratedDefaults(): void
+    {
+        $this->fixture(['composer-managed' => true], extraEnv: "SYMPRESS_ENABLE_WORDPRESS_HARDENING=false\nDISALLOW_UNFILTERED_HTML=false\nALLOW_UNFILTERED_UPLOADS=true\nWP_HTTP_BLOCK_EXTERNAL=false\nWP_ACCESSIBLE_HOSTS=api.wordpress.org,api.payments.example\n");
+        $report = 'echo json_encode([SYMPRESS_ENABLE_WORDPRESS_HARDENING, DISALLOW_UNFILTERED_HTML, ALLOW_UNFILTERED_UPLOADS, WP_HTTP_BLOCK_EXTERNAL, WP_ACCESSIBLE_HOSTS]);';
+        self::assertSame([false, false, true, false, 'api.wordpress.org,api.payments.example'], $this->boot($report));
+        self::assertSame([true, true, false, true, 'api.operator.example'], $this->boot($report, "define('SYMPRESS_ENABLE_WORDPRESS_HARDENING', true); define('DISALLOW_UNFILTERED_HTML', true); define('ALLOW_UNFILTERED_UPLOADS', false); define('WP_HTTP_BLOCK_EXTERNAL', true); define('WP_ACCESSIBLE_HOSTS', 'api.operator.example')"));
     }
 
     public function testComposerManagedSectionCanBeRemovedThroughEditor(): void
@@ -123,6 +134,7 @@ PHP;
 
     #[Group('wordpress')]
     #[Group('database')]
+    #[Group('PAR-WP-018')]
     public function testRealWordPressShortInitBootsColdAndWarmFromBundledProductionCache(): void
     {
         $core = getenv('RUNTIME_TEST_WORDPRESS_DIR');
@@ -156,14 +168,14 @@ define('SHORTINIT', true);
 require __DIR__ . '/wp-config.php';
 $debug = apply_filters('debug_information', []);
 $parsed = count(array_filter(get_included_files(), static fn (string $file): bool => str_ends_with($file, '/Dotenv/Dotenv.php'))) > 0;
-echo json_encode([$debug['sympress-runtime']['fields']['cached-env']['debug'], $parsed, (string) $wpdb->get_var('SELECT 1'), WP_ENVIRONMENT_TYPE, DISALLOW_FILE_MODS, FORCE_SSL_ADMIN, class_exists('Composer\Autoload\ClassLoader', false), sympress_runtime_getenv('RTV_VALUE')]);
+echo json_encode([$debug['sympress-runtime']['fields']['cached-env']['debug'], $parsed, (string) $wpdb->get_var('SELECT 1'), WP_ENVIRONMENT_TYPE, DISALLOW_FILE_MODS, FORCE_SSL_ADMIN, class_exists('Composer\Autoload\ClassLoader', false), sympress_runtime_getenv('RTV_VALUE'), SYMPRESS_ENABLE_WORDPRESS_HARDENING, DISALLOW_UNFILTERED_HTML, ALLOW_UNFILTERED_UPLOADS, WP_HTTP_BLOCK_EXTERNAL, WP_ACCESSIBLE_HOSTS]);
 PHP);
             $environment = array_replace($this->environment(), ['DB_HOST' => $host, 'DB_USER' => $user, 'DB_PASSWORD' => $password, 'DB_NAME' => $database, 'WP_HOME' => 'https://fixture.invalid']);
             foreach ([false, true] as $warm) {
                 $probe = new Process([PHP_BINARY, $this->root . '/real-probe.php'], $this->root, $environment);
                 $probe->run();
                 self::assertSame(0, $probe->getExitCode(), $probe->getErrorOutput());
-                self::assertSame([$warm, !$warm, '1', 'production', true, true, false, 'real-wordpress'], json_decode($probe->getOutput(), true, flags: JSON_THROW_ON_ERROR));
+                self::assertSame([$warm, !$warm, '1', 'production', true, true, false, 'real-wordpress', true, true, false, true, 'api.wordpress.org,downloads.wordpress.org'], json_decode($probe->getOutput(), true, flags: JSON_THROW_ON_ERROR));
                 self::assertFileExists($this->root . '/.env.cached.php');
                 self::assertSame(0640, fileperms($this->root . '/.env.cached.php') & 0777);
             }
