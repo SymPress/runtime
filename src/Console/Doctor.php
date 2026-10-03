@@ -104,18 +104,18 @@ final readonly class Doctor
             }
             $packages = new PackageFinder($this->context);
             $hasKernel = $packages->findByName('sympress/kernel') !== null;
-            if (!$hasKernel) {
-                $record('kernel.cache', 'not-applicable', 'sympress/kernel is not installed.');
-            }
             $kernelDirectories = [];
             foreach (['cache', 'build'] as $id) {
+                if (!$hasKernel) {
+                    $record('kernel.' . $id, 'not-applicable', 'sympress/kernel is not installed.');
+                    $record('permissions.kernel-' . $id, 'not-applicable', 'sympress/kernel is not installed; its directories are unused.');
+                    continue;
+                }
                 try {
                     $path = $id === 'cache' ? $kernel->cache() : $kernel->build();
                     $kernel->assertSafe($path, $id);
                     $kernelDirectories['kernel-' . $id] = $path;
-                    if ($hasKernel) {
-                        $record('kernel.' . $id, is_dir($path) && is_readable($path) ? 'pass' : 'unknown', is_dir($path) ? 'Selected kernel directory is readable.' : 'Selected kernel directory has not been created; run cache warmup as the PHP-FPM user.');
-                    }
+                    $record('kernel.' . $id, is_dir($path) && is_readable($path) ? 'pass' : 'unknown', is_dir($path) ? 'Selected kernel directory is readable.' : 'Selected kernel directory has not been created; run cache warmup as the PHP-FPM user.');
                 } catch (Throwable) {
                     $record('kernel.' . $id, 'fail', 'Unsafe kernel directory. Configure APP_CACHE_DIR/APP_BUILD_DIR outside the webroot without symlinks or group/world write access. External roots require mode 0700. Create and warm them as the PHP-FPM user.');
                     $record('permissions.kernel-' . $id, 'fail', 'Unsafe kernel directory cannot be used for cache operations.');
