@@ -31,6 +31,10 @@ final readonly class DumpEnvironment
 
             return 1;
         }
+        if (!$reader->canPersistEnvironment()) {
+            $this->io->error('Cannot publish an environment dump with a dynamic environment selector; use a literal selector and rebuild.');
+            return 1;
+        }
         $reader->setupConstants();
         $directory = $this->config['env-dir']->unwrapOrFallback($this->paths->root());
         if (!is_string($directory)) {

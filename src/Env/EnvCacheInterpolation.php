@@ -11,7 +11,7 @@ use Symfony\Component\Dotenv\Dotenv;
 /** @internal */
 final class EnvCacheInterpolation
 {
-    /** @var array<string, array{marker: string, fingerprint: string|null}> */
+    /** @var array<string, array{marker: string}> */
     private array $dependencies = [];
     /** @var array<string, string> */
     private array $templates = [];
@@ -19,6 +19,7 @@ final class EnvCacheInterpolation
     private array $resolved = [];
     private bool $uncacheable = false;
     private ?EnvCacheExpressions $expressions = null;
+    private ?Dotenv $dotenv = null;
 
     /**
      * @param callable(string): ?string $external
@@ -26,6 +27,7 @@ final class EnvCacheInterpolation
      */
     public function parse(Dotenv $dotenv, string $content, string $path, callable $external): array
     {
+        $this->dotenv = $dotenv;
         ($this->expressions ??= new EnvCacheExpressions())->record($content, $path);
         // The selected source chain cannot lose its history through later overrides.
         $this->uncacheable = $this->uncacheable || $this->expressions->hasDynamicEnvironmentSelection();
@@ -36,7 +38,7 @@ final class EnvCacheInterpolation
         foreach ($this->expressions->referencesFor($path) as $name) {
             $value = $external($name);
             $marker = $this->dependencies[$name]['marker'] ?? 'SYMPRESS_INTERPOLATION_' . bin2hex(random_bytes(16));
-            $this->dependencies[$name] = ['marker' => $marker, 'fingerprint' => self::fingerprint($marker, $value)];
+            $this->dependencies[$name] = ['marker' => $marker];
             if ($value !== null && $value !== '') {
                 $externalReferences[$name] = true;
             }
@@ -111,7 +113,7 @@ final class EnvCacheInterpolation
         return !$this->uncacheable && array_intersect_key($dynamic, array_flip(['WP_ENVIRONMENT_TYPE', 'WP_ENV', 'WORDPRESS_ENV'])) === [];
     }
 
-    /** @return array{dependencies: array<string, array{marker: string, fingerprint: string|null}>, templates: array<string, string>, expressions: array<string, string>, dynamic: array<string, true>, transient: array<string, true>, process: array<string, true>, replay: array<string, true>, refresh: bool} */
+    /** @return array{dependencies: array<string, array{marker: string}>, templates: array<string, string>, expressions: array<string, string>, dynamic: array<string, true>, transient: array<string, true>, process: array<string, true>, replay: array<string, true>, refresh: bool, plans: array<string, mixed>|null} */
     public function payload(): array
     {
         $templates = [];
@@ -129,7 +131,8 @@ final class EnvCacheInterpolation
         $dependencies = array_intersect_key($this->dependencies, $needed + $expressions['needed']);
         unset($expressions['needed']);
 
-        return ['dependencies' => $dependencies, 'templates' => $templates, 'refresh' => array_diff_key($expressions['process'], $templates) !== []] + $expressions;
+        $plans = $this->dotenv === null ? [] : $this->expressions?->templates($this->dotenv);
+        return ['dependencies' => $dependencies, 'templates' => $templates, 'refresh' => $expressions['dynamic'] !== [], 'plans' => $plans] + $expressions;
     }
 
     /**
@@ -145,13 +148,11 @@ final class EnvCacheInterpolation
             throw new RuntimeException('Environment cache interpolation data is invalid.');
         }
         $replacements = [];
-        $changed = false;
         foreach ($payload['dependencies'] as $name => $dependency) {
-            if (!is_string($name) || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/D', $name) || !is_array($dependency) || !is_string($dependency['marker'] ?? null) || !preg_match('/^SYMPRESS_INTERPOLATION_[a-f0-9]{32}$/D', $dependency['marker']) || !array_key_exists('fingerprint', $dependency) || ($dependency['fingerprint'] !== null && (!is_string($dependency['fingerprint']) || !preg_match('/^[a-f0-9]{64}$/D', $dependency['fingerprint'])))) {
+            if (!is_string($name) || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/D', $name) || !is_array($dependency) || !is_string($dependency['marker'] ?? null) || !preg_match('/^SYMPRESS_INTERPOLATION_[a-f0-9]{32}$/D', $dependency['marker'])) {
                 throw new RuntimeException('Environment cache interpolation dependency is invalid.');
             }
             $value = $external($name);
-            $changed = $changed || self::fingerprint($dependency['marker'], $value) !== $dependency['fingerprint'];
             $replacements[$dependency['marker']] = $value ?? '';
         }
         $values = [];
@@ -161,12 +162,7 @@ final class EnvCacheInterpolation
             }
             $values[$name] = strtr($template, $replacements);
         }
-        return $changed || ($payload['transient'] ?? []) !== [] || ($payload['refresh'] ?? false) ? null : $values;
-    }
-
-    private static function fingerprint(string $marker, ?string $value): ?string
-    {
-        return $value === null ? null : hash('sha256', $marker . "\0" . $value);
+        return ($payload['dynamic'] ?? []) !== [] || ($payload['transient'] ?? []) !== [] || ($payload['refresh'] ?? false) ? null : $values;
     }
 
     /** @param array<string, string> $replacements */

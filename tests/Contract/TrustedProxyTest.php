@@ -19,6 +19,11 @@ final class TrustedProxyTest extends TestCase
         yield 'ipv6 cidr' => ['2001:db8::a', 'https', '2001:db8::/32', true];
         yield 'ipv6 outside' => ['2001:db9::a', 'https', '2001:db8::/32', false];
         yield 'ipv6 exact' => ['::1', 'https', '127.0.0.1, ::1', true];
+        yield 'mapped ipv4 peer' => ['::ffff:192.0.2.129', 'https', '192.0.2.128/25', true];
+        yield 'mapped ipv4 network' => ['192.0.2.129', 'https', '::ffff:192.0.2.128/121', true];
+        yield 'mapped ipv4 exact' => ['::ffff:127.0.0.1', 'https', '127.0.0.1', true];
+        yield 'mapped ipv4 outside' => ['::ffff:192.0.2.127', 'https', '192.0.2.128/25', false];
+        yield 'mapped network ambiguous width' => ['192.0.2.129', 'https', '::ffff:192.0.2.128/95', false];
         yield 'untrusted direct' => ['203.0.113.9', 'https', '127.0.0.1', false];
         yield 'no configured trust' => ['127.0.0.1', 'https', null, false];
         yield 'malformed mask' => ['127.0.0.1', 'https', '127.0.0.1/-1,127.0.0.1/33', false];

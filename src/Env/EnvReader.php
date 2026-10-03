@@ -320,13 +320,20 @@ final class EnvReader
     }
 
     /** @internal */
-    public static function buildFromCacheDump(string $file, string $profile = 'native', ?string $environment = null, bool $compatibility = true, bool $validateSources = false, int $fileMode = 0600, ?string $producer = null, bool $refreshInterpolation = true): self
+    public function canPersistEnvironment(): bool
+    {
+        return $this->interpolation === null || $this->interpolation->canPersist(true);
+    }
+
+    /** @internal */
+    // phpcs:ignore SymPress.Complexity.NestingLevel.High -- Cache restoration distinguishes compiled templates, command replay and the retained format-1 compatibility path.
+    public static function buildFromCacheDump(string $file, string $profile = 'native', ?string $environment = null, bool $compatibility = true, bool $validateSources = false, int $fileMode = 0600, ?string $producer = null, bool $refreshInterpolation = true, bool $defineConstants = true, bool $dataOnly = false): self
     {
         $reader = new self(profile: $profile, compatibility: $compatibility, fileMode: $fileMode);
         if (!is_file($file) || !is_readable($file)) {
             return $reader;
         }
-        $data = EnvCacheFormat::read($file);
+        $data = EnvCacheFormat::read($file, $dataOnly);
         if ($producer !== null && ($data['producer'] ?? null) !== $producer) {
             return $reader;
         }
@@ -342,8 +349,27 @@ final class EnvReader
             }
             $inputEnvironment = $_ENV;
             $inputServer = $_SERVER;
-            $reader->restoreCache($data, $environment, []);
+            $reader->restoreCache($data, $environment, [], $defineConstants);
+            $plans = $payload['plans'] ?? null;
+            if (is_array($plans)) {
+                $reader->prepareInterpolationReplay($payload, $inputEnvironment, $inputServer);
+                foreach ($plans as $sourcePlans) {
+                    foreach (EnvCacheTemplates::resolve($sourcePlans) as $name => $value) {
+                        if ($reader->externalValue($name) !== null) {
+                            $reader->raw[$name] = $value;
+                            continue;
+                        }
+                        $reader->write($name, $value);
+                    }
+                }
+                $reader->fromCache = $reader->cache !== [];
+                $reader->loaded = true;
+                return $reader;
+            }
             if (!$refreshInterpolation) {
+                if ($dataOnly) {
+                    throw new RuntimeException('Environment inspection cannot safely refresh command-based or older interpolation data; rebuild the dump.');
+                }
                 return $reader;
             }
             $reader->prepareInterpolationReplay($payload, $inputEnvironment, $inputServer);
@@ -358,7 +384,7 @@ final class EnvReader
 
             return $reader;
         }
-        $reader->restoreCache($data, $environment, $interpolated);
+        $reader->restoreCache($data, $environment, $interpolated, $defineConstants);
 
         return $reader;
     }
@@ -409,7 +435,7 @@ final class EnvReader
     }
 
     /** @param array<string, string> $interpolated */
-    private function restoreCache(mixed $data, ?string $environment, array $interpolated): void
+    private function restoreCache(mixed $data, ?string $environment, array $interpolated, bool $defineConstants = true): void
     {
         if (!is_array($data) || ($data['format'] ?? null) !== 1 || ($data['profile'] ?? null) !== $this->profile || !is_string($data['environment'] ?? null)) {
             throw new RuntimeException('Environment cache format or profile is invalid.');
@@ -480,7 +506,7 @@ final class EnvReader
             }
             $this->write($name, $value);
         }
-        foreach ($data['constants'] as $name) {
+        foreach ($defineConstants ? $data['constants'] : [] as $name) {
             if (in_array($name, ['WP_ENV', 'WP_ENVIRONMENT_TYPE'], true)) {
                 $this->setupEnvConstants();
                 continue;

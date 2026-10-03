@@ -53,6 +53,12 @@ Constructing a runner or invoking `run` is internal.
 `installed` and `reason` are public, with nullable booleans preserving unknown
 state. Obtain it through `dbChecker()->status()`.
 
+`EnvironmentInspection::inspect()` reads only requested raw variable names through
+Runtime's configured dump/cache/file precedence without setup or WordPress boot.
+It preserves the caller's environment and rejects executable PHP/command substitutions.
+See [read-only inspection](deployment.md#read-only-environment-inspection) for the
+result structure and explicit file/Composer-manifest overrides.
+
 ## Services and narrow handles
 
 | `Services` accessor | Handle and supported operations |
@@ -196,6 +202,8 @@ SymPress\Runtime\Env\EnvReader::rawValue(string $name): ?string
 SymPress\Runtime\Env\EnvReader::read(string $name): string|int|float|bool|null
 SymPress\Runtime\Env\EnvReader::readMany(string ...$names): array
 SymPress\Runtime\Env\EnvReader::write(string $name, string $value): void
+SymPress\Runtime\EnvironmentInspection [public type]
+SymPress\Runtime\EnvironmentInspection::inspect(string $projectRoot, array $names, ?string $manifest = NULL, ?string $environmentFile = NULL): array [static]
 SymPress\Runtime\Event\LifecycleEvent [public type]
 SymPress\Runtime\Event\LifecycleEvent::$result: int [readonly]
 SymPress\Runtime\Event\LifecycleEvent::$services: SymPress\Runtime\Services [readonly]

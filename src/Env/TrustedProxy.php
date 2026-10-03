@@ -7,6 +7,7 @@ namespace SymPress\Runtime\Env;
 /** @internal */
 final class TrustedProxy
 {
+    // phpcs:ignore SymPress.Complexity.NestingLevel.High -- IP-family normalization and bounded CIDR validation share a fail-closed comparison boundary.
     public static function forwardsHttps(mixed $peer, mixed $scheme, mixed $trusted): bool
     {
         if (!is_string($peer) || !is_string($scheme) || strtolower($scheme) !== 'https' || !is_string($trusted)) {
@@ -16,9 +17,22 @@ final class TrustedProxy
         if ($address === false) {
             return false;
         }
+        $mappedPrefix = str_repeat("\0", 10) . "\xff\xff";
+        if (strlen($address) === 16 && str_starts_with($address, $mappedPrefix)) {
+            $address = substr($address, 12);
+        }
         foreach (explode(',', $trusted) as $entry) {
             $parts = explode('/', trim($entry));
             $network = @inet_pton($parts[0]);
+            if (is_string($network) && strlen($network) === 16 && str_starts_with($network, $mappedPrefix)) {
+                if (isset($parts[1])) {
+                    if (!ctype_digit($parts[1]) || (int) $parts[1] < 96 || (int) $parts[1] > 128) {
+                        continue;
+                    }
+                    $parts[1] = (string) ((int) $parts[1] - 96);
+                }
+                $network = substr($network, 12);
+            }
             if ($network === false || strlen($network) !== strlen($address) || count($parts) > 2) {
                 continue;
             }

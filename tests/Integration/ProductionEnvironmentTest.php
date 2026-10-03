@@ -48,9 +48,9 @@ $cached = $r->hasCachedValues(); $r->loadChain();
 echo json_encode([$cached, class_exists(Symfony\Component\Dotenv\Dotenv::class, false), $r->read('WP_SITEURL'), $r->read('RTV_APPENDED'), $r->read('RTV_DEFAULT')]);
 PHP;
         self::assertSame([true, false, 'https://process.example/wp', 'https://process.example/wp/admin/tail', 'fallback'], $this->runPhp("putenv('WP_HOME=https://process.example');" . $load));
-        self::assertSame([true, true, 'https://changed.example/wp', 'https://changed.example/wp/admin/tail', 'fallback'], $this->runPhp("putenv('WP_HOME=https://changed.example');" . $load));
-        self::assertSame([true, true, 'https://process.example/wp', 'https://process.example/wp/admin/tail', 'present'], $this->runPhp("putenv('WP_HOME=https://process.example'); putenv('RTV_OPTIONAL=present');" . $load));
-        self::assertSame([true, true, 'https://file.example/wp', 'https://file.example/wp/admin/tail', 'fallback'], $this->runPhp("putenv('WP_HOME'); unset(\$_ENV['WP_HOME'], \$_SERVER['WP_HOME']);" . $load));
+        self::assertSame([true, false, 'https://changed.example/wp', 'https://changed.example/wp/admin/tail', 'fallback'], $this->runPhp("putenv('WP_HOME=https://changed.example');" . $load));
+        self::assertSame([true, false, 'https://process.example/wp', 'https://process.example/wp/admin/tail', 'present'], $this->runPhp("putenv('WP_HOME=https://process.example'); putenv('RTV_OPTIONAL=present');" . $load));
+        self::assertSame([true, false, 'https://file.example/wp', 'https://file.example/wp/admin/tail', 'fallback'], $this->runPhp("putenv('WP_HOME'); unset(\$_ENV['WP_HOME'], \$_SERVER['WP_HOME']);" . $load));
     }
 
     public function testRealEnvironmentSecretsAreExcludedAndFileDefaultsSurviveTheirRemoval(): void
@@ -105,6 +105,27 @@ $cached = $r->dumpCached('cache.php');
 $r = SymPress\Runtime\Env\EnvReader::buildFromCacheDump('cache.php', validateSources: true);
 echo json_encode([$cached, $r->read('RTV_DERIVED')]);
 PHP));
+    }
+
+    public function testCompiledDefaultsKeepDotenvEscapeAndQuoteSemantics(): void
+    {
+        $this->write('.env', <<<'ENV'
+RTV_DEFAULT="${RTV_MISSING:-line\nback\\slash\$literal}"
+RTV_UNQUOTED=${RTV_MISSING:-back\\slash}
+ENV);
+        $cold = $this->runPhp(<<<'PHP'
+putenv('RTV_MISSING');
+$r = new SymPress\Runtime\Env\EnvReader(); $r->loadChain();
+$r->dumpCached('cache.php');
+echo json_encode([$r->rawValue('RTV_DEFAULT'), $r->rawValue('RTV_UNQUOTED')]);
+PHP);
+        self::assertSame(["line\nback\\slash\$literal", 'back\\slash'], $cold);
+        $warm = $this->runPhp(<<<'PHP'
+putenv('RTV_MISSING');
+$r = SymPress\Runtime\Env\EnvReader::buildFromCacheDump('cache.php', validateSources: true);
+echo json_encode([$r->rawValue('RTV_DEFAULT'), $r->rawValue('RTV_UNQUOTED'), class_exists(Symfony\Component\Dotenv\Dotenv::class, false)]);
+PHP);
+        self::assertSame([...$cold, false], $warm);
     }
 
     public function testExplicitWriteRetainsSafeCacheAndDumpAfterUnusedProcessDependencyRotates(): void
@@ -407,7 +428,7 @@ $parser = str_replace('Env\\EnvReader', 'Dotenv\\Dotenv', $class);
 echo json_encode([$cached, $r->read('WP_SITEURL'), class_exists($parser, false)]);
 PHP;
         self::assertSame([true, 'https://process.example/wp', false], $this->runPhp("putenv('WP_HOME=https://process.example');" . $load));
-        self::assertSame([true, 'https://changed.example/wp', true], $this->runPhp("putenv('WP_HOME=https://changed.example');" . $load));
+        self::assertSame([true, 'https://changed.example/wp', false], $this->runPhp("putenv('WP_HOME=https://changed.example');" . $load));
     }
 
     public function testUnprivilegedReadOnlyDirectoryNeverReceivesOrSpillsSecrets(): void
