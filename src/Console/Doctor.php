@@ -64,7 +64,7 @@ final readonly class Doctor
                 throw new RuntimeException('Invalid compatibility profile.');
             }
             [$env] = EnvironmentInspection::loadReader($this->config, $this->paths);
-            $kernel = new KernelPaths($env, $this->paths);
+            $kernel = new KernelPaths($env, $this->paths, $webroot);
             $canonical = $kernel->environment();
             if ($production || in_array($canonical, ['staging', 'production'], true)) {
                 $home = $env->rawValue('WP_HOME');
@@ -107,14 +107,23 @@ final readonly class Doctor
             if (!$hasKernel) {
                 $record('kernel.cache', 'not-applicable', 'sympress/kernel is not installed.');
             }
-            if ($hasKernel) {
-                foreach (['cache' => $kernel->cache(), 'build' => $kernel->build()] as $id => $path) {
-                    try {
-                        $boundary->assertWritablePath($path);
-                        $record('kernel.' . $id, is_dir($path) && is_readable($path) ? 'pass' : 'unknown', is_dir($path) ? 'Kernel directory is readable.' : 'Kernel directory has not been created.');
-                    } catch (Throwable) {
-                        $record('kernel.' . $id, 'fail', 'Kernel directory is unsafe for runtime cache operations.');
+            $kernelDirectories = [];
+            foreach (['cache', 'build'] as $id) {
+                try {
+                    $path = $id === 'cache' ? $kernel->cache() : $kernel->build();
+                    $kernel->assertSafe($path, $id);
+                    $kernelDirectories['kernel-' . $id] = $path;
+                    if ($hasKernel) {
+                        $record('kernel.' . $id, is_dir($path) && is_readable($path) ? 'pass' : 'unknown', is_dir($path) ? 'Selected kernel directory is readable.' : 'Selected kernel directory has not been created; run cache warmup as the PHP-FPM user.');
                     }
+                } catch (Throwable) {
+                    $record('kernel.' . $id, 'fail', 'Unsafe kernel directory. Configure APP_CACHE_DIR/APP_BUILD_DIR outside the webroot without symlinks or group/world write access. External roots require mode 0700. Create and warm them as the PHP-FPM user.');
+                    $record('permissions.kernel-' . $id, 'fail', 'Unsafe kernel directory cannot be used for cache operations.');
+                }
+            }
+            if ($hasKernel) {
+                if (isset($kernelDirectories['kernel-cache']) && $kernel->usesFallback()) {
+                    $record('kernel.cache-migration', 'warning', 'Kernel selected its private per-user fallback because the implicit cache is unsafe, public or unavailable. Configure a durable APP_CACHE_DIR shared by CLI and PHP-FPM and warm it as the PHP-FPM user. Diagnostics do not create or migrate directories.');
                 }
                 try {
                     $owners = (new BootOwnership($packages, new MuPluginList($packages, $this->paths), $this->config, $this->paths))->providers();
@@ -124,7 +133,7 @@ final readonly class Doctor
                     $record('kernel.boot', 'fail', 'Kernel boot ownership is ambiguous.');
                 }
             }
-            foreach (['configuration' => $this->paths->root('wp-config.php'), 'content' => $this->paths->wpContent(), 'kernel-cache' => $kernel->cache(), 'kernel-build' => $kernel->build()] as $id => $path) {
+            foreach (['configuration' => $this->paths->root('wp-config.php'), 'content' => $this->paths->wpContent(), ...$kernelDirectories] as $id => $path) {
                 $ancestor = $path;
                 while (!file_exists($ancestor) && dirname($ancestor) !== $ancestor) {
                     $ancestor = dirname($ancestor);

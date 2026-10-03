@@ -34,9 +34,8 @@ final readonly class KernelCacheStep implements StepInterface
     public function run(Config $config, Paths $paths): int
     {
         $targets = $this->kernel->clearTargets();
-        foreach ($targets as $target) {
-            $this->boundary->assertWritablePath($target);
-        }
+        $this->kernel->assertSafe($this->kernel->cache(), 'cache');
+        $this->kernel->assertSafe($this->kernel->build(), 'build');
         $id = $config['kernel-build-id']->unwrap();
         if (is_string($id)) {
             $this->boundary->assertWritablePath($this->kernel->buildIdFile());
