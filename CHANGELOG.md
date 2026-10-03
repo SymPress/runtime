@@ -4,6 +4,7 @@
 
 - Align read-only Doctor and explicit cache maintenance with Kernel 1.1.4's selected private fallback, configured cache/build roots and discovery metadata.
 - Fail diagnostics for unsafe explicit cache directories; report implicit fallback selection without creating directories or executing cache metadata.
+- Mark unused cache/build diagnostics and permissions as not-applicable when the optional Kernel is absent, including WordPress core installed in the project root.
 - Support explicitly configured external cache/build roots with mode 0700 and matching ownership; reject symlinks, parent traversal and unsafe permissions before any deletion.
 - Require Kernel 1.1.4 or newer when the optional kernel is installed, and pin shared QA workflows to the released 1.2.2 source.
 
