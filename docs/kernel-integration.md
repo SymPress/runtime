@@ -17,7 +17,28 @@ Composer exposes `sympress-runtime:doctor`, `sympress-runtime:check`, `sympress-
 
 Doctor exits with 0 when applicable checks pass, 1 on a failure, or 2 when a check remains unknown. `--json` includes each check's ID, status and redacted detail. Database-disabled status is unknown; it is never reported as a successful connection. A missing optional kernel is not-applicable. No setup autoload file or custom step executes during diagnosis.
 
-`kernel-cache` preserves other environments and asset directories. It honors APP_CACHE_DIR and APP_BUILD_DIR and removes separately located discovery metadata. Unsafe or escaping symlink paths fail before any clearing. Align explicit SiteKernel environment overrides before running maintenance.
+`kernel-cache` preserves other environments and asset directories. It honors APP_CACHE_DIR and APP_BUILD_DIR and clears discovery metadata in the selected cache, including Kernel 1.1.4's private fallback. A safe legacy default discovery file is also retired after an override. The unsafe old generation that triggered fallback stays untouched. Align explicit SiteKernel environment overrides before running maintenance.
+
+Explicit cache/build roots outside the project must already exist, belong to the
+user running PHP and have mode 0700. Runtime rejects root or ancestor symlinks,
+parent traversal, foreign directory owners and group/world writable directories
+before deleting any selected target. External ancestors must belong to that user
+or the system root user; shared writable ancestors require the sticky bit, as on
+the system temporary directory. It removes only the selected environment's
+`kernel` directories, preserving sibling caches and other environments. These
+rules apply only to kernel maintenance; generated project artifacts retain their
+project boundary.
+
+Doctor computes the same cache location without booting Kernel, creating a
+fallback or changing permissions. A missing selected directory remains unknown;
+an unsafe explicit root fails. `kernel.cache-migration` warns when Kernel would
+select its private per-user fallback. Warmup must run as the PHP-FPM identity.
+The guard also treats the known WordPress core/content paths and conventional
+`public` directory as public without booting WordPress. Supply `doctor --webroot`
+for a different server document root; diagnostics cannot discover web server
+configuration from PHP files.
+Doctor observes the calling identity; a CLI check cannot prove the web process's
+UID or its filesystem namespace. See the [1.2.2 upgrade notes](releases/1.2.2.md).
 
 This is an explicit command-only step: Composer update does not automatically run it. A deployment requiring a deliberate clear or new build ID must invoke it and warm the selected environment before traffic switches.
 
