@@ -9,9 +9,8 @@ use SymPress\Runtime\Application\RunContext;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Database\DbChecker;
 use SymPress\Runtime\Database\MysqliProbe;
-use SymPress\Runtime\Env\EnvFactory;
-use SymPress\Runtime\Env\EnvReader;
 use SymPress\Runtime\Env\EnvRequirements;
+use SymPress\Runtime\EnvironmentInspection;
 use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Filesystem\ProjectBoundary;
 use SymPress\Runtime\Kernel\BootOwnership;
@@ -64,9 +63,7 @@ final readonly class Doctor
             if (!is_string($profile)) {
                 throw new RuntimeException('Invalid compatibility profile.');
             }
-            $env = $dump
-                ? EnvReader::buildFromCacheDump($environmentDirectory . '/.env.dump.php', $profile, compatibility: $this->config['compatibility']->is(true), refreshInterpolation: false)
-                : (new EnvFactory($this->config, $this->paths))->create();
+            [$env] = EnvironmentInspection::loadReader($this->config, $this->paths);
             $kernel = new KernelPaths($env, $this->paths);
             $canonical = $kernel->environment();
             if ($production || in_array($canonical, ['staging', 'production'], true)) {

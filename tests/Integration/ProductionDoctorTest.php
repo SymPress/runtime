@@ -19,7 +19,7 @@ final class ProductionDoctorTest extends TemporaryProject
         $this->write('wordpress/wp-load.php', '<?php // never executed');
         $this->write('public/.keep', '');
         $this->write('wp-content/.keep', '');
-        $this->write('.env', "WP_ENVIRONMENT_TYPE=production\nWP_HOME=https://example.test\nDB_NAME=fixture\nDB_USER=fixture\nDB_HOST=localhost\nDB_PASSWORD=private-credential\nWPDB_ENV_VALID=true\nWPDB_EXISTS=true\nWP_INSTALLED=true\n");
+        $this->write('.env', "WP_ENVIRONMENT_TYPE=production\nWP_HOME=https://example.test\nDB_NAME=fixture\nDB_USER=fixture\nDB_HOST=localhost\nDB_PASSWORD=private-credential\nAPP_SECRET=" . str_repeat('test-secret-', 4) . "\nWPDB_ENV_VALID=true\nWPDB_EXISTS=true\nWP_INSTALLED=true\n");
         chmod($this->root . '/.env', 0600);
         $template = file_get_contents(dirname(__DIR__, 2) . '/templates/wp-config.php');
         self::assertIsString($template);
@@ -40,6 +40,18 @@ final class ProductionDoctorTest extends TemporaryProject
     {
         $autoload = dirname(__DIR__, 2) . '/vendor/autoload.php';
         (new Process([PHP_BINARY, '-r', 'require ' . var_export($autoload, true) . '; $r = new SymPress\\Runtime\\Env\\EnvReader(); $r->loadChain(); $r->setupConstants(); $r->dumpCached(".env.dump.php", immutable: true);'], $this->root))->mustRun();
+    }
+
+    public function testShortApplicationSecretFailsProductionDoctorWithoutDisclosure(): void
+    {
+        $this->fixture();
+        $this->write('.env.production', "APP_SECRET=short-private-secret\n");
+        chmod($this->root . '/.env.production', 0600);
+        $this->dump();
+        [$exit, $checks, $output] = $this->diagnose();
+        self::assertSame(1, $exit);
+        self::assertSame('fail', $checks['production.app-secret']);
+        self::assertStringNotContainsString('short-private-secret', $output);
     }
 
     /** @return array{int|null, array<string, string>, string} */

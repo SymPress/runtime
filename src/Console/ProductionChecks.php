@@ -41,6 +41,8 @@ final readonly class ProductionChecks
         $record('production.debug-display', $this->effectiveBoolean($env, 'WP_DEBUG_DISPLAY', false, $defaults && in_array($canonical, ['staging', 'production'], true), $predefined, $opaque), 'Effective WP_DEBUG_DISPLAY must be false.');
         $record('production.debug', $this->effectiveBoolean($env, 'WP_DEBUG', false, $defaults && $canonical === 'production', $predefined, $opaque), 'Effective WP_DEBUG must be false for production.');
         $record('production.dump', $dump, 'A readable deployment environment dump is required.');
+        $secret = $env->rawValue('APP_SECRET');
+        $record('production.app-secret', is_string($secret) && strlen($secret) >= 32, 'APP_SECRET requires at least 32 bytes generated with a cryptographically secure random source.');
         $record('production.env-cache', !$this->config['cache-env']->is(false), 'Production must not explicitly disable environment caching.');
         $record('production.proxy-trust', $this->hasProxyTrust($env), 'A forwarded scheme header or enabled forwarded SSL requires explicit trusted proxy addresses or CIDRs.');
         $record('production.file-mods', $this->effectiveBoolean($env, 'DISALLOW_FILE_MODS', true, $managedDefaults, $predefined, $opaque), 'Effective DISALLOW_FILE_MODS must be true, explicitly or through the generated Composer-managed defaults.');

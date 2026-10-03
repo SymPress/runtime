@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Remove persisted process-value fingerprints; evaluate compiled interpolation templates on every warm request without reparsing Dotenv, including rotated, absent and newly supplied values.
+- Add side-effect-free `EnvironmentInspection` for requested raw values, sharing Doctor's configured cache/dump/file precedence and rejecting executable PHP or shell substitutions.
+- Require a production `APP_SECRET` of at least 32 bytes in Doctor, refresh diagnostic interpolation and report dynamic dump selectors directly.
+- Normalize IPv4-mapped IPv6 proxy peers and networks, refresh mutable OPcache environment data and constrain the tested Composer dependency to the 2.10 minor.
+
 ## 1.2.0 — 2026-10-03
 
 - Enable WordPress hardening, disallow unfiltered HTML/uploads and block outbound WordPress HTTP by default in Composer-managed production. Only `api.wordpress.org,downloads.wordpress.org` are admitted until an operator supplies a complete project-specific allowlist.

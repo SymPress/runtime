@@ -7,17 +7,21 @@ Status: implemented, 2026-09-30.
 Native runtime caching defaults to auto, checks parent writability before shutdown
 registration, and invalidates on size/mtime changes to all attempted chain paths.
 Missing paths are recorded so newly deployed overrides invalidate existing caches.
-Interpolated process values use parser-produced substitution templates and salted
-dependency fingerprints. Runtime cache hits validate those dependencies and
-expand templates without Dotenv parsing or persisted process secret bytes.
-Missing and empty dependencies remain distinct; changes refresh the original
-affected expressions and their file-owned dependencies. Unrelated values stay cached.
-Dotenv retains control of quoting, escaping, defaults and file-chain resolution.
+Interpolated values use templates compiled through Dotenv when the artifact is
+built. Persisted artifacts contain variable names, literal defaults and random
+placeholder markers, never fingerprints or other verifiers derived from process
+values. Every request evaluates the templates against its current environment,
+without reparsing Dotenv. Missing and empty values, defaults, assignment side
+effects, quoting and source-chain precedence remain covered by differential tests.
+Unrelated values stay cached. Older artifacts refresh through the original parser;
+rebuild caches and dumps to use the compiled warm path and remove old fingerprints.
 Deployment dumps preserve safe values and non-secret expressions too. Command
 results and transitive results remain outside the value map and run live on hits.
 Dynamic environment selectors decline persistence because their source-chain
-selection cannot be updated through a partial cache. Doctor never executes
-persisted dynamic commands. This supersedes the previous whole-dump refusal for
+selection cannot be updated through a partial cache; dump creation reports this
+directly. Doctor and the public read-only environment inspection share the same
+safe reader, refresh compiled interpolation and reject executable artifact data or
+command substitutions. They never execute wp-config.php. This supersedes the previous whole-dump refusal for
 external interpolation and whole-cache refusal for command substitution.
 Deployment dumps remain explicit immutable artifacts. Legacy runtime cache
 semantics remain unchanged.
@@ -64,3 +68,10 @@ must flush caches in that case. Group ownership is a deployment responsibility.
 `ProductionEnvironmentTest` covers an actual unprivileged read-only directory,
 permissions, new/changed/deleted overrides, immutable dumps, live file secrets,
 required value validation and lazy parsing through the bundled bootstrap.
+
+A PHP 8.5.9 container measurement with 30 variable templates and 1,000 requests
+per case recorded median reader costs of 0.45 ms from source and 0.19 ms from a
+warm cache, including alternating process-secret rotation. Warm p95 was 0.23 ms;
+the rotated case was 0.21 ms. Both warm cases verified every result and left
+Dotenv unloaded. These synthetic reader timings exclude WordPress boot and
+describe the tested container, not a production latency guarantee.

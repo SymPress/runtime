@@ -23,6 +23,47 @@ PHP identity before switching traffic. A successful package QA suite does not
 replace those site checks. Pin a reviewed tagged Runtime release and keep its exact resolved source reference
 in the lockfile.
 
+Provide a randomly generated `APP_SECRET` of at least 32 bytes before production
+validation. Doctor reports a missing or short value without printing it. Older
+projects should provision a new strong secret once through their private environment
+or secret store, then rebuild the dump and kernel cache. Do not regenerate an existing
+good secret on each deployment: rotation deliberately invalidates signed cache data
+and can affect Symfony features using the application secret.
+
+Set `SYMPRESS_PROJECT_DIR` to a persistent project identity, such as the deployment
+base directory, before the kernel and object-cache drop-in boot. Its literal value
+seeds WordPress cache namespaces/signing and Symfony cache pool prefixes; keep it
+identical across release directories and different between projects. Actual package,
+configuration and autoloader discovery continues from the active release. Changing
+the identity or secret causes a normal cache refill. Provision a durable private
+`APP_CACHE_DIR` accessible to the same CLI and PHP-FPM identity and warm it before
+traffic; explicit unsafe cache permissions fail with an actionable diagnostic.
+
+After updating interpolation persistence, regenerate ordinary environment caches
+and deployment dumps to remove fingerprints stored by older Runtime versions.
+New artifacts contain no verifier derived from a process secret. Compiled variable
+templates resolve against current process values on every request without loading
+Dotenv; command substitutions still require the live parser during application boot.
+
+## Read-only environment inspection
+
+Applications and security checks can request selected raw values without running
+setup, loading WordPress or changing the caller's process/ENV/SERVER state:
+
+```php
+$snapshot = \SymPress\Runtime\EnvironmentInspection::inspect(
+    $activeReleaseDirectory,
+    ['APP_SECRET', 'DB_HOST'],
+);
+```
+
+The result contains `environment`, the requested `values` (null when absent), and
+`source` (`dump`, `cache` or `files`). It honors Runtime configuration and live
+process precedence. Generated artifacts are decoded as literal data rather than
+executed. Command substitutions are rejected. The optional `manifest` argument
+means a Composer configuration manifest; `environmentFile` explicitly selects a
+file chain and bypasses cached/dumped artifacts. Treat returned values as secrets.
+
 ## Required artifacts
 
 `var/runtime/<fingerprint>/` is required application code. Generated `wp-config.php` references its `bootstrap.php` on every request. **Do not exclude all of `var/` or clear `var/runtime` as a cache cleanup.** Each immutable payload includes its manifest, scoped environment classes, Symfony Dotenv/Process source and license notices.

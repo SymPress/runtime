@@ -97,4 +97,15 @@ final class OperationsCommandTest extends TemporaryProject
         $this->fixture(['required-env' => ['SMTP_PORT' => 'object']]);
         self::assertNotSame(0, $this->command('validate')->getExitCode());
     }
+
+    public function testDynamicEnvironmentSelectorHasAnActionableDumpError(): void
+    {
+        $this->fixture();
+        $this->write('.env', 'WP_ENVIRONMENT_TYPE=${RTV_SELECTOR:-production}' . "\nRTV_VALUE=safe\n");
+        $run = $this->command('dump-env', 'production');
+        self::assertSame(1, $run->getExitCode());
+        self::assertStringContainsString('dynamic environment selector', $run->getOutput() . $run->getErrorOutput());
+        self::assertStringNotContainsString('permissions', $run->getOutput() . $run->getErrorOutput());
+        self::assertFileDoesNotExist($this->root . '/.env.dump.php');
+    }
 }

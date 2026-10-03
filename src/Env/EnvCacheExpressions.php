@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Env;
 
+use Symfony\Component\Dotenv\Dotenv;
+
 /** Keeps original expressions, never their process-derived results. @internal */
 final class EnvCacheExpressions
 {
@@ -50,6 +52,21 @@ final class EnvCacheExpressions
     public function referencesFor(string $path): array
     {
         return array_values(array_unique(array_merge(...array_column($this->sources[$path] ?? [], 'references'))));
+    }
+
+    /** @return array<string, mixed>|null */
+    public function templates(Dotenv $dotenv): ?array
+    {
+        $expressions = $this->payload()['expressions'];
+        $plans = [];
+        foreach ($expressions as $path => $content) {
+            $compiled = EnvCacheTemplates::compile($dotenv, $this->statements($content));
+            if ($compiled === null) {
+                return null;
+            }
+            $plans[$path] = $compiled;
+        }
+        return $plans;
     }
 
     public function hasDynamicEnvironmentSelection(): bool
