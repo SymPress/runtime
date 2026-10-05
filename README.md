@@ -20,7 +20,9 @@ install or update. The same setup is available as a standalone command.
 
 Runtime does not require the SymPress kernel. If your application uses it, the
 [kernel integration](docs/kernel-integration.md) adds diagnostics, environment dumps
-and explicit cache maintenance to `wp console`.
+and explicit cache maintenance to `wp console`. Runtime 1.2.3 requires Kernel
+1.1.5 or newer when that optional package is installed; update both packages
+together as described in the [1.2.3 upgrade notes](docs/releases/1.2.3.md).
 
 ## Requirements
 

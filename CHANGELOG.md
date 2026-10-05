@@ -1,10 +1,13 @@
 # Changelog
 
-## 1.2.3 — Unreleased
+## 1.2.3 — 2026-10-05
 
 - Preserve existing outbound WordPress HTTP integrations in 1.x: production and staging no longer enable `WP_HTTP_BLOCK_EXTERNAL` automatically. Explicit environment/constant opt-in retains operator host overrides and the Composer-managed core-host fallback.
 - Validate a non-empty outbound host list without a global wildcard when blocking is enabled. Doctor reports compatibility-preserving disabled blocking separately from host restrictions.
 - Report the WordPress hardening configuration switch separately from unverified consumer hook activation. Runtime preflight does not require or install the private Security package.
+- Align discovery paths and read-only cache selection with Kernel 1.1.5's `discovery-packages.json` and `meta.json`; legacy PHP metadata is never executed or used to select an unwritable cache.
+- Retire safe stale default JSON and legacy PHP discovery files after a configured cache override, while preserving unsafe generations that selected the private fallback and validating all targets before deletion.
+- Require Kernel 1.1.5 or newer only when the optional kernel is installed. Update the Runtime/Kernel pair together and warm the selected JSON cache before read-only deployment.
 - Upgrade note: regenerate the managed configuration section and inspect preserved customized sections; an unchanged 1.2.0–1.2.2 generated file still contains its earlier HTTP default.
 
 ## 1.2.2 — 2026-10-03

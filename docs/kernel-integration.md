@@ -1,6 +1,6 @@
 # Kernel operations
 
-The package works without sympress/kernel. When the kernel is installed, generated wp-config registers the optional RuntimeBundle through the kernel's public bundle filter. This makes `wp console doctor`, `wp console check`, `wp console validate` and `wp console dump-env production` available. If you override wp-config.php, register `SymPress\Runtime\Bridge\Kernel\RuntimeBundle::class => ['all' => true]` in `config/bundles.php` or preserve the generated filter.
+The package works without sympress/kernel. Runtime 1.2.3 requires Kernel 1.1.5 or newer when the optional kernel is installed. When the kernel is installed, generated wp-config registers the optional RuntimeBundle through the kernel's public bundle filter. This makes `wp console doctor`, `wp console check`, `wp console validate` and `wp console dump-env production` available. If you override wp-config.php, register `SymPress\Runtime\Bridge\Kernel\RuntimeBundle::class => ['all' => true]` in `config/bundles.php` or preserve the generated filter.
 
 Standalone commands:
 
@@ -17,7 +17,7 @@ Composer exposes `sympress-runtime:doctor`, `sympress-runtime:check`, `sympress-
 
 Doctor exits with 0 when applicable checks pass, 1 on a failure, or 2 when a check remains unknown. `--json` includes each check's ID, status and redacted detail. Database-disabled status is unknown; it is never reported as a successful connection. A missing optional kernel is not-applicable. No setup autoload file or custom step executes during diagnosis.
 
-`kernel-cache` preserves other environments and asset directories. It honors APP_CACHE_DIR and APP_BUILD_DIR and clears discovery metadata in the selected cache, including Kernel 1.1.4's private fallback. A safe legacy default discovery file is also retired after an override. The unsafe old generation that triggered fallback stays untouched. Align explicit SiteKernel environment overrides before running maintenance.
+`kernel-cache` preserves other environments and asset directories. It honors APP_CACHE_DIR and APP_BUILD_DIR and clears discovery metadata in the selected cache, including Kernel 1.1.5's private fallback. The selected discovery path is `discovery-packages.json`; read-only cache selection probes `meta.json` without reading or executing metadata. Safe stale default JSON and legacy PHP discovery files are also retired after an override. The unsafe old generation that triggered fallback stays untouched. Align explicit SiteKernel environment overrides before running maintenance.
 
 Explicit cache/build roots outside the project must already exist, belong to the
 user running PHP and have mode 0700. Runtime rejects root or ancestor symlinks,
@@ -38,7 +38,7 @@ The guard also treats the known WordPress core/content paths and conventional
 for a different server document root; diagnostics cannot discover web server
 configuration from PHP files.
 Doctor observes the calling identity; a CLI check cannot prove the web process's
-UID or its filesystem namespace. See the [1.2.2 upgrade notes](releases/1.2.2.md).
+UID or its filesystem namespace. See the [1.2.3 upgrade notes](releases/1.2.3.md).
 
 This is an explicit command-only step: Composer update does not automatically run it. A deployment requiring a deliberate clear or new build ID must invoke it and warm the selected environment before traffic switches.
 
