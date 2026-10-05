@@ -55,7 +55,7 @@ final class EnvironmentInspectionTest extends TemporaryProject
             $payload = EnvCacheFormat::read($this->root . '/' . $artifact, dataOnly: true);
             foreach ($payload['interpolation']['dependencies'] as $dependency) {
                 self::assertSame(['marker'], array_keys($dependency));
-                foreach (['dictionary-word', 'password', 'secret'] as $guess) {
+                foreach (['dictionary-word', 'password', 'secret', 'letmein', 'admin'] as $guess) {
                     self::assertStringNotContainsString(hash('sha256', $dependency['marker'] . "\0" . $guess), $bytes);
                 }
             }

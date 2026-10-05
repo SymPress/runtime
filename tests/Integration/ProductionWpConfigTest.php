@@ -80,7 +80,7 @@ PHP);
         $this->fixture(['composer-managed' => $mode], $environment);
         $result = $this->boot('echo json_encode([defined("DISALLOW_FILE_MODS") ? DISALLOW_FILE_MODS : null, defined("AUTOMATIC_UPDATER_DISABLED") ? AUTOMATIC_UPDATER_DISABLED : null, defined("WP_AUTO_UPDATE_CORE") ? WP_AUTO_UPDATE_CORE : null, defined("FORCE_SSL_ADMIN") ? FORCE_SSL_ADMIN : null, $GLOBALS["settings_loaded"]]);');
         self::assertSame([$protected ? true : null, $protected ? true : null, $protected ? false : null, $environment === 'production' ? true : null, true], $result);
-        self::assertSame([$protected ? true : null, $protected ? true : null, $protected ? false : null, $protected ? true : null, $protected ? 'api.wordpress.org,downloads.wordpress.org' : null], $this->boot('echo json_encode([defined("SYMPRESS_ENABLE_WORDPRESS_HARDENING") ? SYMPRESS_ENABLE_WORDPRESS_HARDENING : null, defined("DISALLOW_UNFILTERED_HTML") ? DISALLOW_UNFILTERED_HTML : null, defined("ALLOW_UNFILTERED_UPLOADS") ? ALLOW_UNFILTERED_UPLOADS : null, defined("WP_HTTP_BLOCK_EXTERNAL") ? WP_HTTP_BLOCK_EXTERNAL : null, defined("WP_ACCESSIBLE_HOSTS") ? WP_ACCESSIBLE_HOSTS : null]);'));
+        self::assertSame([$protected ? true : null, $protected ? true : null, $protected ? false : null, null, null], $this->boot('echo json_encode([defined("SYMPRESS_ENABLE_WORDPRESS_HARDENING") ? SYMPRESS_ENABLE_WORDPRESS_HARDENING : null, defined("DISALLOW_UNFILTERED_HTML") ? DISALLOW_UNFILTERED_HTML : null, defined("ALLOW_UNFILTERED_UPLOADS") ? ALLOW_UNFILTERED_UPLOADS : null, defined("WP_HTTP_BLOCK_EXTERNAL") ? WP_HTTP_BLOCK_EXTERNAL : null, defined("WP_ACCESSIBLE_HOSTS") ? WP_ACCESSIBLE_HOSTS : null]);'));
     }
 
     public function testExplicitEnvironmentAndPredefinedConstantsOverrideManagedDefaults(): void
@@ -88,6 +88,43 @@ PHP);
         $this->fixture(['composer-managed' => true], extraEnv: "DISALLOW_FILE_MODS=false\nAUTOMATIC_UPDATER_DISABLED=false\nWP_AUTO_UPDATE_CORE=true\nFORCE_SSL_ADMIN=false\n");
         self::assertSame([false, false, true, false], $this->boot('echo json_encode([DISALLOW_FILE_MODS, AUTOMATIC_UPDATER_DISABLED, WP_AUTO_UPDATE_CORE, FORCE_SSL_ADMIN]);'));
         self::assertSame([false, false, true, false], $this->boot('echo json_encode([DISALLOW_FILE_MODS, AUTOMATIC_UPDATER_DISABLED, WP_AUTO_UPDATE_CORE, FORCE_SSL_ADMIN]);', 'define("DISALLOW_FILE_MODS", false); define("AUTOMATIC_UPDATER_DISABLED", false); define("WP_AUTO_UPDATE_CORE", true); define("FORCE_SSL_ADMIN", false);'));
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function productionStages(): iterable
+    {
+        yield 'production' => ['production'];
+        yield 'staging' => ['staging'];
+    }
+
+    #[DataProvider('productionStages')]
+    public function testOutboundHttpRemainsOptInForManagedProductionAndStaging(string $environment): void
+    {
+        $this->fixture(['composer-managed' => 'auto'], $environment);
+        self::assertSame([false, null], $this->boot('echo json_encode([defined("WP_HTTP_BLOCK_EXTERNAL") && WP_HTTP_BLOCK_EXTERNAL, defined("WP_ACCESSIBLE_HOSTS") ? WP_ACCESSIBLE_HOSTS : null]);'));
+    }
+
+    #[DataProvider('productionStages')]
+    public function testExplicitOutboundBlockingRetainsApprovedHosts(string $environment): void
+    {
+        $this->fixture(['composer-managed' => 'auto'], $environment, "WP_HTTP_BLOCK_EXTERNAL=true\n");
+        $report = 'echo json_encode([WP_HTTP_BLOCK_EXTERNAL, WP_ACCESSIBLE_HOSTS]);';
+        self::assertSame([true, 'api.wordpress.org,downloads.wordpress.org'], $this->boot($report));
+        self::assertSame([true, 'api.payments.example'], $this->boot($report, "define('WP_HTTP_BLOCK_EXTERNAL', true); define('WP_ACCESSIBLE_HOSTS', 'api.payments.example')"));
+    }
+
+    #[DataProvider('productionStages')]
+    #[Group('wordpress')]
+    public function testRealWordPressHttpPolicyPreservesIntegrationsUntilExplicitBlocking(string $environment): void
+    {
+        $core = getenv('RUNTIME_TEST_WORDPRESS_DIR');
+        if (!$core || !is_file($core . '/wp-includes/class-wp-http.php')) {
+            self::markTestSkipped('Set the WordPress integration fixture.');
+        }
+        $this->fixture(['composer-managed' => 'auto'], $environment);
+        $policy = 'require ' . var_export($core . '/wp-includes/Requests/src/Autoload.php', true) . '; WpOrg\\Requests\\Autoload::register(); require ' . var_export($core . '/wp-includes/class-wp-http.php', true) . '; function get_option($name) { return "https://fixture.invalid"; } $http = new WP_Http(); echo json_encode([$http->block_request("https://api.payments.example/v1/checkout"), $http->block_request("https://api.wordpress.org/core/version-check/1.7/"), $http->block_request("https://other.invalid/license")]);';
+        self::assertSame([false, false, false], $this->boot($policy));
+        self::assertSame([false, false, true], $this->boot($policy, 'define("WP_HTTP_BLOCK_EXTERNAL", true); define("WP_ACCESSIBLE_HOSTS", "api.wordpress.org,downloads.wordpress.org,api.payments.example")'));
     }
 
     #[Group('PAR-WP-018')]
@@ -168,14 +205,14 @@ define('SHORTINIT', true);
 require __DIR__ . '/wp-config.php';
 $debug = apply_filters('debug_information', []);
 $parsed = count(array_filter(get_included_files(), static fn (string $file): bool => str_ends_with($file, '/Dotenv/Dotenv.php'))) > 0;
-echo json_encode([$debug['sympress-runtime']['fields']['cached-env']['debug'], $parsed, (string) $wpdb->get_var('SELECT 1'), WP_ENVIRONMENT_TYPE, DISALLOW_FILE_MODS, FORCE_SSL_ADMIN, class_exists('Composer\Autoload\ClassLoader', false), sympress_runtime_getenv('RTV_VALUE'), SYMPRESS_ENABLE_WORDPRESS_HARDENING, DISALLOW_UNFILTERED_HTML, ALLOW_UNFILTERED_UPLOADS, WP_HTTP_BLOCK_EXTERNAL, WP_ACCESSIBLE_HOSTS]);
+echo json_encode([$debug['sympress-runtime']['fields']['cached-env']['debug'], $parsed, (string) $wpdb->get_var('SELECT 1'), WP_ENVIRONMENT_TYPE, DISALLOW_FILE_MODS, FORCE_SSL_ADMIN, class_exists('Composer\Autoload\ClassLoader', false), sympress_runtime_getenv('RTV_VALUE'), SYMPRESS_ENABLE_WORDPRESS_HARDENING, DISALLOW_UNFILTERED_HTML, ALLOW_UNFILTERED_UPLOADS, defined('WP_HTTP_BLOCK_EXTERNAL') && WP_HTTP_BLOCK_EXTERNAL, defined('WP_ACCESSIBLE_HOSTS') ? WP_ACCESSIBLE_HOSTS : null]);
 PHP);
             $environment = array_replace($this->environment(), ['DB_HOST' => $host, 'DB_USER' => $user, 'DB_PASSWORD' => $password, 'DB_NAME' => $database, 'WP_HOME' => 'https://fixture.invalid']);
             foreach ([false, true] as $warm) {
                 $probe = new Process([PHP_BINARY, $this->root . '/real-probe.php'], $this->root, $environment);
                 $probe->run();
                 self::assertSame(0, $probe->getExitCode(), $probe->getErrorOutput());
-                self::assertSame([$warm, !$warm, '1', 'production', true, true, false, 'real-wordpress', true, true, false, true, 'api.wordpress.org,downloads.wordpress.org'], json_decode($probe->getOutput(), true, flags: JSON_THROW_ON_ERROR));
+                self::assertSame([$warm, !$warm, '1', 'production', true, true, false, 'real-wordpress', true, true, false, false, null], json_decode($probe->getOutput(), true, flags: JSON_THROW_ON_ERROR));
                 self::assertFileExists($this->root . '/.env.cached.php');
                 self::assertSame(0640, fileperms($this->root . '/.env.cached.php') & 0777);
             }

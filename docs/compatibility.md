@@ -23,6 +23,13 @@ The command reads inline `extra.wpstarter`, referenced JSON and root `wpstarter.
 
 ## Choose a behavior profile
 
+Throughout Runtime 1.x, outbound WordPress HTTP blocking is explicit opt-in:
+set `WP_HTTP_BLOCK_EXTERNAL=true` and review `WP_ACCESSIBLE_HOSTS` only when the
+project requires that restriction. Production/staging and `composer-managed`
+alone do not block payment, API or licensing integrations. When upgrading from
+1.2.0–1.2.2, regenerate stock managed sections; customized sections are preserved
+and must be inspected for the earlier automatic blocking constant.
+
 Keep `release-3.0.1` or `upstream-dev` while preserving the corresponding WP Starter behavior. Selecting `native` is a separate behavior change: explicit step selections override configured skips, `WP_ENVIRONMENT_TYPE` has first selector priority, local dotenv overrides are enabled, and VCS/step ordering differs. Renaming configuration keys alone does not require switching profiles. Review [ADR 0005](adr/0005-compatibility-and-differences.md) before making that decision.
 
 Legacy profiles default `wp-config-autoload` to true; migration records that inherited value explicitly. It loads the actual configured vendor autoloader after WordPress's hook API and before environment PHP and `early-hook-file`, preserving Composer `autoload.files` callbacks and vendor classes at that stage. Retain it if any early code/plugin relies on this behavior. Native defaults false; the environment parser itself remains independent of Composer either way. Existing edited `AUTOLOAD` sections are preserved, so inspect regeneration diagnostics and custom templates rather than assuming an option change rewrote hand-maintained PHP.

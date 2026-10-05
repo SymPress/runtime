@@ -169,8 +169,9 @@ COMPOSER_MANAGED : {
         defined('SYMPRESS_ENABLE_WORDPRESS_HARDENING') || define('SYMPRESS_ENABLE_WORDPRESS_HARDENING', $envLoader->read('SYMPRESS_ENABLE_WORDPRESS_HARDENING') ?? true);
         defined('DISALLOW_UNFILTERED_HTML') || define('DISALLOW_UNFILTERED_HTML', true);
         defined('ALLOW_UNFILTERED_UPLOADS') || define('ALLOW_UNFILTERED_UPLOADS', false);
-        defined('WP_HTTP_BLOCK_EXTERNAL') || define('WP_HTTP_BLOCK_EXTERNAL', true);
-        defined('WP_ACCESSIBLE_HOSTS') || define('WP_ACCESSIBLE_HOSTS', 'api.wordpress.org,downloads.wordpress.org');
+        if (defined('WP_HTTP_BLOCK_EXTERNAL') && WP_HTTP_BLOCK_EXTERNAL === true) {
+            defined('WP_ACCESSIBLE_HOSTS') || define('WP_ACCESSIBLE_HOSTS', 'api.wordpress.org,downloads.wordpress.org');
+        }
     }
     if ({{{PROFILE}}} === 'native' && WP_ENVIRONMENT_TYPE === 'production' && str_starts_with(strtolower(WP_HOME), 'https://')) {
         defined('FORCE_SSL_ADMIN') || define('FORCE_SSL_ADMIN', true);
