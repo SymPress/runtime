@@ -50,7 +50,8 @@ final class KernelCacheTest extends TemporaryProject
         self::assertSame('staging', $kernel->environment());
         $this->write('custom/cache/staging/kernel/container.php', 'cache');
         $this->write('custom/build/staging/kernel/container.php', 'build');
-        $this->write('var/cache/staging/kernel/discovery-packages.php', 'discovery');
+        $this->write('var/cache/staging/kernel/discovery-packages.json', '{"packages":["stale/default"]}');
+        $this->write('var/cache/staging/kernel/discovery-packages.php', '<?php file_put_contents(__DIR__ . "/executed", "unsafe");');
         $this->write('var/cache/staging/kernel/keep.php', 'unrelated default-cache entry');
         $this->write('custom/cache/production/kernel/container.php', 'other environment');
         $this->write('custom/cache/staging/assets/asset.css', 'asset compiler');
@@ -58,9 +59,34 @@ final class KernelCacheTest extends TemporaryProject
         self::assertDirectoryDoesNotExist($kernel->cache());
         self::assertDirectoryDoesNotExist($kernel->build());
         self::assertFileDoesNotExist($kernel->discovery());
+        self::assertFileDoesNotExist($this->root . '/var/cache/staging/kernel/discovery-packages.json');
+        self::assertFileDoesNotExist($this->root . '/var/cache/staging/kernel/discovery-packages.php');
+        self::assertFileDoesNotExist($this->root . '/var/cache/staging/kernel/executed');
         foreach (['var/cache/staging/kernel/keep.php', 'custom/cache/production/kernel/container.php', 'custom/cache/staging/assets/asset.css'] as $file) {
             self::assertFileExists($this->root . '/' . $file);
         }
+    }
+
+    #[Group('PAR-SYM-003')]
+    public function testUnsafeDefaultDiscoveryPreventsDeletionOfSeparateConfiguredCaches(): void
+    {
+        [$step, $kernel, $paths] = $this->fixture();
+        $this->write('custom/cache/staging/kernel/keep.php', 'configured cache');
+        $this->write('custom/build/staging/kernel/keep.php', 'configured build');
+        $this->write('var/cache/staging/kernel/discovery-packages.json', '{}');
+        $this->write('var/cache/staging/kernel/discovery-packages.php', '<?php file_put_contents(__DIR__ . "/executed", "unsafe");');
+        chmod($this->root . '/var/cache/staging/kernel', 0770);
+        try {
+            $step->run(new Config([], new Validator($paths)), $paths);
+            self::fail('Unsafe default discovery must fail before clearing configured caches.');
+        } catch (RuntimeException $error) {
+            self::assertStringContainsString('private', $error->getMessage());
+        }
+        self::assertFileExists($kernel->cache() . '/keep.php');
+        self::assertFileExists($kernel->build() . '/keep.php');
+        self::assertFileExists($this->root . '/var/cache/staging/kernel/discovery-packages.json');
+        self::assertFileExists($this->root . '/var/cache/staging/kernel/discovery-packages.php');
+        self::assertFileDoesNotExist($this->root . '/var/cache/staging/kernel/executed');
     }
 
     #[Group('PAR-SYM-003')]

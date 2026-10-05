@@ -41,7 +41,7 @@ final readonly class KernelPaths
 
     public function discovery(): string
     {
-        return $this->cache() . '/discovery-packages.php';
+        return $this->cache() . '/discovery-packages.json';
     }
 
     public function usesFallback(): bool
@@ -72,13 +72,18 @@ final readonly class KernelPaths
     public function clearTargets(): array
     {
         $targets = array_values(array_unique([$this->cache(), $this->build()]));
-        // Retire only the known legacy discovery artifact; never adopt or delete
+        // Retire only known default discovery artifacts; never adopt or delete
         // the unsafe implicit generation that caused Kernel's private fallback.
-        $legacy = $this->paths->root('var/cache/' . $this->environment() . '/kernel/discovery-packages.php');
-        if (!$this->usesFallback() && is_file($legacy) && !array_any($targets, static fn (string $target): bool => Path::isBasePath($target, $legacy))) {
-            (new ProjectBoundary($this->paths))->assertWritablePath($legacy);
-            CacheLocation::assertTarget(dirname($legacy), $this->paths->root('var/cache'), false, $this->publicRoots());
-            $targets[] = $legacy;
+        if (!$this->usesFallback()) {
+            foreach (['discovery-packages.json', 'discovery-packages.php'] as $file) {
+                $legacy = $this->paths->root('var/cache/' . $this->environment() . '/kernel/' . $file);
+                if (!is_file($legacy) || array_any($targets, static fn (string $target): bool => Path::isBasePath($target, $legacy))) {
+                    continue;
+                }
+                (new ProjectBoundary($this->paths))->assertWritablePath($legacy);
+                CacheLocation::assertTarget(dirname($legacy), $this->paths->root('var/cache'), false, $this->publicRoots());
+                $targets[] = $legacy;
+            }
         }
 
         return $targets;

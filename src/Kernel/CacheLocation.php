@@ -9,7 +9,7 @@ use Symfony\Component\Filesystem\Path;
 
 // phpcs:disable SlevomatCodingStandard.Variables.DisallowSuperGlobalVariable -- Match Kernel's public directory boundary without executing or booting it.
 
-/** Read-only counterpart of Kernel 1.1.4's cache selection. @internal */
+/** Read-only counterpart of Kernel 1.1.5's cache selection. @internal */
 final class CacheLocation
 {
     /** @param list<string> $publicRoots */
@@ -26,7 +26,7 @@ final class CacheLocation
 
             return $path;
         }
-        if (!$public && !$unsafe && (is_file($path . '/meta.php') || self::writableAncestor($path))) {
+        if (!$public && !$unsafe && (is_file($path . '/meta.json') || self::writableAncestor($path))) {
             return $path;
         }
         $root = self::fallbackRoot($project);

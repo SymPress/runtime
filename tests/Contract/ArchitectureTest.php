@@ -4,11 +4,25 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Tests\Contract;
 
+use Composer\Semver\Semver;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
 final class ArchitectureTest extends TestCase
 {
+    #[Group('PAR-SYM-003')]
+    public function testKernelRemainsOptionalAndRequiresTheJsonMetadataContractWhenInstalled(): void
+    {
+        $manifest = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/composer.json'), true, flags: JSON_THROW_ON_ERROR);
+        self::assertArrayNotHasKey('sympress/kernel', $manifest['require']);
+        self::assertArrayHasKey('sympress/kernel', $manifest['suggest']);
+        self::assertTrue(Semver::satisfies('1.1.4', $manifest['conflict']['sympress/kernel']));
+        foreach (['1.1.5', '1.2.0'] as $version) {
+            self::assertFalse(Semver::satisfies($version, $manifest['conflict']['sympress/kernel']));
+            self::assertTrue(Semver::satisfies($version, $manifest['require-dev']['sympress/kernel']));
+        }
+    }
+
     #[Group('PAR-QA-001')]
     #[Group('PAR-QA-003')]
     public function testInstalledGraphExcludesWpStarterAndUsesTheRequiredStack(): void

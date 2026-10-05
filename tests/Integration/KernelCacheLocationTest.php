@@ -8,8 +8,11 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RuntimeException;
 use SymPress\Kernel\Bundle\BundleRegistry;
+use SymPress\Kernel\Discovery\KernelPackageManifestCache;
 use SymPress\Kernel\Kernel\SiteKernel;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Config\Validator;
@@ -48,7 +51,7 @@ final class KernelCacheLocationTest extends TemporaryProject
     private function fixture(string $extra = ''): KernelPaths
     {
         $this->write('vendor/autoload.php', '<?php return require ' . var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true) . ';');
-        $this->write('vendor/composer/installed.json', '{"packages":[{"name":"sympress/kernel","version":"1.1.4","install-path":"../sympress/kernel"}]}');
+        $this->write('vendor/composer/installed.json', '{"packages":[{"name":"sympress/kernel","version":"1.1.5","install-path":"../sympress/kernel"}]}');
         $this->write('composer.json', '{"extra":{"sympress-runtime":{"db-check":false,"require-wp":false}}}');
         $this->write('wordpress/wp-load.php', '<?php // read-only fixture');
         $this->write('wp-content/mu-plugins/sympress-runtime-kernel.php', '<?php // present boot entry');
@@ -93,7 +96,13 @@ final class KernelCacheLocationTest extends TemporaryProject
         $container->builder()->register('fixture.warmed', \ArrayObject::class)->setPublic(true);
         $kernel->createRuntimeContainer($container, $registry, $files);
         self::assertInstanceOf(\ArrayObject::class, $container->get('fixture.warmed'));
-        self::assertFileExists($kernel->getCacheDir() . '/meta.php');
+        self::assertFileExists($kernel->getCacheDir() . '/meta.json');
+        self::assertFileDoesNotExist($kernel->getCacheDir() . '/meta.php');
+        $manifest = new KernelPackageManifestCache($this->root, 'production', []);
+        $manifest->write(['fixture/package']);
+        self::assertSame(['fixture/package'], $manifest->read());
+        self::assertFileExists($runtime->discovery());
+        self::assertJson((string) file_get_contents($runtime->discovery()));
 
         return $kernel;
     }
@@ -102,10 +111,11 @@ final class KernelCacheLocationTest extends TemporaryProject
     {
         $runtime = $this->fixture();
         $this->write('var/cache/production/kernel/meta.php', '<?php file_put_contents(__DIR__ . "/executed", "unsafe");');
+        $this->write('var/cache/production/kernel/discovery-packages.json', '{"unsafe":"old generation"}');
         chmod($this->root . '/var/cache/production/kernel', 0770);
         $selected = CacheLocation::fallbackRoot($this->root) . '/production/kernel';
         self::assertSame($selected, $runtime->cache());
-        self::assertSame($selected . '/discovery-packages.php', $runtime->discovery());
+        self::assertSame($selected . '/discovery-packages.json', $runtime->discovery());
         $report = $this->diagnose();
         $checks = array_column($report['checks'], 'status', 'id');
         self::assertSame('unknown', $checks['kernel.cache']);
@@ -120,6 +130,8 @@ final class KernelCacheLocationTest extends TemporaryProject
         $this->clear($runtime);
         self::assertDirectoryDoesNotExist($kernel->getCacheDir());
         self::assertFileExists($this->root . '/var/cache/production/kernel/meta.php');
+        self::assertFileExists($this->root . '/var/cache/production/kernel/discovery-packages.json');
+        self::assertFileDoesNotExist($this->root . '/var/cache/production/kernel/executed');
         self::assertFileExists($this->root . '/var/cache/production/assets/keep.css');
         self::assertFileExists($this->root . '/var/cache/staging/kernel/keep.php');
     }
@@ -165,7 +177,7 @@ final class KernelCacheLocationTest extends TemporaryProject
         self::assertSame('pass', $checks['kernel.cache']);
         self::assertSame('pass', $checks['kernel.build']);
         self::assertArrayNotHasKey('kernel.cache-migration', $checks);
-        self::assertSame($kernel->getCacheDir() . '/discovery-packages.php', $runtime->discovery());
+        self::assertSame($kernel->getCacheDir() . '/discovery-packages.json', $runtime->discovery());
         $this->clear($runtime);
         self::assertDirectoryDoesNotExist($kernel->getCacheDir());
         self::assertDirectoryDoesNotExist($kernel->getBuildDir());
@@ -188,6 +200,60 @@ final class KernelCacheLocationTest extends TemporaryProject
         ini_set('error_log', $this->root . '/kernel-warnings.log');
         self::assertSame((new SiteKernel($this->root, 'production'))->getCacheDir(), $selected);
         self::assertSame(CacheLocation::fallbackRoot($this->root) . '/production/kernel', $selected);
+    }
+
+    /** @return iterable<string, array{string, bool}> */
+    public static function readOnlyMetadata(): iterable
+    {
+        yield 'JSON metadata retains the warmed location' => ['meta.json', false];
+        yield 'legacy PHP metadata cannot select an unwritable location' => ['meta.php', true];
+    }
+
+    #[DataProvider('readOnlyMetadata')]
+    public function testReadOnlyCacheSelectionMatchesKernelWithoutExecutingMetadata(string $file, bool $fallback): void
+    {
+        $this->fixture();
+        $directory = $this->root . '/var/cache/production/kernel';
+        $contents = $file === 'meta.json' ? '{}' : '<?php file_put_contents(__DIR__ . "/executed", "unsafe");';
+        $this->write('var/cache/production/kernel/' . $file, $contents);
+        $this->write('readonly-probe.php', <<<'PHP'
+<?php
+if (function_exists('posix_geteuid') && posix_geteuid() === 0 && !posix_setuid(65534)) {
+    throw new RuntimeException('Cannot drop the read-only probe identity.');
+}
+require __DIR__ . '/vendor/autoload.php';
+$reader = new SymPress\Runtime\Env\EnvReader();
+$reader->loadFile(__DIR__ . '/.env');
+$runtime = new SymPress\Runtime\Kernel\KernelPaths($reader, new SymPress\Runtime\Filesystem\Paths(__DIR__));
+$selected = $runtime->cache();
+$fallback = SymPress\Runtime\Kernel\CacheLocation::fallbackRoot(__DIR__);
+$before = is_dir($fallback);
+$doctor = new Symfony\Component\Process\Process([PHP_BINARY, $argv[1], '-n', 'doctor', '--json'], __DIR__);
+$doctor->run();
+$checks = array_column(json_decode($doctor->getOutput(), true, flags: JSON_THROW_ON_ERROR)['checks'], 'status', 'id');
+$after = is_dir($fallback);
+ini_set('error_log', __DIR__ . '/kernel-warnings.log');
+$kernel = new SymPress\Kernel\Kernel\SiteKernel(__DIR__, 'production');
+echo json_encode([is_writable(__DIR__ . '/var/cache/production/kernel'), $selected, $before, $checks['kernel.cache'], $after, $kernel->getCacheDir(), $fallback]);
+PHP);
+        if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+            foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($this->root, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST) as $entry) {
+                self::assertTrue(chown($entry->getPathname(), 65534));
+            }
+            self::assertTrue(chown($this->root, 65534));
+        }
+        chmod($directory, 0500);
+        try {
+            $probe = new Process([PHP_BINARY, 'readonly-probe.php', dirname(__DIR__, 2) . '/bin/runtime'], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false, 'APP_CACHE_DIR' => false, 'APP_BUILD_DIR' => false]);
+            $probe->mustRun();
+            $result = json_decode($probe->getOutput(), true, flags: JSON_THROW_ON_ERROR);
+            $expected = $fallback ? $result[6] . '/production/kernel' : $directory;
+            self::assertSame([false, $expected, false, $fallback ? 'unknown' : 'pass', false, $expected, $result[6]], $result);
+            self::assertSame($contents, file_get_contents($directory . '/' . $file));
+            self::assertFileDoesNotExist($directory . '/executed');
+        } finally {
+            chmod($directory, 0700);
+        }
     }
 
     /** @return iterable<string, array{string}> */

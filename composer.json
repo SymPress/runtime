@@ -55,11 +55,11 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^13.0",
-        "sympress/kernel": "^1.1.4",
+        "sympress/kernel": "^1.1.5",
         "sympress/qa": "^0.1.2"
     },
     "conflict": {
-        "sympress/kernel": "<1.1.4",
+        "sympress/kernel": "<1.1.5",
         "symfony/event-dispatcher-contracts": "<3.4.2"
     },
     "autoload": {
