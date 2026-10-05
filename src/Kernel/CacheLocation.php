@@ -60,14 +60,14 @@ final class CacheLocation
      *
      * @param list<string> $publicRoots
      */
-    public static function assertTarget(string $path, string $root, bool $external, array $publicRoots = [], bool $implicit = false): void
+    public static function assertTarget(string $path, string $root, bool $external, array $publicRoots = [], bool $implicit = false, ?int $readOnlyOwner = null): void
     {
         if (!Path::isBasePath($root, $path) || self::isPublic($path, $publicRoots)) {
             throw new RuntimeException('Kernel cache target must remain inside its private cache root and outside the webroot.');
         }
         $ancestor = $path;
         while (true) {
-            self::assertDirectory($ancestor);
+            self::assertDirectory($ancestor, $external ? null : $readOnlyOwner);
             if ($ancestor === $root) {
                 break;
             }
@@ -94,7 +94,7 @@ final class CacheLocation
         }
     }
 
-    private static function assertDirectory(string $directory): void
+    private static function assertDirectory(string $directory, ?int $readOnlyOwner = null): void
     {
         if (is_link($directory)) {
             throw new RuntimeException('Refusing a symlinked kernel cache directory.');
@@ -105,7 +105,7 @@ final class CacheLocation
         if (!is_dir($directory) || (fileperms($directory) & 0022) !== 0) {
             throw new RuntimeException('Kernel cache directories must be private and not group/world writable; create them as the PHP-FPM user and warm the cache as that user.');
         }
-        if (fileowner($directory) !== self::currentOwner()) {
+        if (fileowner($directory) !== self::currentOwner() && !(fileowner($directory) === $readOnlyOwner && is_readable($directory) && !is_writable($directory))) {
             throw new RuntimeException('The kernel cache directory belongs to another user. Configure APP_CACHE_DIR for the PHP-FPM identity and warm it as that user.');
         }
     }

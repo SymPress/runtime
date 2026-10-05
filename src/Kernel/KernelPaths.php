@@ -49,7 +49,7 @@ final readonly class KernelPaths
         return $this->configured('APP_CACHE_DIR') === null && $this->cache() !== $this->paths->root('var/cache/' . $this->environment() . '/kernel');
     }
 
-    public function assertSafe(string $path, string $kind): void
+    public function assertSafe(string $path, string $kind, bool $readOnly = false): void
     {
         $configured = $this->configured($kind === 'build' ? 'APP_BUILD_DIR' : 'APP_CACHE_DIR');
         if ($kind === 'build' && $configured === null) {
@@ -61,7 +61,11 @@ final readonly class KernelPaths
         if (!$external) {
             (new ProjectBoundary($this->paths))->assertWritablePath($path);
         }
-        CacheLocation::assertTarget($path, $root, $external, $this->publicRoots(), $implicit);
+        $immutable = filter_var($this->env->rawValue('SYMPRESS_KERNEL_IMMUTABLE_CACHE'), FILTER_VALIDATE_BOOLEAN);
+        $buildId = $this->env->rawValue('SYMPRESS_KERNEL_BUILD_ID');
+        $owner = $readOnly && !$external && !$implicit && $immutable && is_string($buildId) && preg_match('/\A[A-Za-z0-9._-]{1,128}\z/', $buildId) === 1
+            ? fileowner($this->paths->root()) : false;
+        CacheLocation::assertTarget($path, $root, $external, $this->publicRoots(), $implicit, $owner === false ? null : $owner);
     }
 
     public function buildIdFile(): string

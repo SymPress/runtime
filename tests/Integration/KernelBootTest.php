@@ -16,7 +16,7 @@ final class KernelBootTest extends TemporaryProject
     {
         $this->write('composer.json', json_encode(['extra' => ['sympress-runtime' => ['require-wp' => false, 'db-check' => false, 'kernel-boot' => $enabled]]], JSON_THROW_ON_ERROR));
         $this->write('vendor/autoload.php', '<?php require ' . var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true) . '; require_once __DIR__ . "/kernel-stub.php";');
-        $this->write('vendor/composer/installed.json', json_encode(['packages' => [['name' => 'sympress/kernel', 'version' => '1.0.0', 'type' => 'library', 'install-path' => '../sympress/kernel'], ...$packages]], JSON_THROW_ON_ERROR));
+        $this->write('vendor/composer/installed.json', json_encode(['packages' => [['name' => 'sympress/kernel', 'version' => '1.0.0', 'type' => 'library', 'install-path' => '../sympress/kernel'], ['name' => 'sympress/runtime', 'version' => 'v1.2.4', 'type' => 'composer-plugin', 'install-path' => '../sympress/runtime'], ...$packages]], JSON_THROW_ON_ERROR));
         $this->write('vendor/kernel-stub.php', <<<'PHP'
 <?php
 namespace SymPress\Kernel;
@@ -48,6 +48,7 @@ PHP);
         self::assertSame(0, $run->getExitCode(), $run->getErrorOutput());
         $file = $this->root . '/wp-content/mu-plugins/sympress-runtime-kernel.php';
         self::assertFileExists($file);
+        self::assertStringContainsString(' * Version: 1.2.4', (string) file_get_contents($file));
         $boot = new Process([PHP_BINARY, '-r', 'define("ABSPATH", __DIR__); require "wp-content/mu-plugins/sympress-runtime-kernel.php"; require "wp-content/mu-plugins/sympress-runtime-kernel.php"; echo json_encode([SymPress\\Kernel\\App::$boots, realpath(SymPress\\Kernel\\App::kernel()->root)]);'], $this->root);
         $boot->mustRun();
         self::assertSame([1, $this->root], json_decode($boot->getOutput(), true, flags: JSON_THROW_ON_ERROR));

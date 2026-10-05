@@ -11,6 +11,7 @@ use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Filesystem\ProjectBoundary;
 use SymPress\Runtime\Generation\ArtifactWriter;
 use SymPress\Runtime\Package\MuPluginList;
+use SymPress\Runtime\Package\PackageFinder;
 use SymPress\Runtime\Step\ConditionalStepInterface;
 use SymPress\Runtime\Step\FileCreationStepInterface;
 use Symfony\Component\Filesystem\Path;
@@ -21,7 +22,7 @@ final class MuLoaderStep implements FileCreationStepInterface, ConditionalStepIn
     /** @var array<string, string> */
     private array $plugins = [];
 
-    public function __construct(private readonly MuPluginList $list, private readonly FileContentBuilder $builder, private readonly ArtifactWriter $writer)
+    public function __construct(private readonly MuPluginList $list, private readonly FileContentBuilder $builder, private readonly ArtifactWriter $writer, private readonly PackageFinder $packages)
     {
     }
 
@@ -52,6 +53,7 @@ final class MuLoaderStep implements FileCreationStepInterface, ConditionalStepIn
             $template = 'wpstarter-mu-loader.php';
         }
         $content = $this->builder->build($paths, $template, [
+            'RUNTIME_VERSION' => $this->packages->runtimeVersion(),
             'MU_PLUGINS_ARRAY' => var_export($relative, true),
             'MU_NATIVE' => var_export($config['compatibility-profile']->is('native'), true),
             'MU_PLUGINS_LIST' => str_replace(['\\', "'"], ['\\\\', "\\'"], implode(', ', $relative)),

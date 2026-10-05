@@ -425,7 +425,7 @@ final class EnvReader
             return false;
         }
 
-        return SecureFileWriter::write($file, EnvCacheFormat::encode($payload), $this->fileMode);
+        return SecureFileWriter::write($file, EnvCacheFormat::encode($payload), $this->fileMode, invalidateOpcache: !$immutable);
     }
 
     /** @internal */
