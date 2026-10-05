@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.3 — Unreleased
+
+- Preserve existing outbound WordPress HTTP integrations in 1.x: production and staging no longer enable `WP_HTTP_BLOCK_EXTERNAL` automatically. Explicit environment/constant opt-in retains operator host overrides and the Composer-managed core-host fallback.
+- Validate a non-empty outbound host list without a global wildcard when blocking is enabled. Doctor reports compatibility-preserving disabled blocking separately from host restrictions.
+- Report the WordPress hardening configuration switch separately from unverified consumer hook activation. Runtime preflight does not require or install the private Security package.
+- Upgrade note: regenerate the managed configuration section and inspect preserved customized sections; an unchanged 1.2.0–1.2.2 generated file still contains its earlier HTTP default.
+
 ## 1.2.2 — 2026-10-03
 
 - Align read-only Doctor and explicit cache maintenance with Kernel 1.1.4's selected private fallback, configured cache/build roots and discovery metadata.

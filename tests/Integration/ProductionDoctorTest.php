@@ -75,7 +75,7 @@ final class ProductionDoctorTest extends TemporaryProject
         chmod($this->root . '/.env.example', 0644);
         [$exit, $checks, $output] = $this->diagnose();
         self::assertSame(0, $exit, $output);
-        foreach (['production.home', 'production.debug', 'production.debug-display', 'production.file-mods', 'production.auto-updates', 'production.salts', 'production.wordpress-hardening', 'production.unfiltered-html', 'production.unfiltered-uploads', 'production.external-http'] as $name) {
+        foreach (['production.home', 'production.debug', 'production.debug-display', 'production.file-mods', 'production.auto-updates', 'production.salts', 'production.wordpress-hardening-switch', 'production.unfiltered-html', 'production.unfiltered-uploads', 'production.external-http'] as $name) {
             self::assertSame('pass', $checks[$name]);
         }
         self::assertFileDoesNotExist($this->root . '/executed');
@@ -89,9 +89,11 @@ final class ProductionDoctorTest extends TemporaryProject
         $this->dump();
         [$exit, $checks] = $this->diagnose();
         self::assertSame(1, $exit);
-        foreach (['production.home', 'production.debug', 'production.debug-display', 'production.file-mods', 'production.wordpress-hardening', 'production.unfiltered-html', 'production.unfiltered-uploads', 'production.external-http'] as $name) {
+        foreach (['production.home', 'production.debug', 'production.debug-display', 'production.file-mods', 'production.wordpress-hardening-switch', 'production.unfiltered-html', 'production.unfiltered-uploads'] as $name) {
             self::assertSame('fail', $checks[$name]);
         }
+        self::assertSame('pass', $checks['production.external-http']);
+        self::assertSame('not-applicable', $checks['production.external-http-hosts']);
     }
 
     public function testExplicitlyDisabledEnvironmentCacheFailsProductionCheck(): void
@@ -101,6 +103,39 @@ final class ProductionDoctorTest extends TemporaryProject
         [$exit, $checks] = $this->diagnose();
         self::assertSame(1, $exit);
         self::assertSame('fail', $checks['production.env-cache']);
+    }
+
+    /** @return iterable<string, array{string, string}> */
+    public static function outboundHostLists(): iterable
+    {
+        yield 'empty' => ['', 'fail'];
+        yield 'global wildcard' => ['*', 'fail'];
+        yield 'repeated global wildcard' => ['**', 'fail'];
+        yield 'all domain wildcard' => ['*.*', 'fail'];
+        yield 'global wildcard beside approved host' => ['api.wordpress.org,*', 'fail'];
+        yield 'empty list entry' => ['api.wordpress.org, ', 'fail'];
+        yield 'approved integration' => ['api.wordpress.org,downloads.wordpress.org,api.payments.example', 'pass'];
+    }
+
+    #[DataProvider('outboundHostLists')]
+    public function testProductionDoctorValidatesOptInHttpHosts(string $hosts, string $expected): void
+    {
+        $this->fixture();
+        file_put_contents($this->root . '/.env', "WP_HTTP_BLOCK_EXTERNAL=true\nWP_ACCESSIBLE_HOSTS=" . $hosts . "\n", FILE_APPEND);
+        $this->dump();
+        [$exit, $checks] = $this->diagnose();
+        self::assertSame($expected === 'pass' ? 0 : 1, $exit);
+        self::assertSame($expected, $checks['production.external-http-hosts']);
+    }
+
+    public function testHardeningSwitchDoesNotClaimHookActivation(): void
+    {
+        $this->fixture();
+        [$exit, $checks] = $this->diagnose();
+        self::assertSame(0, $exit);
+        self::assertArrayNotHasKey('production.wordpress-hardening', $checks);
+        self::assertSame('pass', $checks['production.wordpress-hardening-switch']);
+        self::assertSame('unverified', $checks['production.wordpress-hardening-activation']);
     }
 
     public function testConfiguredForwardedSslRequiresValidTrustedProxyConfiguration(): void

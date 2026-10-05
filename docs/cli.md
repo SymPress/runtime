@@ -42,7 +42,7 @@ The standalone runner uses the current project directory and its Composer vendor
 | `flush-env-cache` | Remove only the runtime cache in the configured environment directory; WordPress installation is not required |
 | `dump-env <environment>` | Resolve an explicit raw environment into a private `.env.dump.php`; does not execute steps or run-only autoload |
 | `doctor`, `check` | Read-only project, environment, permission, symlink, database and kernel diagnostics |
-| `doctor --json`, `check --json` | Structured redacted results; exit 0 pass, 1 fail, 2 unknown without failures |
+| `doctor --json`, `check --json` | Structured redacted results; exit 0 for passed Runtime checks, 1 fail, 2 unknown without failures. Advisory `unverified` consumer activation and `not-applicable` restrictions do not alter this exit status. |
 | `kernel-cache` | Explicitly clear only the selected environment's kernel cache/build and discovery metadata |
 | `kernel-cache --generate-build-id` | Explicitly generate and persist a new kernel deployment ID |
 | `kernel-boot` | Reconcile optional boot ownership; generation requires kernel-boot configuration |

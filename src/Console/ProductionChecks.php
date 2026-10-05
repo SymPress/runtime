@@ -47,10 +47,19 @@ final readonly class ProductionChecks
         $record('production.proxy-trust', $this->hasProxyTrust($env), 'A forwarded scheme header or enabled forwarded SSL requires explicit trusted proxy addresses or CIDRs.');
         $record('production.file-mods', $this->effectiveBoolean($env, 'DISALLOW_FILE_MODS', true, $managedDefaults, $predefined, $opaque), 'Effective DISALLOW_FILE_MODS must be true, explicitly or through the generated Composer-managed defaults.');
         $record('production.auto-updates', $this->both($this->effectiveBoolean($env, 'AUTOMATIC_UPDATER_DISABLED', true, $managedDefaults, $predefined, $opaque), $this->effectiveBoolean($env, 'WP_AUTO_UPDATE_CORE', false, $managedDefaults, $predefined, $opaque)), 'Effective automatic updates must be disabled, explicitly or through Composer-managed defaults.');
-        $record('production.wordpress-hardening', $this->effectiveBoolean($env, 'SYMPRESS_ENABLE_WORDPRESS_HARDENING', true, $managedDefaults, $predefined, $opaque), 'The WordPress hardening switch must be enabled; activation of its consumer remains a separate bootstrap acceptance check.');
+        $record('production.wordpress-hardening-switch', $this->effectiveBoolean($env, 'SYMPRESS_ENABLE_WORDPRESS_HARDENING', true, $managedDefaults, $predefined, $opaque), 'The WordPress hardening configuration switch must be enabled; this check establishes only its effective value.');
+        $checks[] = ['id' => 'production.wordpress-hardening-activation', 'status' => 'unverified', 'detail' => 'Runtime does not register or execute the consumer WordPress hardening hooks. Verify their activation in the deployed application separately.'];
         $record('production.unfiltered-html', $this->effectiveBoolean($env, 'DISALLOW_UNFILTERED_HTML', true, $managedDefaults, $predefined, $opaque), 'Effective DISALLOW_UNFILTERED_HTML must be true.');
         $record('production.unfiltered-uploads', $this->effectiveBoolean($env, 'ALLOW_UNFILTERED_UPLOADS', false, $managedDefaults, $predefined, $opaque), 'Effective ALLOW_UNFILTERED_UPLOADS must be false.');
-        $record('production.external-http', $this->effectiveBoolean($env, 'WP_HTTP_BLOCK_EXTERNAL', true, $managedDefaults, $predefined, $opaque), 'Effective WP_HTTP_BLOCK_EXTERNAL must be true; approve required integration hosts explicitly through WP_ACCESSIBLE_HOSTS.');
+        $blocking = $predefined['WP_HTTP_BLOCK_EXTERNAL'] ?? $env->read('WP_HTTP_BLOCK_EXTERNAL') ?? false;
+        $record('production.external-http', $opaque ? null : is_bool($blocking), 'Outbound WordPress HTTP blocking is opt-in through WP_HTTP_BLOCK_EXTERNAL=true; the default preserves existing integrations. This check validates the selected policy, not network isolation.');
+        if ($blocking === true) {
+            $hosts = $predefined['WP_ACCESSIBLE_HOSTS'] ?? $env->read('WP_ACCESSIBLE_HOSTS') ?? ($managedDefaults ? 'api.wordpress.org,downloads.wordpress.org' : '');
+            $record('production.external-http-hosts', $opaque ? null : $this->hasApprovedHostList($hosts), 'Explicit outbound blocking requires a non-empty WP_ACCESSIBLE_HOSTS list without a global wildcard. Verify the project-specific integration hosts separately.');
+        }
+        if ($blocking !== true) {
+            $checks[] = ['id' => 'production.external-http-hosts', 'status' => $opaque ? 'unknown' : 'not-applicable', 'detail' => 'WP_ACCESSIBLE_HOSTS restricts requests only when outbound WordPress HTTP blocking is enabled.'];
+        }
         $record('production.commands', !(new EnvironmentFiles($this->config, $this->paths))->containsCommands(), 'Environment source files must not contain shell command substitutions.');
         $public = Path::canonicalize($webroot === null ? $this->paths->wpParent() : Path::makeAbsolute($webroot, $this->paths->root()));
         $files = (new EnvironmentFiles($this->config, $this->paths))->activeFiles();
@@ -145,6 +154,16 @@ final readonly class ProductionChecks
         }
 
         return $first === null || $second === null ? null : true;
+    }
+
+    private function hasApprovedHostList(mixed $hosts): bool
+    {
+        if (!is_string($hosts) || trim($hosts) === '') {
+            return false;
+        }
+        $entries = array_map(trim(...), explode(',', $hosts));
+
+        return !in_array('', $entries, true) && !array_any($entries, static fn (string $entry): bool => preg_match('/^[*.]+$/D', $entry) === 1);
     }
 
     /** @return array{array<string, bool|string>, bool} */
