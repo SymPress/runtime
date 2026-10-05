@@ -33,6 +33,17 @@ Doctor computes the same cache location without booting Kernel, creating a
 fallback or changing permissions. A missing selected directory remains unknown;
 an unsafe explicit root fails. `kernel.cache-migration` warns when Kernel would
 select its private per-user fallback. Warmup must run as the PHP-FPM identity.
+If that project-local fallback is public or unwritable, Kernel 1.1.5 selects
+`sympress-kernel-{user}-{project-hash}` under the canonical system temporary
+directory. Runtime validates that selected root and its protected ancestors;
+shared writable temporary parents require the sticky bit. A missing root remains
+unknown in Doctor and is created only by Kernel warmup. Existing symlinked,
+foreign-owned or group/world writable roots fail. Cache maintenance stays inside
+the selected root and preserves the old default generation. Configure a durable
+APP_CACHE_DIR when deployment caches must survive temporary-directory cleanup.
+Without ext-posix, process ownership is verified with a transient `tmpfile()` /
+`fstat()` probe that is closed immediately; cache directories and configuration
+remain unchanged during inspection.
 The guard also treats the known WordPress core/content paths and conventional
 `public` directory as public without booting WordPress. Supply `doctor --webroot`
 for a different server document root; diagnostics cannot discover web server
