@@ -46,7 +46,7 @@ final readonly class KernelPaths
 
     public function usesFallback(): bool
     {
-        return $this->cache() === CacheLocation::fallbackRoot($this->paths->root()) . '/' . $this->environment() . '/kernel';
+        return $this->configured('APP_CACHE_DIR') === null && $this->cache() !== $this->paths->root('var/cache/' . $this->environment() . '/kernel');
     }
 
     public function assertSafe(string $path, string $kind): void
@@ -55,12 +55,13 @@ final readonly class KernelPaths
         if ($kind === 'build' && $configured === null) {
             $configured = $this->configured('APP_CACHE_DIR');
         }
-        $root = $configured === null ? ($this->usesFallback() ? CacheLocation::fallbackRoot($this->paths->root()) : $this->paths->root('var/cache')) : Path::makeAbsolute($configured, $this->paths->root());
+        $implicit = $configured === null && $this->usesFallback();
+        $root = $configured === null ? ($implicit ? CacheLocation::fallbackRoot($this->paths->root(), $this->publicRoots()) : $this->paths->root('var/cache')) : Path::makeAbsolute($configured, $this->paths->root());
         $external = !Path::isBasePath($this->paths->root(), $root);
         if (!$external) {
             (new ProjectBoundary($this->paths))->assertWritablePath($path);
         }
-        CacheLocation::assertTarget($path, $root, $external, $this->publicRoots());
+        CacheLocation::assertTarget($path, $root, $external, $this->publicRoots(), $implicit);
     }
 
     public function buildIdFile(): string

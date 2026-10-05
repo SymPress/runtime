@@ -29,8 +29,8 @@ final class CacheLocation
         if (!$public && !$unsafe && (is_file($path . '/meta.json') || self::writableAncestor($path))) {
             return $path;
         }
-        $root = self::fallbackRoot($project);
-        if (self::isPublic($root, $publicRoots) || (!is_dir($root) && !self::writableAncestor($root))) {
+        $root = self::fallbackRoot($project, $publicRoots);
+        if (self::isPublic($root, $publicRoots)) {
             throw new RuntimeException('No private kernel cache is available. Configure APP_CACHE_DIR outside the webroot, create it with mode 0700 as the PHP-FPM user, and run cache warmup as that user.');
         }
         self::assertDirectory($root);
@@ -38,11 +38,21 @@ final class CacheLocation
         return $root . '/' . $environment . '/kernel';
     }
 
-    public static function fallbackRoot(string $project): string
+    /** @param list<string> $publicRoots */
+    public static function fallbackRoot(string $project, array $publicRoots = []): string
     {
-        $user = function_exists('posix_geteuid') ? (string) posix_geteuid() : hash('sha256', get_current_user());
+        $user = (string) self::currentOwner();
+        $root = $project . '/var/cache-private-' . $user;
+        if (!self::isPublic($root, $publicRoots) && self::writableAncestor($root)) {
+            return $root;
+        }
+        $temporary = self::canonical(sys_get_temp_dir());
+        $permissions = fileperms($temporary);
+        if ($permissions === false || (($permissions & 0022) !== 0 && ($permissions & 01000) === 0)) {
+            throw new RuntimeException('A private kernel cache requires a trusted temporary parent or APP_CACHE_DIR; shared temporary directories must have the sticky bit.');
+        }
 
-        return $project . '/var/cache-private-' . $user;
+        return rtrim($temporary, '/') . '/sympress-kernel-' . $user . '-' . substr(hash('sha256', self::canonical($project)), 0, 24);
     }
 
     /**
@@ -50,7 +60,7 @@ final class CacheLocation
      *
      * @param list<string> $publicRoots
      */
-    public static function assertTarget(string $path, string $root, bool $external, array $publicRoots = []): void
+    public static function assertTarget(string $path, string $root, bool $external, array $publicRoots = [], bool $implicit = false): void
     {
         if (!Path::isBasePath($root, $path) || self::isPublic($path, $publicRoots)) {
             throw new RuntimeException('Kernel cache target must remain inside its private cache root and outside the webroot.');
@@ -66,7 +76,7 @@ final class CacheLocation
         if (!$external) {
             return;
         }
-        if (!is_dir($root) || (fileperms($root) & 0777) !== 0700) {
+        if (!$implicit && (!is_dir($root) || (fileperms($root) & 0777) !== 0700)) {
             throw new RuntimeException('An external APP_CACHE_DIR or APP_BUILD_DIR root must exist with mode 0700 and belong to the PHP-FPM user. Warm the cache as that same user.');
         }
         // Even an ancestor above the explicitly trusted root must not redirect it.
@@ -78,7 +88,7 @@ final class CacheLocation
             if ($mode === false || (($mode & 0022) !== 0 && ($mode & 01000) === 0)) {
                 throw new RuntimeException('External kernel cache roots require protected ancestors; shared writable ancestors must have the sticky bit.');
             }
-            if (function_exists('posix_geteuid') && !in_array(fileowner($ancestor), [0, posix_geteuid()], true)) {
+            if (!in_array(fileowner($ancestor), [0, self::currentOwner()], true)) {
                 throw new RuntimeException('An external kernel cache ancestor belongs to another user. Configure a protected root for the PHP-FPM identity.');
             }
         }
@@ -95,7 +105,7 @@ final class CacheLocation
         if (!is_dir($directory) || (fileperms($directory) & 0022) !== 0) {
             throw new RuntimeException('Kernel cache directories must be private and not group/world writable; create them as the PHP-FPM user and warm the cache as that user.');
         }
-        if (function_exists('posix_geteuid') && fileowner($directory) !== posix_geteuid()) {
+        if (fileowner($directory) !== self::currentOwner()) {
             throw new RuntimeException('The kernel cache directory belongs to another user. Configure APP_CACHE_DIR for the PHP-FPM identity and warm it as that user.');
         }
     }
@@ -128,6 +138,27 @@ final class CacheLocation
         }
 
         return rtrim($real, '/') . $suffix;
+    }
+
+    private static function currentOwner(): int
+    {
+        if (function_exists('posix_geteuid')) {
+            return posix_geteuid();
+        }
+        $probe = tmpfile();
+        if (!is_resource($probe)) {
+            throw new RuntimeException('Unable to verify private cache ownership; configure APP_CACHE_DIR.');
+        }
+        try {
+            $status = fstat($probe);
+            if ($status === false) {
+                throw new RuntimeException('Unable to verify private cache ownership; configure APP_CACHE_DIR.');
+            }
+
+            return $status['uid'];
+        } finally {
+            fclose($probe);
+        }
     }
 
     private static function writableAncestor(string $path): bool
