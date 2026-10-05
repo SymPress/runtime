@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Package;
 
+use Composer\InstalledVersions;
 use RuntimeException;
 use SymPress\Runtime\Application\RunContext;
 use SymPress\Runtime\Config\ConfigLoader;
@@ -47,6 +48,17 @@ final class PackageFinder
     public function findPathOf(Package $package): string
     {
         return $package->getInstallPath();
+    }
+
+    public function runtimeVersion(): string
+    {
+        $version = $this->findByName('sympress/runtime')?->getPrettyVersion();
+        if ($version === null && InstalledVersions::isInstalled('sympress/runtime')) {
+            $version = InstalledVersions::getPrettyVersion('sympress/runtime');
+        }
+
+        return is_string($version) && preg_match('/\A[vV]?[0-9]+\.[0-9]+\.[0-9]+(?:[.+-][a-zA-Z0-9.+-]+)?\z/', $version) === 1
+            ? ltrim($version, 'vV') : 'dev';
     }
 
     /** @return list<Package> */

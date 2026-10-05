@@ -55,7 +55,7 @@ final readonly class KernelBootStep implements ConditionalStepInterface
         }
         $root = var_export(Path::makeRelative($paths->root(), dirname($file)), true);
         $autoload = var_export(Path::makeRelative($paths->vendor('autoload.php'), dirname($file)), true);
-        $source = "<?php\n// " . OverwritePolicy::MARKER . " kernel-boot:v1\n/** Plugin Name: SymPress Runtime Kernel */\n";
+        $source = "<?php\n// " . OverwritePolicy::MARKER . " kernel-boot:v1\n/**\n * Plugin Name: SymPress Runtime Kernel\n * Version: " . $this->packages->runtimeVersion() . "\n */\n";
         $source .= "if (!defined('ABSPATH')) { return; }\nrequire_once __DIR__ . '/' . " . $autoload . ";\n";
         $source .= "if (\\SymPress\\Kernel\\App::kernel() === null) {\n    \\SymPress\\Kernel\\App::bootKernel(new \\SymPress\\Kernel\\Kernel\\SiteKernel(__DIR__ . '/' . " . $root . "));\n}\n";
 

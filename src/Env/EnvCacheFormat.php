@@ -27,9 +27,6 @@ final class EnvCacheFormat
                 }
                 $data = (new EnvCacheLiteral())->decode($source);
             }
-            if (!$dataOnly && function_exists('opcache_invalidate')) {
-                opcache_invalidate($file, true);
-            }
             $data = $dataOnly ? $data : (static fn (string $path): mixed => require $path)($file);
         } catch (Throwable) {
             throw new RuntimeException('Cannot read environment cache.');

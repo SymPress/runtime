@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.4 — 2026-10-05
+
+- Keep compiled environment caches and immutable dumps in OPcache on reads. Invalidate only a mutable cache actually rewritten by this process; unchanged writes do not waste shared memory.
+- Include the installed Runtime version in generated MU loader and kernel plugin headers for security inventories.
+- Production doctor accepts sealed, readable project-owned immutable caches when run as PHP-FPM. Mutable maintenance, external roots, symlinks and group/world write protection retain their ownership boundaries.
+- Verify 8,000 warm OPcache reads without a reset and complete two SSH/MariaDB/FPM deployments with the actual PHP identity.
+
 ## 1.2.3 — 2026-10-05
 
 - Preserve existing outbound WordPress HTTP integrations in 1.x: production and staging no longer enable `WP_HTTP_BLOCK_EXTERNAL` automatically. Explicit environment/constant opt-in retains operator host overrides and the Composer-managed core-host fallback.

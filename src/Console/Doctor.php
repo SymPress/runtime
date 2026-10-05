@@ -113,7 +113,7 @@ final readonly class Doctor
                 }
                 try {
                     $path = $id === 'cache' ? $kernel->cache() : $kernel->build();
-                    $kernel->assertSafe($path, $id);
+                    $kernel->assertSafe($path, $id, readOnly: true);
                     $kernelDirectories['kernel-' . $id] = $path;
                     $record('kernel.' . $id, is_dir($path) && is_readable($path) ? 'pass' : 'unknown', is_dir($path) ? 'Selected kernel directory is readable.' : 'Selected kernel directory has not been created; run cache warmup as the PHP-FPM user.');
                 } catch (Throwable) {

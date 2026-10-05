@@ -31,7 +31,7 @@ final class SecureFileWriter
         return !is_link($file) && !is_dir($file);
     }
 
-    public static function write(string $file, string $content, int $mode = 0600): bool
+    public static function write(string $file, string $content, int $mode = 0600, bool $invalidateOpcache = false): bool
     {
         if (!in_array($mode, [0600, 0640], true)) {
             throw new InvalidArgumentException('Generated file mode must be 0600 or 0640.');
@@ -60,9 +60,14 @@ final class SecureFileWriter
                 return false;
             }
 
-            return @chmod($temporary, $mode)
+            $written = @chmod($temporary, $mode)
                 && @file_put_contents($temporary, $content) === strlen($content)
                 && @rename($temporary, $file);
+            if ($written && $invalidateOpcache && function_exists('opcache_invalidate')) {
+                opcache_invalidate($file, true);
+            }
+
+            return $written;
         } finally {
             if (is_file($temporary)) {
                 unlink($temporary);
