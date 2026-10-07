@@ -43,12 +43,12 @@ my-site/
 ├── composer.json
 ├── composer.lock
 ├── .env                     # private, created in the next step
-├── wp-config.php            # generated
 ├── wp-cli.yml               # generated
 ├── vendor/
 ├── var/runtime/             # required generated PHP payload
 └── public/                  # web document root
     ├── index.php            # generated
+    ├── wp-config.php        # generated main configuration; no forwarding loader
     ├── wp/                  # Composer-managed WordPress core
     └── wp-content/
         ├── mu-plugins/

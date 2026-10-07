@@ -224,7 +224,7 @@ PHP);
         self::assertFileDoesNotExist($this->root . '/vendor/autoload.php');
         $actual = $this->boot('echo json_encode([$GLOBALS["order"], apply_filters("fixture", null), DB_PASSWORD, AUTH_KEY, WP_ENV, WP_ENVIRONMENT_TYPE, WP_DEBUG, $table_prefix, WP_HOME, WP_SITEURL, WP_CONTENT_URL, $GLOBALS["settings_count"], isset($envLoader), isset($debugInfo), class_exists("Composer\\\\Autoload\\\\ClassLoader", false)]);', '$_SERVER["SERVER_NAME"] = "example.test"; $_SERVER["SERVER_PORT"] = 8080');
         self::assertSame([[true, true], 'hook-ready', 'synthetic <secret>&value', 'environment-key', 'dev-custom', 'development', false, 'custom_', 'http://example.test:8080', 'http://example.test:8080/wp', 'http://example.test:8080/content', 1, false, false, false], $actual);
-        self::assertSame(0600, fileperms($this->root . '/wp-config.php') & 0777);
+        self::assertSame(0600, fileperms($this->root . '/public/wp-config.php') & 0777);
     }
 
     #[Group('PAR-SYM-005')]
@@ -254,13 +254,13 @@ PHP);
         $this->fixture();
         $first = $this->generate();
         self::assertSame(0, $first->getExitCode(), $first->getErrorOutput());
-        $before = file_get_contents($this->root . '/wp-config.php');
-        touch($this->root . '/wp-config.php', 1000000000);
+        $before = file_get_contents($this->root . '/public/wp-config.php');
+        touch($this->root . '/public/wp-config.php', 1000000000);
         $second = $this->generate();
         self::assertSame(0, $second->getExitCode(), $second->getErrorOutput());
-        self::assertSame($before, file_get_contents($this->root . '/wp-config.php'));
+        self::assertSame($before, file_get_contents($this->root . '/public/wp-config.php'));
         clearstatcache();
-        self::assertSame(1000000000, filemtime($this->root . '/wp-config.php'));
+        self::assertSame(1000000000, filemtime($this->root . '/public/wp-config.php'));
         $paths = new Paths($this->root, wp: 'public/wp', content: 'public/content');
         $editor = new WpConfigSectionEditor($paths, new Config([], new Validator($paths)), new Filesystem());
         $editor->append('BEFORE_BOOTSTRAP', 'define("CUSTOM_SECTION_VALUE", "keep");');
@@ -268,9 +268,9 @@ PHP);
         self::assertSame(0, $third->getExitCode(), $third->getErrorOutput());
         self::assertStringContainsString('Preserved edited configuration section: BEFORE_BOOTSTRAP', $third->getOutput());
         self::assertSame(['keep'], $this->boot('echo json_encode([CUSTOM_SECTION_VALUE]);'));
-        $edited = file_get_contents($this->root . '/wp-config.php');
+        $edited = file_get_contents($this->root . '/public/wp-config.php');
         self::assertSame(0, $this->generate()->getExitCode());
-        self::assertSame($edited, file_get_contents($this->root . '/wp-config.php'));
+        self::assertSame($edited, file_get_contents($this->root . '/public/wp-config.php'));
     }
 
     #[Group('PAR-STEP-002')]
@@ -278,7 +278,7 @@ PHP);
     #[Group('PAR-TPL-005')]
     public function testProtectedProxyBlocksAllConfigWritesAndForceKeepsExistingSalts(): void
     {
-        $this->fixture();
+        $this->fixture(['compatibility-profile' => 'upstream-dev', 'prevent-overwrite' => ['public/wp-config.php']]);
         $this->write('public/wp-config.php', '<?php // user-owned');
         $blocked = $this->generate();
         self::assertNotSame(0, $blocked->getExitCode());
@@ -302,9 +302,9 @@ PHP);
         $regenerated = $this->generate();
         self::assertSame(0, $regenerated->getExitCode(), $regenerated->getErrorOutput());
         self::assertSame(['dynamicdynamicdynamic', 64, 64], $this->boot('echo json_encode([AUTH_KEY, strlen(NONCE_KEY), strlen(NONCE_SALT)]);'));
-        $before = file_get_contents($this->root . '/wp-config.php');
+        $before = file_get_contents($this->root . '/public/wp-config.php');
         self::assertSame(0, $this->generate()->getExitCode());
-        self::assertSame($before, file_get_contents($this->root . '/wp-config.php'));
+        self::assertSame($before, file_get_contents($this->root . '/public/wp-config.php'));
     }
 
     /** @return iterable<string, array{string, array<bool|string|null>}> */
@@ -373,7 +373,7 @@ PHP);
     #[Group('PAR-WP-017')]
     public function testProxyWpCliGuardSkipsWordPressSettings(): void
     {
-        $this->fixture(['compatibility' => false]);
+        $this->fixture(['compatibility-profile' => 'upstream-dev', 'compatibility' => false]);
         self::assertSame(0, $this->generate()->getExitCode());
         self::assertSame([false, false, false], $this->boot('echo json_encode([isset($GLOBALS["settings_count"]), function_exists("wpstarter_getenv"), defined("WPSTARTER_PATH")]);', 'define("WP_CLI", true)'));
     }
@@ -447,12 +447,12 @@ PHP);
     {
         $this->fixture();
         $source = "<?php define('AUTH_KEY', secret_provider());\nKEYS : {\n} #@@/KEYS\n";
-        $this->write('wp-config.php', $source);
+        $this->write('public/wp-config.php', $source);
         $generated = $this->generate(['wpconfig', '--force']);
         self::assertNotSame(0, $generated->getExitCode());
         self::assertStringContainsString('nonliteral salt definition: AUTH_KEY', $generated->getErrorOutput());
-        self::assertSame($source, file_get_contents($this->root . '/wp-config.php'));
-        self::assertFileDoesNotExist($this->root . '/public/wp-config.php');
+        self::assertSame($source, file_get_contents($this->root . '/public/wp-config.php'));
+        self::assertFileDoesNotExist($this->root . '/wp-config.php');
         self::assertSame(['.', '..', '.maintenance.lock'], scandir($this->root . '/var/runtime'), 'A rejected generation may create only its maintenance lock, never salts or runtime payloads.');
     }
 
@@ -460,7 +460,7 @@ PHP);
     {
         $this->fixture();
         self::assertSame(0, $this->generate()->getExitCode());
-        $sections = (new SectionMerger())->sections((string) file_get_contents($this->root . '/wp-config.php'));
+        $sections = (new SectionMerger())->sections((string) file_get_contents($this->root . '/public/wp-config.php'));
         $inventory = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/docs/maintainers/upstream-inventory.json'), true, flags: JSON_THROW_ON_ERROR);
         $names = array_unique([...array_column($inventory['baselines']['release']['sections'], 'name'), ...array_column($inventory['baselines']['dev']['sections'], 'name')]);
         $names[] = 'COMPOSER_MANAGED';

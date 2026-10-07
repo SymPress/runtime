@@ -39,7 +39,7 @@ The package name is `sympress/runtime`. Test IDs below are PHPUnit groups or nam
 | is | R/D Config/Result::is | Strict comparison; none is(null) true, errored is(null) false. | Config/Result | `PAR-RES-004` | verified | Parity |
 | not | R/D Config/Result::not | Negation of is including error case. | Config/Result | `PAR-RES-005` | verified | Parity |
 | either | R/D Config/Result::either | Strict membership across variadic alternatives; errors false. | Config/Result | `PAR-RES-006` | verified | Parity |
-| Derived config path | D Requirements::determineWpConfigPath; R WpConfigStep | wp-config-php-path is computed, not a documented user default: root in D unless an existing webroot config contains WordPressEnvBridge; R writes webroot. | Config/RunContext | `PAR-CFG-012` | verified | D13 |
+| Derived config path | D Requirements::determineWpConfigPath; R WpConfigStep | wp-config-php-path is computed, not a documented user default: native and R write the WordPress parent; D retains its root configuration and parent proxy. Explicit invocation context still overrides the target. | Config/RunContext; WpConfigLocationTest | `PAR-CFG-012` | verified | D13, D31 |
 
 ## Every configuration option
 
@@ -112,7 +112,7 @@ Native default order is the twelve-step sequence in the work order. Actual upstr
 | Feature | Upstream reference | Behavior and edge cases | Implementation responsibility | Test ID | Status | Difference |
 | --- | --- | --- | --- | --- | --- | --- |
 | checkpaths | R/D Step/CheckPathStep | Blocking; create content and missing themes/plugins when appropriate; realpath core wp-settings and vendor autoload; warn env in webroot. | Steps/CheckPathsStep | `PAR-STEP-001` | verified | Parity |
-| wpconfig | R/D Step/WpConfigStep | Blocking file-creation; relative paths, all salts/placeholders, root or legacy webroot target and proxy; every generated target guarded. | Steps/WpConfigStep | `PAR-STEP-002` | verified | D07, D13, D20 |
+| wpconfig | R/D Step/WpConfigStep | Blocking file-creation; relative paths, all salts/placeholders; native writes one WordPress-parent configuration, D retains the root target and proxy. Managed native root configurations migrate without executing PHP or rotating salts; edited sections require explicit migration. Every generated target is guarded. | Steps/WpConfigStep; WpConfigLocationTest | `PAR-STEP-002` | verified | D07, D13, D20, D31 |
 | index | R/D Step/IndexStep | Blocking file-creation; webroot index requires core index via shortest relative path, including same-root installation. | Steps/IndexStep | `PAR-STEP-003` | verified | Parity |
 | flushenvcache | R/D Step/FlushEnvCacheStep | Only when configured env-dir/.env.cached.php exists; remove cache, return failure on removal error; absent file skips. | Steps/FlushEnvCacheStep | `PAR-STEP-004` | verified | Parity |
 | muloader | R/D Step/MuLoaderStep; Util/MuPluginList | Only when MU entries exist; relative plugin list in generated loader under mu-plugins; overwrites guarded. | Steps/MuLoaderStep | `PAR-STEP-005` | verified | Parity |
@@ -191,11 +191,11 @@ Native default order is the twelve-step sequence in the work order. Actual upstr
 | Salts across reruns | W idempotence; R/D WpConfigStep | Separate processes preserve managed fallback salts and user-provided secrets; missing keys alone generated; no force-triggered rotation. | Generation/SaltStore | `PAR-WP-014` | verified | D07 |
 | Health info | R/D template DEBUG_INFO | debug_information priority 30 adds dedicated info section; allowlist paths/env/cache/bootstrap/SSL/theme flags only; no DB credentials, salt or arbitrary values. | WordPress/HealthInfo | `PAR-WP-015` | verified | Parity |
 | Cleanup and bootstrap | R/D template CLEAN_UP, final require | Unset temporary bridge/debug variables; retain global table_prefix; require wp-settings once after sections. | Generation/WpConfig | `PAR-WP-016` | verified | Parity |
-| D root proxy and CLI | D wp-config-loader.php; WP_CLI_HACK; wp-cli.yml | Proxy loads root configuration; WP-CLI parses config differently; WP_STARTER_WP_CONFIG_PATH guard prevents duplicate settings bootstrap; no copied lyric/comment hacks. | Generation/WpConfigProxy | `PAR-WP-017` | verified | D13 |
+| D root proxy and CLI | D wp-config-loader.php; WP_CLI_HACK; wp-cli.yml | D retains a proxy loading the root configuration; native needs no proxy. WP-CLI parses config differently; WP_STARTER_WP_CONFIG_PATH guard prevents duplicate settings bootstrap for proxy layouts; no copied lyric/comment hacks. | Generation/WpConfigProxy | `PAR-WP-017` | verified | D13, D31 |
 | Section extraction | R/D WpConfigSectionEditor::sectionContent | NAME : { ... } #@@/NAME with flexible whitespace; query uppercases/trims name, returns trimmed content lines; missing returns empty. | Generation/WpConfigSectionEditor | `PAR-SEC-001` | verified | Parity |
 | Append and prepend | R/D WpConfigSectionEditor::append/prepend | Insert inside markers, preserve other sections; marker digest includes whitespace-stripped content + caller file/line; repeat same call no duplicate. | Generation/WpConfigSectionEditor | `PAR-SEC-002` | verified | D15 |
 | Replace and delete | R/D WpConfigSectionEditor::replace/delete | Replace only content, preserve labels/closing markers; delete leaves empty section; escaped dollars/backslashes literal; nonexistent section no-op. | Generation/WpConfigSectionEditor | `PAR-SEC-003` | verified | D15 |
-| Section error paths | R/D WpConfigSectionEditor | Missing/empty config and write failures throw; root versus legacy webroot resolved consistently; custom template section availability diagnosed. | Generation/WpConfigSectionEditor | `PAR-SEC-004` | verified | D15 |
+| Section error paths | R/D WpConfigSectionEditor | Missing/empty config and write failures throw; native WordPress-parent and legacy targets resolved consistently; custom template section availability diagnosed. | Generation/WpConfigSectionEditor | `PAR-SEC-004` | verified | D15, D31 |
 
 ## Database and WP-CLI
 

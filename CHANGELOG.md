@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Generate native `wp-config.php` directly in the WordPress core parent (`public/` for a `public/wp/` layout), eliminating the default root configuration and forwarding loader. WP-CLI, section editing, setup drift and production diagnostics follow the same target.
+- Recover literal salts from previous managed native root configurations without executing PHP; retain the root file for rollback. Customized sections and dynamic salt providers require explicit migration. Legacy profile layouts and alternate configuration targets remain supported.
+
 ## 1.2.4 — 2026-10-05
 
 - Keep compiled environment caches and immutable dumps in OPcache on reads. Invalidate only a mutable cache actually rewritten by this process; unchanged writes do not waste shared memory.

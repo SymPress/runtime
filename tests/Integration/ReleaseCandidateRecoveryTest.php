@@ -78,8 +78,8 @@ PHP);
     {
         $this->fixture();
         $this->runtime(['wpconfig']);
-        $oldConfiguration = (string) file_get_contents($this->root . '/wp-config.php');
-        $oldProxy = (string) file_get_contents($this->root . '/public/wp-config.php');
+        $oldConfiguration = (string) file_get_contents($this->root . '/public/wp-config.php');
+        self::assertFileDoesNotExist($this->root . '/wp-config.php');
         $before = $this->successfulRequest();
         self::assertSame(['stage', 'staging', 'raw-stage'], array_slice($before, 0, 3));
         self::assertSame([true, false], array_slice($before, 5));
@@ -93,13 +93,12 @@ PHP);
         $this->manifest(true, false);
         $this->runtime(['wpconfig']);
         self::assertCount(2, glob($this->root . '/var/runtime/*/manifest.json'));
-        self::assertNotSame($oldConfiguration, file_get_contents($this->root . '/wp-config.php'));
+        self::assertNotSame($oldConfiguration, file_get_contents($this->root . '/public/wp-config.php'));
         $updated = $this->successfulRequest();
         self::assertNotSame($before[3], $updated[3]);
         self::assertSame($before[4], $updated[4], 'Regeneration must preserve authentication salts.');
 
-        $this->write('wp-config.php', $oldConfiguration);
-        $this->write('public/wp-config.php', $oldProxy);
+        $this->write('public/wp-config.php', $oldConfiguration);
         self::assertSame($before, $this->successfulRequest());
         self::assertSame($oldManifest, file_get_contents($manifests[0]));
         foreach ($oldFiles as $path => $hash) {

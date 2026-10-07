@@ -142,3 +142,5 @@ Steps can read `composer-updated-packages`, `is-composer-install`,
 `is-composer-update`, `is-runtime-command`, `is-runtime-selected-command`
 and the derived `wp-config-php-path`. These are invocation context, not writable
 project settings. Older aliases are listed in [Compatibility](compatibility.md).
+The native configuration target is the WordPress core parent, such as
+`public/wp-config.php`; `upstream-dev` retains its root target and forwarding loader.

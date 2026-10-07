@@ -99,7 +99,7 @@ final readonly class WpConfigSectionEditor
             return $configured;
         }
 
-        return $this->config['compatibility-profile']->is('release-3.0.1') ? $this->paths->wpParent('wp-config.php') : $this->paths->root('wp-config.php');
+        return $this->config['compatibility-profile']->is('upstream-dev') ? $this->paths->root('wp-config.php') : $this->paths->wpParent('wp-config.php');
     }
 
     private function read(): string

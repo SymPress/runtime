@@ -68,6 +68,8 @@ final class GenerationServicesTest extends TemporaryProject
         $this->write('public/wp-config.php', "<?php FIRST : { legacy(); } #@@/FIRST\n");
         self::assertSame('legacy();', $editor->sectionContent('FIRST'));
         $native = new WpConfigSectionEditor($paths, new Config([], new Validator($paths)), new Filesystem());
+        self::assertSame('legacy();', $native->sectionContent('FIRST'));
+        unlink($this->root . '/public/wp-config.php');
         $this->expectExceptionMessage('missing or unreadable');
         $native->sectionContent('FIRST');
     }

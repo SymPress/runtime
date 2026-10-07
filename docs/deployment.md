@@ -72,7 +72,7 @@ Deploy these artifacts together with the reviewed lockfile/application release:
 
 | Artifact | Requirement |
 | --- | --- |
-| Generated `wp-config.php` and core-parent proxy | Match the selected profile, path layout and payload |
+| Generated core-parent `wp-config.php` | Match the selected profile, path layout and payload; a proxy is only needed for alternate configuration targets |
 | `var/runtime/<fingerprint>/` | Include every payload referenced by an active or rollback configuration |
 | Generated `index.php`, MU loader and optional kernel bootstrap | Keep consistent with installed core/content packages |
 | `.env.dump.php` when using build dumps | Private per-environment input; PHP-readable; contains secrets |
