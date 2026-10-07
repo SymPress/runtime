@@ -8,10 +8,16 @@ from pathlib import Path
 import subprocess
 
 
+def configuration_paths(extra):
+    runtime = extra.get("sympress-runtime", {})
+    parent = runtime.get("wordpress-parent-dir", Path(extra.get("wordpress-install-dir", "wordpress")).parent.as_posix())
+    return ["wp-config.php", (Path(parent) / "wp-config.php").as_posix()]
+
+
 def snapshot(project):
     result = {}
     extra = json.loads((project / "composer.json").read_text()).get("extra", {})
-    targets = ["wp-config.php", "wp-cli.yml", "public/index.php", extra.get("wordpress-content-dir", "wp-content"), "var/runtime", "packages/sympress-demo/assets", "packages/sympress-demo/.sympress_asset_compiler.lock"]
+    targets = [*configuration_paths(extra), "wp-cli.yml", "public/index.php", extra.get("wordpress-content-dir", "wp-content"), "var/runtime", "packages/sympress-demo/assets", "packages/sympress-demo/.sympress_asset_compiler.lock"]
     for name in targets:
         target = project / name
         paths = [target, *target.rglob("*")] if target.is_dir() and not target.is_symlink() else [target]
@@ -36,7 +42,8 @@ def main():
     for project in args.projects:
         project = project.resolve()
         baseline = snapshot(project)
-        assert "wp-config.php" in baseline, "Consumer must already be installed."
+        extra = json.loads((project / "composer.json").read_text()).get("extra", {})
+        assert any(name in baseline for name in configuration_paths(extra)), "Consumer must already be installed."
         report = {"project": project.name, "artifact_count": len(baseline), "runs": []}
         commands = [
             ["ddev", "composer", "install", "--no-interaction", "--no-progress"],

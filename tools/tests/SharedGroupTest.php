@@ -67,7 +67,9 @@ PHP);
         $payloads = glob($this->root . '/var/runtime/*/bootstrap.php');
         self::assertIsArray($payloads);
         self::assertCount(1, $payloads);
-        foreach (['wp-config.php', 'public/wp-config.php', '.env.cached.php'] as $file) {
+        self::assertFileDoesNotExist($this->root . '/wp-config.php');
+        self::assertStringNotContainsString('wp-config-proxy:v1', (string) file_get_contents($this->root . '/public/wp-config.php'));
+        foreach (['public/wp-config.php', '.env.cached.php'] as $file) {
             self::assertSame(0640, fileperms($this->root . '/' . $file) & 0777);
             self::assertSame(65534, filegroup($this->root . '/' . $file));
         }
@@ -76,7 +78,7 @@ PHP);
 $identity = (int) $argv[1];
 if (!posix_setgid($identity) || !posix_setuid($identity)) { throw new RuntimeException('Cannot switch probe identity.'); }
 clearstatcache();
-$readable = [is_readable(__DIR__ . '/wp-config.php'), is_readable(__DIR__ . '/.env.cached.php'), is_readable($argv[2])];
+$readable = [is_readable(__DIR__ . '/public/wp-config.php'), is_readable(__DIR__ . '/.env.cached.php'), is_readable($argv[2])];
 if ($identity !== 65534) { echo json_encode($readable); return; }
 require __DIR__ . '/public/wp-config.php';
 $debug = apply_filters('debug_information', []);

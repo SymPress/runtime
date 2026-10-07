@@ -32,7 +32,10 @@ section may depend on `__DIR__`; preserving its bytes while changing its file
 location would change behavior. Back up the old files, move the main file to
 the core parent, review relative paths, and regenerate its managed sections.
 Ordinary regeneration at a fixed location continues to preserve section edits
-and dynamic salt sections. Server configuration denies direct HTTP access to
+and dynamic salt sections. Literal salt edits remain safe to migrate, while
+`__DIR__` or `__FILE__` in the retained salt section requires explicit migration.
+Both valid and dangling root configuration symlinks are refused before writes.
+Server configuration denies direct HTTP access to
 the generated configuration; default file permissions remain 0600.
 
 ## Verification

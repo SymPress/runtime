@@ -32,9 +32,13 @@ def main():
         run(binary + ["validate"])
         run(binary + ["--list-steps"])
         run(binary + ["--no-interaction"])
-        for file in ["wp-config.php", "wp-cli.yml", "public/index.php", "public/wp/wp-settings.php"]:
+        for file in ["public/wp-config.php", "wp-cli.yml", "public/index.php", "public/wp/wp-settings.php"]:
             if not (project / file).is_file():
                 raise RuntimeError("Missing documented artifact: " + file)
+        if (project / "wp-config.php").exists():
+            raise RuntimeError("Native example unexpectedly generated a root configuration.")
+        if "wp-config-proxy:v1" in (project / "public/wp-config.php").read_text():
+            raise RuntimeError("Native example configuration is a forwarding loader.")
         (project / "build-scripts").mkdir()
         shutil.copyfile(ROOT / "examples/WriteBuildMarker.php", project / "build-scripts/WriteBuildMarker.php")
         manifest["autoload"] = {"psr-4": {"Example\\Build\\": "build-scripts/"}}

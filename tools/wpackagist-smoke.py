@@ -59,7 +59,9 @@ def main():
             hooks = (project / "hook-count").read_text()
             if mode == "no-plugins":
                 run([args.php, str(project / "vendor/bin/runtime"), "--no-interaction"], project)
-            paths = {"core": "public/wp/wp-settings.php", "plugin": "public/content/plugins/classic-editor/classic-editor.php", "theme": "public/content/themes/twentytwentyfive/style.css", "configuration": "wp-config.php"}
+            paths = {"core": "public/wp/wp-settings.php", "plugin": "public/content/plugins/classic-editor/classic-editor.php", "theme": "public/content/themes/twentytwentyfive/style.css", "configuration": "public/wp-config.php"}
+            assert not (project / "wp-config.php").exists(), "Native setup must not generate a root configuration"
+            assert "wp-config-proxy:v1" not in (project / paths["configuration"]).read_text(), "The native configuration must not be a forwarding loader"
             hashes = {name: hashlib.sha256((project / path).read_bytes()).hexdigest() for name, path in paths.items()}
             installed = json.loads((project / "vendor/composer/installed.json").read_text())["packages"]
             library_package = next(package for package in installed if package['name'] == 'composer/composer')

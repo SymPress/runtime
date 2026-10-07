@@ -73,6 +73,74 @@ final class WpConfigLocationTest extends TemporaryProject
         self::assertSame($proxy, file_get_contents($this->root . '/public/wp-config.php'));
     }
 
+    /** @return iterable<string, array{string}> */
+    public static function locationDependentKeys(): iterable
+    {
+        yield 'directory constant' => ['require __DIR__ . "/salt-bootstrap.php";'];
+        yield 'file constant' => ['require dirname(__FILE__) . "/salt-bootstrap.php";'];
+    }
+
+    #[DataProvider('locationDependentKeys')]
+    public function testRelativePathInKeysRequiresExplicitMigrationBeforeWrites(string $code): void
+    {
+        $this->fixture(['compatibility-profile' => 'upstream-dev']);
+        self::assertSame(0, $this->generate()->getExitCode());
+        $paths = new Paths($this->root, wp: 'public/wp', content: 'public/content');
+        $editor = new WpConfigSectionEditor($paths, new Config([], new Validator($paths), 'upstream-dev'), new Filesystem());
+        $editor->append('KEYS', $code);
+        $previous = file_get_contents($this->root . '/wp-config.php');
+        $proxy = file_get_contents($this->root . '/public/wp-config.php');
+        $artifacts = scandir($this->root . '/var/runtime');
+        $this->fixture();
+        $generated = $this->generate();
+        self::assertNotSame(0, $generated->getExitCode());
+        self::assertStringContainsString('Existing root configuration has location-dependent salt section', $generated->getErrorOutput());
+        self::assertSame($previous, file_get_contents($this->root . '/wp-config.php'));
+        self::assertSame($proxy, file_get_contents($this->root . '/public/wp-config.php'));
+        self::assertSame($artifacts, scandir($this->root . '/var/runtime'));
+    }
+
+    public function testEditedLiteralSaltSurvivesMigration(): void
+    {
+        $this->fixture(['compatibility-profile' => 'upstream-dev', 'compatibility' => false]);
+        self::assertSame(0, $this->generate()->getExitCode());
+        $keys = $this->boot('echo json_encode([AUTH_KEY, NONCE_SALT]);');
+        self::assertIsString($keys[0]);
+        $previous = (string) file_get_contents($this->root . '/wp-config.php');
+        $this->write('wp-config.php', str_replace(var_export($keys[0], true), var_export('synthetic edited literal salt', true), $previous));
+        $this->fixture(['compatibility' => false]);
+        $generated = $this->generate();
+        self::assertSame(0, $generated->getExitCode(), $generated->getErrorOutput());
+        self::assertSame(['synthetic edited literal salt', $keys[1]], $this->boot('echo json_encode([AUTH_KEY, NONCE_SALT]);'));
+    }
+
+    /** @return iterable<string, array{bool}> */
+    public static function rootSymlinks(): iterable
+    {
+        yield 'existing in-project destination' => [false];
+        yield 'broken destination' => [true];
+    }
+
+    #[DataProvider('rootSymlinks')]
+    public function testRootSymlinkRequiresExplicitMigrationBeforeWrites(bool $broken): void
+    {
+        $this->fixture(['compatibility-profile' => 'upstream-dev']);
+        self::assertSame(0, $this->generate()->getExitCode());
+        self::assertTrue(rename($this->root . '/wp-config.php', $this->root . '/previous-config.php'));
+        self::assertTrue(symlink($broken ? 'missing-config.php' : 'previous-config.php', $this->root . '/wp-config.php'));
+        $previous = file_get_contents($this->root . '/previous-config.php');
+        $proxy = file_get_contents($this->root . '/public/wp-config.php');
+        $artifacts = scandir($this->root . '/var/runtime');
+        $this->fixture();
+        $generated = $this->generate();
+        self::assertNotSame(0, $generated->getExitCode());
+        self::assertStringContainsString('Existing root configuration is a symlink', $generated->getErrorOutput());
+        self::assertTrue(is_link($this->root . '/wp-config.php'));
+        self::assertSame($previous, file_get_contents($this->root . '/previous-config.php'));
+        self::assertSame($proxy, file_get_contents($this->root . '/public/wp-config.php'));
+        self::assertSame($artifacts, scandir($this->root . '/var/runtime'));
+    }
+
     public function testNativeParentTargetCannotOverwriteUnmanagedConfiguration(): void
     {
         $this->fixture();
