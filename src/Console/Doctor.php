@@ -133,7 +133,11 @@ final readonly class Doctor
                     $record('kernel.boot', 'fail', 'Kernel boot ownership is ambiguous.');
                 }
             }
-            foreach (['configuration' => $this->paths->root('wp-config.php'), 'content' => $this->paths->wpContent(), ...$kernelDirectories] as $id => $path) {
+            $configuration = $this->config['wp-config-php-path']->unwrapOrFallback($this->config['compatibility-profile']->is('upstream-dev') ? $this->paths->root('wp-config.php') : $this->paths->wpParent('wp-config.php'));
+            if (!is_string($configuration)) {
+                throw new RuntimeException('Invalid configuration path.');
+            }
+            foreach (['configuration' => $configuration, 'content' => $this->paths->wpContent(), ...$kernelDirectories] as $id => $path) {
                 $ancestor = $path;
                 while (!file_exists($ancestor) && dirname($ancestor) !== $ancestor) {
                     $ancestor = dirname($ancestor);

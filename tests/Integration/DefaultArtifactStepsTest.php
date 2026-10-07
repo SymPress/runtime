@@ -167,7 +167,7 @@ final class DefaultArtifactStepsTest extends TemporaryProject
         self::assertSame("public/word'press", json_decode($path[1], flags: JSON_THROW_ON_ERROR));
         $process = new Process([PHP_BINARY, '-r', json_decode($exec[1], flags: JSON_THROW_ON_ERROR) . 'echo getenv("WP_CONFIG_PATH");'], $this->root);
         $process->mustRun();
-        self::assertSame($this->root . '/wp-config.php', $process->getOutput());
+        self::assertSame($this->root . '/public/wp-config.php', $process->getOutput());
         self::assertSame(0, $this->generate(['wpcliconfig'])->getExitCode());
         self::assertSame($content, file_get_contents($file));
         $this->write('wp-cli.yml', 'path: user-owned');

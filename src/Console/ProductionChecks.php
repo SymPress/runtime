@@ -27,7 +27,7 @@ final readonly class ProductionChecks
         $record = static function (string $id, ?bool $pass, string $detail) use (&$checks): void {
             $checks[] = ['id' => $id, 'status' => $pass === null ? 'unknown' : ($pass ? 'pass' : 'fail'), 'detail' => $detail];
         };
-        $configFile = $this->config['wp-config-php-path']->unwrapOrFallback($this->paths->root('wp-config.php'));
+        $configFile = $this->config['wp-config-php-path']->unwrapOrFallback($this->config['compatibility-profile']->is('upstream-dev') ? $this->paths->root('wp-config.php') : $this->paths->wpParent('wp-config.php'));
         $content = is_string($configFile) && is_readable($configFile) ? file_get_contents($configFile) : false;
         $content = is_string($content) ? $content : '';
         [$predefined, $opaque] = $this->bootstrapEvidence($content, $env);
@@ -204,7 +204,7 @@ final readonly class ProductionChecks
 
     private function matchesTemplateShape(string $actual, string $template): bool
     {
-        $target = $this->config['wp-config-php-path']->unwrapOrFallback($this->paths->root('wp-config.php'));
+        $target = $this->config['wp-config-php-path']->unwrapOrFallback($this->config['compatibility-profile']->is('upstream-dev') ? $this->paths->root('wp-config.php') : $this->paths->wpParent('wp-config.php'));
         $directory = is_string($target) ? dirname($target) : $this->paths->root();
         $envDirectory = $this->config['env-dir']->unwrapOrFallback($this->paths->root());
         $bootstrap = $this->config['env-bootstrap-dir']->unwrapOrFallback($envDirectory);

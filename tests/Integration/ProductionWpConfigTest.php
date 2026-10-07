@@ -150,7 +150,8 @@ PHP);
     public function testBundledProductionBootCreatesGroupReadableCacheAndWarmBootAvoidsParser(): void
     {
         $this->fixture(['composer-managed' => 'auto', 'bundle-bootstrap' => true, 'generated-file-mode' => '0640', 'cache-env' => 'auto']);
-        foreach (['wp-config.php', 'public/wp-config.php'] as $file) {
+        self::assertFileDoesNotExist($this->root . '/wp-config.php');
+        foreach (['public/wp-config.php'] as $file) {
             self::assertSame(0640, fileperms($this->root . '/' . $file) & 0777);
         }
         $report = <<<'PHP'

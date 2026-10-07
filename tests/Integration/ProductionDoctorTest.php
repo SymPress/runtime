@@ -15,10 +15,10 @@ final class ProductionDoctorTest extends TemporaryProject
     private function fixture(): void
     {
         $this->write('vendor/autoload.php', '<?php return require ' . var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true) . ';');
-        $this->write('composer.json', json_encode(['extra' => ['sympress-runtime' => ['wordpress-parent-dir' => 'public']]], JSON_THROW_ON_ERROR));
-        $this->write('wordpress/wp-load.php', '<?php // never executed');
+        $this->configuration();
+        $this->write('public/wp/wp-load.php', '<?php // never executed');
         $this->write('public/.keep', '');
-        $this->write('wp-content/.keep', '');
+        $this->write('public/content/.keep', '');
         $this->write('.env', "WP_ENVIRONMENT_TYPE=production\nWP_HOME=https://example.test\nDB_NAME=fixture\nDB_USER=fixture\nDB_HOST=localhost\nDB_PASSWORD=private-credential\nAPP_SECRET=" . str_repeat('test-secret-', 4) . "\nWPDB_ENV_VALID=true\nWPDB_EXISTS=true\nWP_INSTALLED=true\n");
         chmod($this->root . '/.env', 0600);
         $template = file_get_contents(dirname(__DIR__, 2) . '/templates/wp-config.php');
@@ -31,9 +31,15 @@ final class ProductionDoctorTest extends TemporaryProject
         foreach (['DEFAULT_ENV', 'COMPOSER_MANAGED'] as $name) {
             $config .= $name . ' : {' . strtr($sections[$name], ['{{{COMPOSER_MANAGED}}}' => "'auto'", '{{{PROFILE}}}' => "'native'"]) . '} #@@/' . $name . "\n";
         }
-        $this->write('wp-config.php', $config);
-        chmod($this->root . '/wp-config.php', 0600);
+        $this->write('public/wp-config.php', $config);
+        chmod($this->root . '/public/wp-config.php', 0600);
         $this->dump();
+    }
+
+    /** @param array<string, mixed> $options */
+    private function configuration(array $options = []): void
+    {
+        $this->write('composer.json', json_encode(['extra' => ['wordpress-install-dir' => 'public/wp', 'wordpress-content-dir' => 'public/content', 'sympress-runtime' => $options]], JSON_THROW_ON_ERROR));
     }
 
     private function dump(): void
@@ -99,7 +105,7 @@ final class ProductionDoctorTest extends TemporaryProject
     public function testExplicitlyDisabledEnvironmentCacheFailsProductionCheck(): void
     {
         $this->fixture();
-        $this->write('composer.json', '{"extra":{"sympress-runtime":{"wordpress-parent-dir":"public","cache-env":false}}}');
+        $this->configuration(['cache-env' => false]);
         [$exit, $checks] = $this->diagnose();
         self::assertSame(1, $exit);
         self::assertSame('fail', $checks['production.env-cache']);
@@ -190,7 +196,7 @@ final class ProductionDoctorTest extends TemporaryProject
     public function testCommentedOrDefaultSaltsDoNotCountAsPrivateKeys(): void
     {
         $this->fixture();
-        $this->write('wp-config.php', "<?php\n/* define('AUTH_KEY', '" . str_repeat('a', 64) . "'); */\ndefine('AUTH_KEY', 'put your unique phrase here');\n");
+        $this->write('public/wp-config.php', "<?php\n/* define('AUTH_KEY', '" . str_repeat('a', 64) . "'); */\ndefine('AUTH_KEY', 'put your unique phrase here');\n");
         [$exit, $checks] = $this->diagnose();
         self::assertSame(1, $exit);
         self::assertSame('fail', $checks['production.salts']);
@@ -222,7 +228,7 @@ final class ProductionDoctorTest extends TemporaryProject
     {
         $this->fixture();
         unlink($this->root . '/.env.dump.php');
-        $this->write('composer.json', json_encode(['extra' => ['sympress-runtime' => ['env-file' => $name]]], JSON_THROW_ON_ERROR));
+        $this->configuration(['env-file' => $name]);
         $this->write($name, 'ATTACK=$(touch ' . $this->root . "/shell-executed)\n");
         [$exit, $checks] = $this->diagnose();
         self::assertSame(1, $exit);
@@ -233,7 +239,7 @@ final class ProductionDoctorTest extends TemporaryProject
     public function testCommandScanTreatsEnvironmentDirectoryAsLiteralPath(): void
     {
         $this->fixture();
-        $this->write('composer.json', '{"extra":{"sympress-runtime":{"env-dir":"config/[secrets]"}}}');
+        $this->configuration(['env-dir' => 'config/[secrets]']);
         $this->write('config/[secrets]/.env', 'ATTACK=$(touch ' . $this->root . "/shell-executed)\n");
         [$exit, $checks] = $this->diagnose();
         self::assertSame(1, $exit);
@@ -244,7 +250,7 @@ final class ProductionDoctorTest extends TemporaryProject
     public function testUnlistableTraversableEnvironmentDirectoryFailsBeforeParsing(): void
     {
         $this->fixture();
-        $this->write('composer.json', '{"extra":{"sympress-runtime":{"env-dir":"secrets"}}}');
+        $this->configuration(['env-dir' => 'secrets']);
         $this->write('secrets/.env', 'ATTACK=$(touch ' . $this->root . "/shell-executed)\n");
         $directory = $this->root . '/secrets';
         chmod($directory, 0111);
@@ -265,7 +271,7 @@ final class ProductionDoctorTest extends TemporaryProject
         $this->fixture();
         file_put_contents($this->root . '/.env', "WP_DEBUG=false\nDISALLOW_FILE_MODS=true\n", FILE_APPEND);
         $this->dump();
-        $file = $this->root . '/wp-config.php';
+        $file = $this->root . '/public/wp-config.php';
         $source = file_get_contents($file);
         self::assertIsString($source);
         file_put_contents($file, str_replace('<?php', "<?php define('WP_DEBUG', true); define('DISALLOW_FILE_MODS', false);", $source));
@@ -287,7 +293,7 @@ final class ProductionDoctorTest extends TemporaryProject
     public function testOpaqueBootstrapRequiresRuntimeEvidenceAndIsNotExecuted(string $case): void
     {
         $this->fixture();
-        $file = $this->root . '/wp-config.php';
+        $file = $this->root . '/public/wp-config.php';
         $source = file_get_contents($file);
         self::assertIsString($source);
         $sideEffect = "file_put_contents(__DIR__ . '/executed', 'never');";
@@ -305,13 +311,13 @@ final class ProductionDoctorTest extends TemporaryProject
         }
         if ($case === 'hook') {
             $this->write('early.php', '<?php ' . $sideEffect);
-            $this->write('composer.json', '{"extra":{"sympress-runtime":{"early-hook-file":"early.php"}}}');
+            $this->configuration(['early-hook-file' => 'early.php']);
         }
         if ($case === 'environment-bootstrap') {
             $this->write('production.php', '<?php ' . $sideEffect);
         }
         if ($case === 'autoload') {
-            $this->write('composer.json', '{"extra":{"sympress-runtime":{"wp-config-autoload":true}}}');
+            $this->configuration(['wp-config-autoload' => true]);
         }
         [$exit, $checks, $output] = $this->diagnose();
         self::assertSame(2, $exit, $output);
@@ -319,12 +325,13 @@ final class ProductionDoctorTest extends TemporaryProject
             self::assertSame('unknown', $checks[$name]);
         }
         self::assertFileDoesNotExist($this->root . '/executed');
+        self::assertFileDoesNotExist($this->root . '/public/executed');
     }
 
     public function testCompleteGeneratedConfigurationRemainsStaticallyVerifiable(): void
     {
         $this->fixture();
-        $this->write('composer.json', '{"extra":{"sympress-runtime":{"require-wp":false}}}');
+        $this->configuration(['require-wp' => false]);
         $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', '-n', 'wpconfig', '--force'], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => dirname(__DIR__, 2) . '/vendor']);
         $process->mustRun();
         [$exit, $checks, $output] = $this->diagnose();

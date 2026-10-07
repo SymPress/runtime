@@ -10,6 +10,7 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SymPress\Runtime\Database\DbHost;
 use SymPress\Runtime\Tests\Support\TemporaryProject;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 use mysqli;
 
@@ -31,24 +32,26 @@ final class WordPressBootTest extends TemporaryProject
         $connection = new mysqli($endpoint->host, $user, $password, null, $endpoint->port, $endpoint->socket);
         try {
             $connection->query('CREATE DATABASE `' . $database . '`');
-            self::assertTrue(symlink($core, $this->root . '/wp'));
-            $this->write('composer.json', '{"extra":{"wordpress-install-dir":"wp","wordpress-content-dir":"content","sympress-runtime":{"require-wp":false,"db-check":false,"cache-env":false,"compatibility":false}}}');
-            $this->write('content/mu-plugins/z-last/main.php', "<?php\n/* Plugin Name: Last */\n" . '$GLOBALS["fixture_boots"][] = "last"; $file = "changed";');
-            $this->write('content/mu-plugins/a-first/main.php', "<?php\n/* Plugin Name: First */\n" . '$GLOBALS["fixture_boots"][] = "first"; $fixtureGlobalDb = $wpdb instanceof wpdb;');
+            (new Filesystem())->mirror($core, $this->root . '/public/wp');
+            $this->write('composer.json', '{"extra":{"wordpress-install-dir":"public/wp","wordpress-content-dir":"public/content","sympress-runtime":{"require-wp":false,"db-check":false,"cache-env":false,"compatibility":false}}}');
+            $this->write('public/content/mu-plugins/z-last/main.php', "<?php\n/* Plugin Name: Last */\n" . '$GLOBALS["fixture_boots"][] = "last"; $file = "changed";');
+            $this->write('public/content/mu-plugins/a-first/main.php', "<?php\n/* Plugin Name: First */\n" . '$GLOBALS["fixture_boots"][] = "first"; $fixtureGlobalDb = $wpdb instanceof wpdb;');
             $package = dirname(__DIR__, 2);
             $setup = new Process([PHP_BINARY, $package . '/bin/runtime', '-n', 'wpconfig', 'muloader'], $this->root, ['COMPOSER_VENDOR_DIR' => $package . '/vendor', 'COMPOSER' => false]);
             $setup->mustRun();
-            $loader = $this->root . '/content/mu-plugins/sympress-runtime-mu-loader.php';
+            self::assertFileDoesNotExist($this->root . '/wp-config.php');
+            self::assertStringNotContainsString('wp-config-proxy:v1', (string) file_get_contents($this->root . '/public/wp-config.php'));
+            $loader = $this->root . '/public/content/mu-plugins/sympress-runtime-mu-loader.php';
             rename($loader, $this->root . '/linked-loader.php');
             self::assertTrue(symlink($this->root . '/linked-loader.php', $loader));
             $this->write('probe.php', <<<'PHP'
 <?php
 define('WP_INSTALLING', true);
-require __DIR__ . '/wp/wp-includes/plugin.php';
+require __DIR__ . '/public/wp/wp-includes/plugin.php';
 add_action('mu_plugin_loaded', static function ($file) {
     $GLOBALS['fixture_hooks'][] = basename(dirname($file));
 });
-require __DIR__ . '/wp-config.php';
+require __DIR__ . '/public/wp/wp-load.php';
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
 require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
 require_once ABSPATH . 'wp-admin/includes/class-wp-plugins-list-table.php';

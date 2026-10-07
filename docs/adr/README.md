@@ -1,5 +1,7 @@
 # Architecture decisions
 
+- [0029: Native core-parent configuration](0029-native-core-parent-configuration.md)
+
 - [0021: Native MU-plugin loading](0021-native-mu-plugin-loading.md)
 - [0022: Tagged releases and Composer recovery compatibility](0022-release-and-composer-recovery-policy.md)
 - [0023: Private environment writes and production payloads](0023-env-production.md)

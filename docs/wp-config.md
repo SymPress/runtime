@@ -1,12 +1,29 @@
 # Generated wp-config and sections
 
-The `wpconfig` step generates `wp-config.php` at the project root. Run it with:
+The native `wpconfig` step generates the main `wp-config.php` in the WordPress
+core parent: `public/wp-config.php` when Core is installed in `public/wp/`.
+This is the file WordPress discovers directly; native projects need no root
+configuration or forwarding loader. Run it with:
 
 ```sh
 vendor/bin/runtime --no-interaction wpconfig
 ```
 
-Older compatibility profiles can use a different location; see [Compatibility](compatibility.md). A proxy in the core parent is generated when required. Both files are parsed before publication. Native unmarked files require overwrite approval; protected paths, symlinks and directories retain their documented guards. Existing salts and edited managed sections are preserved during regeneration.
+The `release-3.0.1` profile also uses the core parent. `upstream-dev` keeps its
+root configuration and core-parent proxy; an explicitly supplied alternate
+target still receives a proxy when needed. See [Compatibility](compatibility.md).
+Every generated file is parsed before publication. Native unmarked files require
+overwrite approval; protected paths, symlinks and directories retain their guards.
+Existing salts and edited managed sections are preserved during regeneration.
+
+When upgrading an older native root layout, Runtime replaces its generated proxy
+with the main configuration and recovers literal salts without executing the old
+PHP. It retains the old root file for rollback; archive it after verifying the
+new configuration. A customized root configuration or dynamic salt provider
+requires an explicit migration: back up both files, move the main configuration
+to the core parent, review paths relative to `__DIR__`, and regenerate the managed
+sections. Keep `.env` and `var/runtime/` outside the public document root. Deny
+direct HTTP requests to `wp-config.php` in the web-server configuration.
 
 ## What gets loaded
 

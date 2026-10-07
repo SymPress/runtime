@@ -23,6 +23,14 @@ The command reads inline `extra.wpstarter`, referenced JSON and root `wpstarter.
 
 ## Choose a behavior profile
 
+Native configuration now lives directly in the WordPress core parent, normally
+`public/wp-config.php`, without a root file or forwarding loader. Existing stock
+native root configurations migrate with their literal salts preserved; Runtime
+retains the original root file. Customized sections and dynamic salt providers
+require the explicit migration described in [Generated wp-config](wp-config.md).
+The `release-3.0.1` core-parent layout and `upstream-dev` root/proxy layout retain
+their compatibility contracts.
+
 Throughout Runtime 1.x, outbound WordPress HTTP blocking is explicit opt-in:
 set `WP_HTTP_BLOCK_EXTERNAL=true` and review `WP_ACCESSIBLE_HOSTS` only when the
 project requires that restriction. Production/staging and `composer-managed`

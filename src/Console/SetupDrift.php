@@ -185,7 +185,7 @@ final readonly class SetupDrift
     private function outputs(array $steps): array
     {
         $targets = [];
-        $config = $this->option('wp-config-php-path', $this->config['compatibility-profile']->is('release-3.0.1') ? $this->paths->wpParent('wp-config.php') : $this->paths->root('wp-config.php'));
+        $config = $this->option('wp-config-php-path', $this->config['compatibility-profile']->is('upstream-dev') ? $this->paths->root('wp-config.php') : $this->paths->wpParent('wp-config.php'));
         $map = [
             'wpconfig' => [$config, $this->paths->wpParent('wp-config.php')],
             'index' => [$this->paths->wpParent('index.php')],
