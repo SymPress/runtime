@@ -2,8 +2,15 @@
 
 ## Unreleased
 
+No changes yet.
+
+## 1.2.5 — 2026-10-07
+
 - Generate native `wp-config.php` directly in the WordPress core parent (`public/` for a `public/wp/` layout), eliminating the default root configuration and forwarding loader. WP-CLI, section editing, setup drift and production diagnostics follow the same target.
 - Recover literal salts from previous managed native root configurations without executing PHP; retain the root file for rollback. Customized sections, dynamic salt providers, location-dependent salt code and root symlinks require explicit migration. Literal salt edits, legacy profile layouts and alternate configuration targets remain supported.
+- Report the current release version in the standalone CLI.
+
+See the [1.2.5 upgrade notes](docs/releases/1.2.5.md).
 
 ## 1.2.4 — 2026-10-05
 

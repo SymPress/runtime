@@ -31,7 +31,7 @@ final class Application
         $installed = is_file($installedFile) ? json_decode((string) file_get_contents($installedFile), true, 512, JSON_THROW_ON_ERROR) : [];
         $dev = !is_array($installed) || ($installed['dev'] ?? true) !== false;
         $context = $data === null ? new RunContext($root, $vendor, $bin, dev: $dev, manifest: $manifestFile) : RunContext::fromArray($data);
-        $application = new ConsoleApplication('SymPress Runtime', '1.1.1');
+        $application = new ConsoleApplication('SymPress Runtime', '1.2.5');
         $application->setAutoExit(false);
         foreach (['run', ...Registry::RESERVED] as $operation) {
             $application->addCommand(new RuntimeCommand($context, $operation));
