@@ -4,6 +4,13 @@
 
 No changes yet.
 
+## 1.2.6 — 2026-10-09
+
+- Require Symfony DependencyInjection 8.1.8 or newer to preserve environment placeholders reused across container extensions. Library consumers now receive the fix without relying on a development lockfile.
+- Report the current release version in the standalone CLI.
+
+See the [1.2.6 upgrade notes](docs/releases/1.2.6.md).
+
 ## 1.2.5 — 2026-10-07
 
 - Generate native `wp-config.php` directly in the WordPress core parent (`public/` for a `public/wp/` layout), eliminating the default root configuration and forwarding loader. WP-CLI, section editing, setup drift and production diagnostics follow the same target.
