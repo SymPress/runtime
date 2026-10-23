@@ -41,6 +41,11 @@ vendor/bin/runtime doctor --production --webroot=public --json
 
 The production gate checks explicit HTTPS `WP_HOME`, debugging, the deployment
 dump, Composer file-update policy, private salts and readable private artifacts.
+With a deployment dump it also requires an environment directory that the PHP
+runtime identity cannot write: the generated configuration `require`s files from
+that directory, so a web process with write access there could plant bootstrap
+PHP. The automatic request-time cache (`cache-env: auto`) is a development
+convenience; production deployments ship `.env.dump.php` and stay read-only.
 It never executes `wp-config.php` to inspect settings. Known literal definitions
 before the generated sections take precedence over environment values and
 defaults. Opaque PHP, definitions between sections, edited sections, early hooks
