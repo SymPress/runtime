@@ -63,6 +63,18 @@ final class ProductionDoctorTest extends TemporaryProject
     /** @return array{int|null, array<string, string>, string} */
     private function diagnose(string ...$arguments): array
     {
+        // Production deployments keep the environment directory read-only for PHP.
+        chmod($this->root, 0555);
+        try {
+            return $this->diagnoseWritableEnvironmentDirectory(...$arguments);
+        } finally {
+            chmod($this->root, 0755);
+        }
+    }
+
+    /** @return array{int|null, array<string, string>, string} */
+    private function diagnoseWritableEnvironmentDirectory(string ...$arguments): array
+    {
         $process = new Process([PHP_BINARY, dirname(__DIR__, 2) . '/bin/runtime', '-n', 'doctor', '--production', '--json', '--webroot=public', ...$arguments], $this->root, ['COMPOSER' => false, 'COMPOSER_VENDOR_DIR' => false]);
         $process->run();
         $report = json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR);
@@ -72,6 +84,21 @@ final class ProductionDoctorTest extends TemporaryProject
         $checks = $report['checks'];
 
         return [$process->getExitCode(), array_column($checks, 'status', 'id'), $process->getOutput() . $process->getErrorOutput()];
+    }
+
+    public function testWritableEnvironmentDirectoryWithDumpFailsProductionCheck(): void
+    {
+        $this->fixture();
+        [$exit, $checks] = $this->diagnoseWritableEnvironmentDirectory();
+        self::assertSame(1, $exit);
+        self::assertSame('fail', $checks['production.env-dir-readonly']);
+
+        [$exit, $checks] = $this->diagnose();
+        self::assertSame(0, $exit);
+        self::assertSame('pass', $checks['production.env-dir-readonly']);
+
+        [, $checks] = $this->diagnose('--php-user=no-such-sympress-user');
+        self::assertSame('unknown', $checks['production.env-dir-readonly']);
     }
 
     public function testGeneratedDefaultsPassWithoutExecutingConfigOrLeakingSecrets(): void

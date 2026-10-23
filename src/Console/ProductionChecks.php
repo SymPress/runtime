@@ -79,6 +79,12 @@ final readonly class ProductionChecks
             $mode = @fileperms($file);
             $record('production.env-mode.' . $index, $mode !== false && in_array($mode & 0777, [0600, 0640], true), 'Environment files require private 0600 or group-readable 0640 permissions.');
         }
+        if ($dump) {
+            // A deployment dump makes the environment directory a bootstrap input;
+            // a web process that can write there can place executable PHP there.
+            $writable = $this->writableByRuntime($directory, $phpUser);
+            $checks[] = ['id' => 'production.env-dir-readonly', 'status' => $writable === null ? 'unknown' : ($writable ? 'fail' : 'pass'), 'detail' => 'With a deployment dump the environment directory must not be writable by the PHP runtime identity. Run doctor as the PHP-FPM identity for an authoritative check.'];
+        }
         if (is_string($configFile)) {
             $files[] = $configFile;
             $mode = @fileperms($configFile);
@@ -313,6 +319,19 @@ final readonly class ProductionChecks
         }
 
         return $definitions;
+    }
+
+    private function writableByRuntime(string $directory, ?string $phpUser): ?bool
+    {
+        if ($phpUser !== null) {
+            $identity = function_exists('posix_getpwnam') ? posix_getpwnam($phpUser) : false;
+            if ($identity === false || !function_exists('posix_geteuid') || $identity['uid'] !== posix_geteuid()) {
+                // Mode bits cannot prove another identity's write access under ACLs.
+                return null;
+            }
+        }
+
+        return is_writable($directory);
     }
 
     private function currentIdentityReadable(string $file): bool
