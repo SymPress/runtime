@@ -33,10 +33,11 @@ final class EnvCacheInterpolation
         // Dotenv falls back to $_SERVER itself; request metadata must not reach ${NAME} references.
         $hidden = [];
         foreach ($expressions->referencesFor($path) as $name) {
-            if (EnvReader::isRequestMetaVariable($name) && array_key_exists($name, $_SERVER)) {
-                $hidden[$name] = $_SERVER[$name];
-                unset($_SERVER[$name]);
+            if (!EnvReader::isRequestMetaVariable($name) || !array_key_exists($name, $_SERVER)) {
+                continue;
             }
+            $hidden[$name] = $_SERVER[$name];
+            unset($_SERVER[$name]);
         }
         try {
             return $this->parseReferences($expressions, $dotenv, $content, $path, $external);
