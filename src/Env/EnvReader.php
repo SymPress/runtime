@@ -31,6 +31,8 @@ final class EnvReader
     public const array WP_CONSTANTS = ConstantCatalog::TYPES;
     public const array ENV_TYPES = EnvironmentName::ALIASES;
     public const array WP_STARTER_ENV_VARS = ['WP_ENV', 'WORDPRESS_ENV', 'WP_ENVIRONMENT_TYPE'];
+    /** CGI/FastCGI request metadata the web server places in $_SERVER; never configuration. */
+    private const string REQUEST_META_VARIABLES = '/^(?:HTTP_|REDIRECT_|REQUEST_|SCRIPT_|CONTENT_|REMOTE_|SERVER_|DOCUMENT_|CONTEXT_|ORIG_|PHP_AUTH_|(?:PATH_INFO|PATH_TRANSLATED|QUERY_STRING|GATEWAY_INTERFACE|AUTH_TYPE|PHP_SELF|HTTPS|FCGI_ROLE|argv|argc)$)/';
     public const array WP_STARTER_VARS = [
         'WP_STARTER_ENV_TO_CONST' => 'string',
         'SYMPRESS_RUNTIME_ENV_TO_CONST' => 'string',
@@ -78,7 +80,8 @@ final class EnvReader
             if (!is_string($name) || !is_scalar($value)) {
                 continue;
             }
-            if (str_starts_with($name, 'HTTP_')) {
+            if (self::isRequestMetaVariable($name)) {
+                // Request metadata is only accepted from the real environment, never from the SAPI.
                 $value = $_ENV[$name] ?? null;
                 if (!is_scalar($value)) {
                     continue;
@@ -97,6 +100,12 @@ final class EnvReader
             }
             $this->external[$name] = (string) $value;
         }
+    }
+
+    /** @internal */
+    public static function isRequestMetaVariable(string $name): bool
+    {
+        return preg_match(self::REQUEST_META_VARIABLES, $name) === 1;
     }
 
     /**

@@ -32,6 +32,12 @@ The generic `.env.local` file is skipped for the raw `test` environment. Disable
 `env-local-overrides` to use only the base and environment-specific files.
 `env-dir` and `env-file` change the directory and base filename.
 
+Values the web server derives from the request and places in `$_SERVER` are not
+configuration: `HTTP_*`, `REDIRECT_*`, `REQUEST_*`, `QUERY_STRING`, `PATH_INFO`,
+`REMOTE_*`, `SERVER_*`, `SCRIPT_*`, `DOCUMENT_*`, `CONTENT_*`, `PHP_AUTH_*`,
+`HTTPS` and similar CGI names are ignored there. Such a name is read only when the
+real process environment or `$_ENV` supplies it.
+
 ## Select an environment
 
 Native selection checks `WP_ENVIRONMENT_TYPE`, then `WP_ENV`, then
