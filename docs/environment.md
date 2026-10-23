@@ -32,6 +32,16 @@ The generic `.env.local` file is skipped for the raw `test` environment. Disable
 `env-local-overrides` to use only the base and environment-specific files.
 `env-dir` and `env-file` change the directory and base filename.
 
+Values the web server derives from the request and places in `$_SERVER` are not
+configuration. The CGI meta-variables (`REQUEST_URI`, `REQUEST_METHOD`,
+`QUERY_STRING`, `PATH_INFO`, `REMOTE_ADDR`, `SERVER_NAME`, `SCRIPT_FILENAME`,
+`DOCUMENT_ROOT`, `CONTENT_TYPE`, `HTTPS` and the other exact names of that set)
+plus every `HTTP_*`, `REDIRECT_*` and `PHP_AUTH_*` entry are ignored there, for
+direct reads as well as for `${NAME}` interpolation. Such a name is read only
+when the real process environment or `$_ENV` supplies it. Operator values with
+other names, for example `SERVER_ROLE` passed through `fastcgi_param`, are still
+read from `$_SERVER`.
+
 ## Select an environment
 
 Native selection checks `WP_ENVIRONMENT_TYPE`, then `WP_ENV`, then
@@ -105,7 +115,9 @@ when changing that mode; older formats without the field are treated as
 compatibility-enabled.
 
 Native payloads persist file-owned values only; process-only values and process
-overrides are read live and never serialized. A file default remains available
+overrides are read live and never serialized. Within one request the reader
+samples each process variable once, on its first read; a `putenv()` made later
+in the same request is not observed until the next request. A file default remains available
 when a process override is removed. Native runtime caches store interpolation
 templates and salted dependency fingerprints, excluding derived process bytes.
 An unchanged dependency resolves the template without loading the dotenv parser.
@@ -152,6 +164,16 @@ allows a separately provisioned PHP group to read generated configuration, cache
 and dumps. Runtime does not select the group or change ownership. Temporary files
 are checked against the canonical target directory before any secret content is
 written; PHP's system temporary-directory fallback is never used for content.
+
+## Typed values
+
+Catalog constants and `SYMPRESS_RUNTIME_ENV_TO_CONST` entries are cast by type.
+The `string` type strips tags and HTML-escapes the value (`&` becomes `&amp;`,
+quotes become entities) before it is defined, so a database name, cookie domain
+or URL containing those characters is altered. Use `raw_string` for values that
+must reach PHP byte for byte; credentials and salts in the catalog already use
+it. This escaping is inherited from the previous loader and kept for
+compatibility of existing projects.
 
 ## File-backed secrets and required values
 

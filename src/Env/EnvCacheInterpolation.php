@@ -28,14 +28,37 @@ final class EnvCacheInterpolation
     public function parse(Dotenv $dotenv, string $content, string $path, callable $external): array
     {
         $this->dotenv = $dotenv;
-        ($this->expressions ??= new EnvCacheExpressions())->record($content, $path);
+        $expressions = $this->expressions ??= new EnvCacheExpressions();
+        $expressions->record($content, $path);
+        // Dotenv falls back to $_SERVER itself; request metadata must not reach ${NAME} references.
+        $hidden = [];
+        foreach ($expressions->referencesFor($path) as $name) {
+            if (!EnvReader::isRequestMetaVariable($name) || !array_key_exists($name, $_SERVER)) {
+                continue;
+            }
+            $hidden[$name] = $_SERVER[$name];
+            unset($_SERVER[$name]);
+        }
+        try {
+            return $this->parseReferences($expressions, $dotenv, $content, $path, $external);
+        } finally {
+            $_SERVER = $hidden + $_SERVER;
+        }
+    }
+
+    /**
+     * @param callable(string): ?string $external
+     * @return array<string, string>
+     */
+    private function parseReferences(EnvCacheExpressions $expressions, Dotenv $dotenv, string $content, string $path, callable $external): array
+    {
         // The selected source chain cannot lose its history through later overrides.
-        $this->uncacheable = $this->uncacheable || $this->expressions->hasDynamicEnvironmentSelection();
+        $this->uncacheable = $this->uncacheable || $expressions->hasDynamicEnvironmentSelection();
         $replacements = [];
         $externalReferences = [];
         $loaded = $_SERVER['SYMFONY_DOTENV_VARS'] ?? $_ENV['SYMFONY_DOTENV_VARS'] ?? '';
         $filePrecedence = array_fill_keys(is_string($loaded) ? explode(',', $loaded) : [], true);
-        foreach ($this->expressions->referencesFor($path) as $name) {
+        foreach ($expressions->referencesFor($path) as $name) {
             $value = $external($name);
             $marker = $this->dependencies[$name]['marker'] ?? 'SYMPRESS_INTERPOLATION_' . bin2hex(random_bytes(16));
             $this->dependencies[$name] = ['marker' => $marker];
@@ -52,7 +75,7 @@ final class EnvCacheInterpolation
             }
             $replacements[$marker] = $value;
         }
-        $this->expressions->trackExternalReferences($path, $externalReferences, $filePrecedence);
+        $expressions->trackExternalReferences($path, $externalReferences, $filePrecedence);
         // Commands may transform secrets and cannot be represented by substitution templates.
         if (str_contains($content, '$(')) {
             $values = self::validateValues($dotenv->parse($content, $path));
