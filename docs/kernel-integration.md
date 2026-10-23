@@ -57,6 +57,8 @@ To request a generated kernel MU plugin, set `kernel-boot: true`. A package that
 
 Set `kernel-build-id` to an explicit deployment identifier, or generate one with the command above. Normal setup does not rotate IDs. The generated configuration defines SYMPRESS_KERNEL_BUILD_ID from the environment, configured fallback or persisted deployment ID, while preserving an existing constant. Persist `var/runtime/{environment}/kernel-build-id.json` with the deployment artifacts if you use command-generated IDs.
 
+Prefer exporting `SYMPRESS_KERNEL_BUILD_ID` in the deployment environment or in `.env.production` (the command prints the generated value for that purpose). The persisted JSON file is a fallback that the generated configuration reads and parses on every request; an environment value is read from memory and keeps the kernel cache identity visible in one place. A value kept in an environment file is part of the deployment dump: rotate it with `kernel-cache --generate-build-id` before `dump-env`, or rebuild the dump afterwards, so the dump does not carry the previous identity.
+
 Build dumps and kernel caches are separate artifacts. Generate the environment dump and warm the kernel before making production files read-only. The runtime package's tests verify an actual compiled kernel reading a dump without writable project files; consumer deployment and admin smoke still need their own verification.
 
 The generated environment-parser payload under `var/runtime/<fingerprint>/` is another required artifact, even when the kernel is absent. It must survive cache cleanup and accompany its generated configuration. See [deployment and rollback-safe payload retention](deployment.md).

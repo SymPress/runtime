@@ -155,6 +155,16 @@ and dumps. Runtime does not select the group or change ownership. Temporary file
 are checked against the canonical target directory before any secret content is
 written; PHP's system temporary-directory fallback is never used for content.
 
+## Typed values
+
+Catalog constants and `SYMPRESS_RUNTIME_ENV_TO_CONST` entries are cast by type.
+The `string` type strips tags and HTML-escapes the value (`&` becomes `&amp;`,
+quotes become entities) before it is defined, so a database name, cookie domain
+or URL containing those characters is altered. Use `raw_string` for values that
+must reach PHP byte for byte; credentials and salts in the catalog already use
+it. This escaping is inherited from the previous loader and kept for
+compatibility of existing projects.
+
 ## File-backed secrets and required values
 
 In native mode, `DB_PASSWORD_FILE=/run/secrets/database-password` supplies
