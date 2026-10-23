@@ -4,6 +4,13 @@
 
 No changes yet.
 
+## 1.2.7 — 2026-10-23
+
+- Stop probing absent optional environment files with a suppressed `stat()`. The warning stayed in PHP's `error_get_last()`, so WordPress added the `php-error` admin body class and shifted the sidebar by 2em. Cache signatures are unchanged.
+- Report the current release version in the standalone CLI.
+
+See the [1.2.7 upgrade notes](docs/releases/1.2.7.md).
+
 ## 1.2.6 — 2026-10-09
 
 - Require Symfony DependencyInjection 8.1.8 or newer to preserve environment placeholders reused across container extensions. Library consumers now receive the fix without relying on a development lockfile.
