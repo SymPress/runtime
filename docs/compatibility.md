@@ -101,6 +101,12 @@ Existing `WPSTARTER_*` environment controls and deprecated getter/filter names
 remain compatibility interfaces. Consult the migration report before disabling
 them; changing product terminology does not remove the adapters.
 
+The retained `getenv` WordPress filter returns any environment value, including
+`DB_PASSWORD` and the authentication salts, to every plugin or theme that calls
+`apply_filters('getenv', $name)`. It exists only for code written against the
+previous loader. Set `compatibility: false` once no such code remains; the
+native `sympress_runtime_getenv()` function stays available.
+
 Release compatibility preserves optional confirmation for explicitly selected
 steps and rejects positional selection combined with `--list-steps`.
 Native mode permits that combination and bypasses optional confirmation for an
