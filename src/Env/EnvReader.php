@@ -294,7 +294,6 @@ final class EnvReader
         if ($this->profile !== 'native') {
             putenv($name . '=' . $value);
             $this->ownedProcess[$name] = $value;
-            unset($this->processValues[$name]);
         }
         $_ENV['SYMFONY_DOTENV_VARS'] = implode(',', array_keys(array_diff_key($this->raw, $this->nonPersistentNames, $this->profile === 'native' ? $this->external : [])));
         $_SERVER['SYMFONY_DOTENV_VARS'] = $_ENV['SYMFONY_DOTENV_VARS'];
@@ -643,8 +642,9 @@ final class EnvReader
     private function externalValue(string $name): ?string
     {
         if ($this->profile === 'native' && !str_starts_with($name, 'HTTP_')) {
-            // The process environment does not change during a request; every read()
-            // and define() used to scan it again. The reader's own putenv() invalidates.
+            // Each process variable is sampled once per reader (one request); every
+            // read() and define() used to scan the environment again. Compatibility
+            // profiles never reach this branch, so their putenv() needs no invalidation.
             $process = $this->processValues[$name] ??= getenv($name);
             if ($process !== false && ($this->ownedProcess[$name] ?? null) !== $process) {
                 return $process;

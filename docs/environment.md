@@ -105,7 +105,9 @@ when changing that mode; older formats without the field are treated as
 compatibility-enabled.
 
 Native payloads persist file-owned values only; process-only values and process
-overrides are read live and never serialized. A file default remains available
+overrides are read live and never serialized. Within one request the reader
+samples each process variable once, on its first read; a `putenv()` made later
+in the same request is not observed until the next request. A file default remains available
 when a process override is removed. Native runtime caches store interpolation
 templates and salted dependency fingerprints, excluding derived process bytes.
 An unchanged dependency resolves the template without loading the dotenv parser.
