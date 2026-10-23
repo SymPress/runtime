@@ -49,6 +49,8 @@ final class EnvReader
     private array $external = [];
     /** @var array<string, string> */
     private array $ownedProcess = [];
+    /** @var array<string, string|false> */
+    private array $processValues = [];
     /** @var array<string, array{string, bool|int|float|string|null}> */
     private array $cache = [];
     /** @var array<string, string> */
@@ -655,7 +657,10 @@ final class EnvReader
     private function externalValue(string $name): ?string
     {
         if ($this->profile === 'native' && !str_starts_with($name, 'HTTP_')) {
-            $process = getenv($name);
+            // Each process variable is sampled once per reader (one request); every
+            // read() and define() used to scan the environment again. Compatibility
+            // profiles never reach this branch, so their putenv() needs no invalidation.
+            $process = $this->processValues[$name] ??= getenv($name);
             if ($process !== false && ($this->ownedProcess[$name] ?? null) !== $process) {
                 return $process;
             }
