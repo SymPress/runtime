@@ -55,6 +55,8 @@ final class EnvReader
     private array $external = [];
     /** @var array<string, string> */
     private array $ownedProcess = [];
+    /** @var array<string, string|false> */
+    private array $processValues = [];
     /** @var array<string, array{string, bool|int|float|string|null}> */
     private array $cache = [];
     /** @var array<string, string> */
@@ -289,6 +291,14 @@ final class EnvReader
     /** @api */
     public function write(string $name, string $value): void
     {
+        $this->store($name, $value);
+        $this->syncLoadedNames();
+        $this->read($name);
+    }
+
+    /** One assignment without republishing the loaded-name list; callers storing many values sync once. */
+    private function store(string $name, string $value): void
+    {
         if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/D', $name)) {
             throw new InvalidArgumentException('Invalid environment variable name.');
         }
@@ -302,13 +312,18 @@ final class EnvReader
         if (!str_starts_with($name, 'HTTP_')) {
             $_SERVER[$name] = $value;
         }
-        if ($this->profile !== 'native') {
-            putenv($name . '=' . $value);
-            $this->ownedProcess[$name] = $value;
+        if ($this->profile === 'native') {
+            return;
         }
+
+        putenv($name . '=' . $value);
+        $this->ownedProcess[$name] = $value;
+    }
+
+    private function syncLoadedNames(): void
+    {
         $_ENV['SYMFONY_DOTENV_VARS'] = implode(',', array_keys(array_diff_key($this->raw, $this->nonPersistentNames, $this->profile === 'native' ? $this->external : [])));
         $_SERVER['SYMFONY_DOTENV_VARS'] = $_ENV['SYMFONY_DOTENV_VARS'];
-        $this->read($name);
     }
 
     /** @internal */
@@ -503,7 +518,7 @@ final class EnvReader
             $this->cache[$name] = $pair;
             $external = $this->externalValue($name);
             if ($external === null) {
-                $this->write($name, $pair[0]);
+                $this->store($name, $pair[0]);
                 continue;
             }
             $_ENV[$name] = $external;
@@ -517,8 +532,10 @@ final class EnvReader
             if ($this->externalValue($name) !== null) {
                 continue;
             }
-            $this->write($name, $value);
+            $this->store($name, $value);
         }
+        // Publish the loaded names once instead of rebuilding the list per value.
+        $this->syncLoadedNames();
         foreach ($defineConstants ? $data['constants'] : [] as $name) {
             if (in_array($name, ['WP_ENV', 'WP_ENVIRONMENT_TYPE'], true)) {
                 $this->setupEnvConstants();
@@ -653,7 +670,10 @@ final class EnvReader
     private function externalValue(string $name): ?string
     {
         if ($this->profile === 'native' && !str_starts_with($name, 'HTTP_')) {
-            $process = getenv($name);
+            // Each process variable is sampled once per reader (one request); every
+            // read() and define() used to scan the environment again. Compatibility
+            // profiles never reach this branch, so their putenv() needs no invalidation.
+            $process = $this->processValues[$name] ??= getenv($name);
             if ($process !== false && ($this->ownedProcess[$name] ?? null) !== $process) {
                 return $process;
             }
@@ -753,7 +773,8 @@ final class EnvReader
                 $this->raw[$name] = $value;
                 continue;
             }
-            $this->write($name, $value);
+            $this->store($name, $value);
         }
+        $this->syncLoadedNames();
     }
 }
