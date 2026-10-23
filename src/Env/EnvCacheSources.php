@@ -25,7 +25,7 @@ final class EnvCacheSources
     public static function signature(string $path): ?array
     {
         clearstatcache(true, $path);
-        $stat = @stat($path);
+        $stat = file_exists($path) ? @stat($path) : false;
 
         return $stat === false ? null : [$stat['size'], $stat['mtime']];
     }
