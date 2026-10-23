@@ -31,7 +31,7 @@ final class EnvReaderServerBoundaryTest extends TestCase
     /** @return iterable<string, array{string}> */
     public static function requestMetaVariables(): iterable
     {
-        foreach (['REQUEST_URI', 'QUERY_STRING', 'PATH_INFO', 'REDIRECT_WP_HOME', 'HTTP_X_WP_HOME', 'REMOTE_ADDR', 'SERVER_NAME', 'SCRIPT_FILENAME', 'HTTPS'] as $name) {
+        foreach (['REQUEST_URI', 'REQUEST_METHOD', 'QUERY_STRING', 'PATH_INFO', 'REDIRECT_WP_HOME', 'HTTP_X_WP_HOME', 'REMOTE_ADDR', 'SERVER_NAME', 'SCRIPT_FILENAME', 'DOCUMENT_ROOT', 'CONTENT_TYPE', 'HTTPS'] as $name) {
             yield $name => [$name];
         }
     }
@@ -51,12 +51,40 @@ final class EnvReaderServerBoundaryTest extends TestCase
 
     public function testRequestMetadataNamesAreStillAcceptedFromTheRealEnvironment(): void
     {
-        $_ENV['REQUEST_TIMEOUT'] = '30';
-        $_SERVER['REQUEST_TIMEOUT'] = '30';
+        unset($_SERVER['REQUEST_URI']);
+        $_ENV['REQUEST_URI'] = '/from-the-environment';
 
-        self::assertSame('30', (new EnvReader())->read('REQUEST_TIMEOUT'));
-        self::assertTrue(EnvReader::isRequestMetaVariable('REQUEST_TIMEOUT'));
+        self::assertSame('/from-the-environment', (new EnvReader())->read('REQUEST_URI'));
+    }
+
+    public function testOperatorNamesWithCgiLikePrefixesRemainConfiguration(): void
+    {
+        foreach (['SERVER_ROLE', 'REQUEST_TIMEOUT', 'CONTENT_BUCKET', 'DOCUMENT_STORE'] as $name) {
+            unset($_ENV[$name]);
+            $_SERVER[$name] = 'operator-' . $name;
+            self::assertFalse(EnvReader::isRequestMetaVariable($name));
+            self::assertSame('operator-' . $name, (new EnvReader())->read($name));
+        }
         self::assertFalse(EnvReader::isRequestMetaVariable('DB_PASSWORD'));
         self::assertFalse(EnvReader::isRequestMetaVariable('AUTH_KEY'));
+    }
+
+    public function testInterpolationDoesNotReadRequestMetadataFromServer(): void
+    {
+        unset($_ENV['REQUEST_URI']);
+        putenv('REQUEST_URI');
+        $_SERVER['REQUEST_URI'] = '/from-the-request';
+        $root = sys_get_temp_dir() . '/sympress-server-boundary-' . bin2hex(random_bytes(6));
+        mkdir($root);
+        try {
+            file_put_contents($root . '/.env', 'RTV_BASE=${REQUEST_URI:-fallback}' . "\n");
+            $reader = new EnvReader();
+            $reader->loadFile($root . '/.env');
+
+            self::assertSame('fallback', $reader->read('RTV_BASE'));
+        } finally {
+            unlink($root . '/.env');
+            rmdir($root);
+        }
     }
 }

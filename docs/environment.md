@@ -33,10 +33,14 @@ The generic `.env.local` file is skipped for the raw `test` environment. Disable
 `env-dir` and `env-file` change the directory and base filename.
 
 Values the web server derives from the request and places in `$_SERVER` are not
-configuration: `HTTP_*`, `REDIRECT_*`, `REQUEST_*`, `QUERY_STRING`, `PATH_INFO`,
-`REMOTE_*`, `SERVER_*`, `SCRIPT_*`, `DOCUMENT_*`, `CONTENT_*`, `PHP_AUTH_*`,
-`HTTPS` and similar CGI names are ignored there. Such a name is read only when the
-real process environment or `$_ENV` supplies it.
+configuration. The CGI meta-variables (`REQUEST_URI`, `REQUEST_METHOD`,
+`QUERY_STRING`, `PATH_INFO`, `REMOTE_ADDR`, `SERVER_NAME`, `SCRIPT_FILENAME`,
+`DOCUMENT_ROOT`, `CONTENT_TYPE`, `HTTPS` and the other exact names of that set)
+plus every `HTTP_*`, `REDIRECT_*` and `PHP_AUTH_*` entry are ignored there, for
+direct reads as well as for `${NAME}` interpolation. Such a name is read only
+when the real process environment or `$_ENV` supplies it. Operator values with
+other names, for example `SERVER_ROLE` passed through `fastcgi_param`, are still
+read from `$_SERVER`.
 
 ## Select an environment
 

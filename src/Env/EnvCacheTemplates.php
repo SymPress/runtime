@@ -94,7 +94,7 @@ final class EnvCacheTemplates
                 }
                 $name = $reference['name'];
                 $value = isset($loaded[$name], $values[$name]) ? $values[$name]
-                    : ($_ENV[$name] ?? (!str_starts_with($name, 'HTTP_') ? ($_SERVER[$name] ?? null) : null) ?? $values[$name] ?? getenv($name));
+                    : ($_ENV[$name] ?? (!EnvReader::isRequestMetaVariable($name) ? ($_SERVER[$name] ?? null) : null) ?? $values[$name] ?? getenv($name));
                 $value = is_scalar($value) ? (string) $value : '';
                 if ($value === '' && is_string($reference['default'] ?? null)) {
                     $value = $reference['default'];
