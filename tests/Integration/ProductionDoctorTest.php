@@ -63,12 +63,14 @@ final class ProductionDoctorTest extends TemporaryProject
     /** @return array{int|null, array<string, string>, string} */
     private function diagnose(string ...$arguments): array
     {
-        // Production deployments keep the environment directory read-only for PHP.
-        chmod($this->root, 0555);
+        // Production deployments keep the environment directory read-only for PHP:
+        // drop only the write bits so identity-specific mode fixtures stay intact.
+        $mode = fileperms($this->root) & 0777;
+        chmod($this->root, $mode & ~0222);
         try {
             return $this->diagnoseWritableEnvironmentDirectory(...$arguments);
         } finally {
-            chmod($this->root, 0755);
+            chmod($this->root, $mode);
         }
     }
 
