@@ -4,6 +4,17 @@
 
 No changes yet.
 
+## 1.2.8 — 2026-10-24
+
+- Publish the loaded environment name list (`SYMFONY_DOTENV_VARS`) once per parsed file and once per cache restore instead of once per variable; restoring n cached values no longer costs n list rebuilds.
+- Sample each process environment value once per reader. A `putenv()` made later in the same request is not observed until the next request; `docs/environment.md` states the contract.
+- Ignore CGI request metadata in `$_SERVER` as configuration, for direct reads and for `${NAME}` interpolation: the exact CGI meta-variable names plus `HTTP_*`, `REDIRECT_*` and `PHP_AUTH_*` are read only from `$_ENV` or the real process environment. Operator values with other names passed through `fastcgi_param` or `SetEnv` keep working.
+- `doctor --production` reports `production.env-dir-readonly` once a deployment dump exists: the environment directory must not be writable by the PHP runtime identity because the generated configuration executes the dump and cache files from it. Another identity or root yields `unknown`.
+- Document that the compatibility `getenv` filter exposes every environment value to plugins, that the `string` type HTML-escapes values, and that `SYMPRESS_KERNEL_BUILD_ID` is best exported in the environment.
+- Report the current release version in the standalone CLI.
+
+See the [1.2.8 upgrade notes](docs/releases/1.2.8.md).
+
 ## 1.2.7 — 2026-10-23
 
 - Stop probing absent optional environment files with a suppressed `stat()`. The warning stayed in PHP's `error_get_last()`, so WordPress added the `php-error` admin body class and shifted the sidebar by 2em. Cache signatures are unchanged.
