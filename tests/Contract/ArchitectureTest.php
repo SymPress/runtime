@@ -43,7 +43,7 @@ final class ArchitectureTest extends TestCase
             self::assertSame($name === 'symfony/dependency-injection' ? '^8.1.8' : '^8.1', $constraint);
         }
         self::assertArrayHasKey('sympress/qa', $manifest['require-dev']);
-        self::assertStringContainsString('sympress/workflows/.github/workflows/sympress-qa.yml@cd809f3986df3ea617d2d26bdf21ab69cae19c1e', (string) file_get_contents($root . '/.github/workflows/qa.yml'));
+        self::assertStringContainsString('sympress/workflows/.github/workflows/sympress-qa.yml@a044303b8492b0c6be48bd9c9fccdc36fb0a9794', (string) file_get_contents($root . '/.github/workflows/qa.yml'));
         $workflow = (string) file_get_contents($root . '/.github/workflows/differential.yml');
         self::assertStringContainsString('--fail-on-skipped', $workflow);
         self::assertStringContainsString('tools/parity-evidence.py', $workflow);
