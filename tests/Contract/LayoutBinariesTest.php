@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace SymPress\Runtime\Tests\Contract;
 
 use Composer\IO\NullIO;
-use Composer\Installer\BinaryInstaller;
 use Composer\Package\Loader\ArrayLoader;
 use RuntimeException;
 use SymPress\Runtime\Composer\LayoutBinaries;
@@ -13,6 +12,7 @@ use SymPress\Runtime\Filesystem\Paths;
 use SymPress\Runtime\Filesystem\ProjectBoundary;
 use SymPress\Runtime\Tests\Support\TemporaryProject;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Process\Process;
 
 final class LayoutBinariesTest extends TemporaryProject
 {
@@ -23,7 +23,14 @@ final class LayoutBinariesTest extends TemporaryProject
         (new Filesystem())->mkdir($this->root . '/physical/deeper/bin');
         self::assertTrue(symlink($this->root . '/physical/deeper/bin', $this->root . '/bin'));
         $package = (new ArrayLoader())->load(['name' => 'fixture/plugin', 'version' => '1.0.0', 'bin' => ['tool.php']]);
-        (new BinaryInstaller(new NullIO(), $this->root . '/bin', 'full', vendorDir: $this->root . '/vendor'))->installBinaries($package, $source);
+        // Keep Composer's suppressed filesystem probes in the native PHP boundary.
+        $code = 'require ' . var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true)
+            . '; $package = (new Composer\\Package\\Loader\\ArrayLoader())->load('
+            . var_export(['name' => 'fixture/plugin', 'version' => '1.0.0', 'bin' => ['tool.php']], true)
+            . '); (new Composer\\Installer\\BinaryInstaller(new Composer\\IO\\NullIO(), getcwd() . "/bin", "full", vendorDir: getcwd() . "/vendor"))->installBinaries($package, getcwd() . "/vendor/fixture/plugin");';
+        $process = new Process([PHP_BINARY, '-d', 'display_errors=stderr', '-r', $code], $this->root);
+        $process->mustRun();
+        self::assertSame('', $process->getErrorOutput(), 'Composer must not emit unsuppressed PHP diagnostics.');
         $boundary = new ProjectBoundary(new Paths($this->root, $this->root . '/vendor'));
         $binaries = new LayoutBinaries(new NullIO(), $this->root . '/bin', 'full', vendorDir: $this->root . '/vendor');
         $binaries->plan($package, $source, [$source], $boundary);
