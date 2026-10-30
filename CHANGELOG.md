@@ -4,6 +4,14 @@
 
 No changes yet.
 
+## 1.3.0 — 2026-10-30
+
+- Support stable Composer 2.11 while retaining Composer 2.10.3 as the minimum supported library version.
+- Update the development toolchain and immutable workflow dependencies.
+- Report the current release version in the standalone CLI.
+
+See the [1.3.0 upgrade notes](docs/releases/1.3.0.md).
+
 ## 1.2.8 — 2026-10-24
 
 - Publish the loaded environment name list (`SYMFONY_DOTENV_VARS`) once per parsed file and once per cache restore instead of once per variable; restoring n cached values no longer costs n list rebuilds.
