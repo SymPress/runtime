@@ -4,6 +4,10 @@
 
 No changes yet.
 
+## 1.3.1 — 2026-11-06
+
+- Require Symfony Filesystem and HttpClient 8.1.11 or later to include the November 4 security fixes.
+
 ## 1.3.0 — 2026-10-30
 
 - Support stable Composer 2.11 while retaining Composer 2.10.3 as the minimum supported library version.

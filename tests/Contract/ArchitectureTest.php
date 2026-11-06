@@ -40,7 +40,12 @@ final class ArchitectureTest extends TestCase
             if (!str_starts_with($name, 'symfony/')) {
                 continue;
             }
-            self::assertSame($name === 'symfony/dependency-injection' ? '^8.1.8' : '^8.1', $constraint);
+            $expected = match ($name) {
+                'symfony/dependency-injection' => '^8.1.8',
+                'symfony/filesystem', 'symfony/http-client' => '^8.1.11',
+                default => '^8.1',
+            };
+            self::assertSame($expected, $constraint);
         }
         self::assertArrayHasKey('sympress/qa', $manifest['require-dev']);
         self::assertStringContainsString('sympress/workflows/.github/workflows/sympress-qa.yml@a044303b8492b0c6be48bd9c9fccdc36fb0a9794', (string) file_get_contents($root . '/.github/workflows/qa.yml'));
