@@ -4,6 +4,10 @@
 
 No changes yet.
 
+## 1.3.2 — 2026-11-13
+
+- Refresh the locked Symfony, Composer Semver and PHPUnit dependencies.
+
 ## 1.3.1 — 2026-11-06
 
 - Require Symfony Filesystem and HttpClient 8.1.11 or later to include the November 4 security fixes.
