@@ -48,7 +48,7 @@ final class ArchitectureTest extends TestCase
             self::assertSame($expected, $constraint);
         }
         self::assertArrayHasKey('sympress/qa', $manifest['require-dev']);
-        self::assertStringContainsString('sympress/workflows/.github/workflows/sympress-qa.yml@9ab936c5ff11667908252eb1b788fffe00ef5ed8', (string) file_get_contents($root . '/.github/workflows/qa.yml'));
+        self::assertStringContainsString('sympress/workflows/.github/workflows/sympress-qa.yml@2ebe47e2bc6d402c172015b64c0f5a9f2bf0c322', (string) file_get_contents($root . '/.github/workflows/qa.yml'));
         $workflow = (string) file_get_contents($root . '/.github/workflows/differential.yml');
         self::assertStringContainsString('--fail-on-skipped', $workflow);
         self::assertStringContainsString('tools/parity-evidence.py', $workflow);
