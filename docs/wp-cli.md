@@ -37,7 +37,8 @@ Native downloads also use the project [download lock](downloads.md). Its first
 successful, verified download records the PHAR SHA-256; later changes at the same
 URL or across WP-CLI release URLs require an explicit reviewed lock update. A
 previously pinned local PHAR is also checked before execution. Existing project-owned
-PHARs without a pin remain usable; select `wpcli` with `--update-lock` to adopt
+PHARs without a pin remain usable, with a warning unless they match the bundled
+default release; select `wpcli` with `--update-lock` to adopt
 reviewed local bytes. Already installed Composer packages remain governed by Composer,
 and an existing local PHAR does not trigger a download. Move it aside before
 requesting a new release download.

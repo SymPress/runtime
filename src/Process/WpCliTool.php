@@ -124,6 +124,10 @@ final class WpCliTool implements PhpTool
 
             return false;
         }
+        // Unpinned project-owned PHARs stay usable for compatibility, but no longer silently.
+        if ($this->config['wp-cli-sha256']->unwrap() === null && $this->downloads->artifactUnpinned('wp-cli.phar') && hash_file('sha256', $pharPath) !== self::DEFAULT_SHA256) {
+            $io->error('Warning: ' . basename($pharPath) . ' is not pinned by wp-cli-sha256, sympress-runtime.lock or the bundled WP-CLI release; review it and adopt it with --update-lock.');
+        }
 
         return true;
     }
