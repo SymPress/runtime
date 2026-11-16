@@ -74,7 +74,7 @@ Compatibility profiles can use different defaults.
 | `composer-managed` | `"auto"` | Protect Composer-managed files and apply WordPress hardening/upload defaults in staging/production; outbound HTTP blocking remains explicit opt-in. `true` enables the section everywhere, `false` disables it. |
 | `required-env` | `{}` | Required nonempty environment names mapped to `string`, `int`, `bool` or `float`, checked by validate, doctor and dump-env. |
 | `download-lock` | `true` | Pin URL-download SHA-256 hashes in `sympress-runtime.lock`; see [Downloads](downloads.md). |
-| `wp-cli-version` | `null` | Exact WP-CLI download release (at least 2.5.0); an installed Composer bundle takes priority. |
+| `wp-cli-version` | `null` | Exact WP-CLI download release (at least 2.5.0); `null` uses Runtime's bundled, SHA-256-pinned default release. An installed Composer bundle takes priority. |
 | `wp-cli-sha256` | `null` | Independent SHA-256 pin for a WP-CLI PHAR; retained even during explicit lock updates. |
 | `bundle-bootstrap` | `false` | Bundle owned environment classes into one bootstrap file; Symfony parser dependencies remain lazy. |
 | `check-vcs-ignore` | `true` | Check relevant Git, Mercurial or SVN ignore rules; also accepts `ask`. |

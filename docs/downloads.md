@@ -53,12 +53,12 @@ constructor argument to participate in the same project policy.
 
 ## WP-CLI
 
-WP-CLI's selected PHAR and checksum sidecar participate in the lock. The moving
-latest-release discovery response is excluded: it is metadata used to select a
-versioned artifact. The stable WP-CLI identity still rejects changed PHAR bytes
-when discovery selects a different release URL; accepting them requires
-`--update-lock`. Set `wp-cli-version` to keep that selection reproducible, and
-`wp-cli-sha256` for an independent PHAR assertion. The release SHA-512 check must
+WP-CLI's selected PHAR and checksum sidecar participate in the lock. Runtime
+selects its bundled default release, pinned by a SHA-256 digest shipped with
+Runtime, unless `wp-cli-version` names another release. The stable WP-CLI identity
+rejects changed PHAR bytes when a different release URL is selected; accepting them
+requires `--update-lock`. Set `wp-cli-sha256` for an independent assertion of a
+configured release. The release SHA-512 check must
 also succeed before the PHAR is trusted or published. See [WP-CLI](wp-cli.md).
 
 A downloaded WP-CLI PHAR is checked against its logical lock digest again before
