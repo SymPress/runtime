@@ -102,7 +102,7 @@ $container->builder()->register('fixture.warmed', ArrayObject::class)->setPublic
 $kernel->createRuntimeContainer($container, $registry, $files);
 $manifest = new SymPress\Kernel\Discovery\KernelPackageManifestCache(__DIR__, 'production', []);
 $manifest->write(['fixture/package']);
-$metadata = is_file($selected . '/meta.json') && is_file($runtime->discovery()) && $manifest->read() === ['fixture/package'];
+$metadata = (glob($selected . '/meta{,_*}.json', GLOB_BRACE) ?: []) !== [] && is_file($runtime->discovery()) && $manifest->read() === ['fixture/package'];
 $filesystem = new Symfony\Component\Filesystem\Filesystem();
 $filesystem->dumpFile($root . '/production/assets/keep.css', 'asset');
 $filesystem->dumpFile($root . '/staging/kernel/keep.php', 'other environment');
@@ -171,7 +171,7 @@ PHP);
                 self::assertSame('protected', file_get_contents($this->root . '/target/keep.php'));
             }
         }
-        self::assertFileDoesNotExist($temporary . '/production/kernel/meta.json');
+        self::assertSame([], glob($temporary . '/production/kernel/meta{,_*}.json', GLOB_BRACE) ?: []);
     }
 
     public function testTemporaryRootMustBelongToTheCallingIdentity(): void

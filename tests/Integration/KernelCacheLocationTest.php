@@ -96,7 +96,7 @@ final class KernelCacheLocationTest extends TemporaryProject
         $container->builder()->register('fixture.warmed', \ArrayObject::class)->setPublic(true);
         $kernel->createRuntimeContainer($container, $registry, $files);
         self::assertInstanceOf(\ArrayObject::class, $container->get('fixture.warmed'));
-        self::assertFileExists($kernel->getCacheDir() . '/meta.json');
+        self::assertNotSame([], glob($kernel->getCacheDir() . '/meta{,_*}.json', GLOB_BRACE) ?: []);
         self::assertFileDoesNotExist($kernel->getCacheDir() . '/meta.php');
         $manifest = new KernelPackageManifestCache($this->root, 'production', []);
         $manifest->write(['fixture/package']);
@@ -205,7 +205,10 @@ final class KernelCacheLocationTest extends TemporaryProject
     /** @return iterable<string, array{string, bool}> */
     public static function readOnlyMetadata(): iterable
     {
-        yield 'JSON metadata retains the warmed location' => ['meta.json', false];
+        // Kernel 1.1.16 replaced meta.json with one meta_<bundle set>.json per bundle set.
+        $bundleSets = CacheLocation::bundleSetMetadata();
+        yield 'JSON metadata matches the installed kernel' => ['meta.json', $bundleSets];
+        yield 'per bundle set metadata matches the installed kernel' => ['meta_0123456789abcdef.json', !$bundleSets];
         yield 'legacy PHP metadata cannot select an unwritable location' => ['meta.php', true];
     }
 
@@ -214,7 +217,7 @@ final class KernelCacheLocationTest extends TemporaryProject
     {
         $this->fixture();
         $directory = $this->root . '/var/cache/production/kernel';
-        $contents = $file === 'meta.json' ? '{}' : '<?php file_put_contents(__DIR__ . "/executed", "unsafe");';
+        $contents = str_ends_with($file, '.json') ? '{}' : '<?php file_put_contents(__DIR__ . "/executed", "unsafe");';
         $this->write('var/cache/production/kernel/' . $file, $contents);
         $this->write('readonly-probe.php', <<<'PHP'
 <?php
