@@ -4,6 +4,11 @@
 
 No changes yet.
 
+## 1.3.4 — 2026-11-16
+
+- Download a reviewed default WP-CLI release (2.12.0) pinned by a SHA-256 digest shipped with Runtime when `wp-cli-version` is not configured. Runtime no longer queries the GitHub `releases/latest` API, so new upstream releases or API rate limits cannot break installs, and legacy profiles no longer fall back to WP-CLI 2.5.0. Explicit `wp-cli-version` and `wp-cli-sha256` settings work as before.
+- Warn when an existing local WP-CLI PHAR is neither pinned in `sympress-runtime.lock` nor by `wp-cli-sha256` nor matches the bundled default release.
+
 ## 1.3.3 — 2026-11-16
 
 - Detect warm kernel caches written by `sympress/kernel` 1.1.16, which keeps one `meta_<bundle set>.json` per bundle set instead of `meta.json`. Runtime's read-only cache selection matches the installed kernel again.
