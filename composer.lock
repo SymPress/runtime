@@ -7244,16 +7244,16 @@
         },
         {
             "name": "sympress/kernel",
-            "version": "v1.1.16",
+            "version": "v1.1.17",
             "source": {
                 "type": "git",
                 "url": "https://github.com/SymPress/kernel.git",
-                "reference": "a3d063ecf2a188c9d9042d85a801cc3496d08455"
+                "reference": "b0bd89256d930d967f09f47581af0ded1660f0a8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/SymPress/kernel/zipball/a3d063ecf2a188c9d9042d85a801cc3496d08455",
-                "reference": "a3d063ecf2a188c9d9042d85a801cc3496d08455",
+                "url": "https://api.github.com/repos/SymPress/kernel/zipball/b0bd89256d930d967f09f47581af0ded1660f0a8",
+                "reference": "b0bd89256d930d967f09f47581af0ded1660f0a8",
                 "shasum": ""
             },
             "require": {
@@ -7305,10 +7305,10 @@
             "description": "WordPress kernel and shared service container built on Symfony DependencyInjection.",
             "support": {
                 "issues": "https://github.com/SymPress/kernel/issues",
-                "source": "https://github.com/SymPress/kernel/tree/v1.1.16"
+                "source": "https://github.com/SymPress/kernel/tree/v1.1.17"
             },
-            "time": "2026-11-16T12:14:01+00:00",
-            "published-time": "2026-11-16T12:14:12+00:00"
+            "time": "2026-11-16T13:47:08+00:00",
+            "published-time": "2026-11-16T13:47:18+00:00"
         },
         {
             "name": "sympress/qa",
