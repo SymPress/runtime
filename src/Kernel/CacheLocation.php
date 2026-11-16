@@ -48,12 +48,6 @@ final class CacheLocation
             : is_file($path . '/meta.json');
     }
 
-    public static function bundleSetMetadata(): bool
-    {
-        return InstalledVersions::isInstalled('sympress/kernel')
-            && Semver::satisfies((string) InstalledVersions::getVersion('sympress/kernel'), '>=1.1.16');
-    }
-
     /** @param list<string> $publicRoots */
     public static function fallbackRoot(string $project, array $publicRoots = []): string
     {
@@ -68,7 +62,49 @@ final class CacheLocation
             throw new RuntimeException('A private kernel cache requires a trusted temporary parent or APP_CACHE_DIR; shared temporary directories must have the sticky bit.');
         }
 
-        return rtrim($temporary, '/') . '/sympress-kernel-' . $user . '-' . substr(hash('sha256', self::canonical($project)), 0, 24);
+        $root = rtrim($temporary, '/') . '/sympress-kernel-' . $user . '-' . substr(hash('sha256', self::canonical($project)), 0, 24);
+
+        return self::kernelAtLeast('1.1.17') ? self::temporaryRoot($root) : $root;
+    }
+
+    public static function bundleSetMetadata(): bool
+    {
+        return self::kernelAtLeast('1.1.16');
+    }
+
+    public static function kernelAtLeast(string $version): bool
+    {
+        return InstalledVersions::isInstalled('sympress/kernel')
+            && Semver::satisfies((string) InstalledVersions::getVersion('sympress/kernel'), '>=' . $version);
+    }
+
+    /**
+     * Mirrors kernel 1.1.17: a predictable temporary root that another user took is never
+     * adopted; the first private sibling is reused, or one is created atomically, so runtime
+     * and the kernel select the same directory.
+     */
+    private static function temporaryRoot(string $root): string
+    {
+        $owner = self::currentOwner();
+        if ((!file_exists($root) && !is_link($root)) || self::privateDirectory($root, $owner)) {
+            return $root;
+        }
+        foreach (glob($root . '.*', GLOB_NOESCAPE) ?: [] as $candidate) {
+            if (self::privateDirectory($candidate, $owner)) {
+                return $candidate;
+            }
+        }
+        $candidate = $root . '.' . bin2hex(random_bytes(8));
+        if (!mkdir($candidate, 0700)) {
+            throw new RuntimeException('Unable to create a private kernel cache next to ' . $root . '; configure APP_CACHE_DIR for the PHP-FPM identity.');
+        }
+
+        return $candidate;
+    }
+
+    private static function privateDirectory(string $path, int $owner): bool
+    {
+        return !is_link($path) && is_dir($path) && fileowner($path) === $owner && (fileperms($path) & 0022) === 0;
     }
 
     /**
