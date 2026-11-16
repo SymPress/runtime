@@ -14,6 +14,7 @@ use RuntimeException;
 use SymPress\Kernel\Kernel\SiteKernel;
 use SymPress\Runtime\Env\EnvReader;
 use SymPress\Runtime\Filesystem\Paths;
+use SymPress\Runtime\Kernel\CacheLocation;
 use SymPress\Runtime\Kernel\KernelPaths;
 use SymPress\Runtime\Step\StepInterface;
 use SymPress\Runtime\Tests\Support\TemporaryProject;
@@ -163,14 +164,27 @@ PHP);
             mkdir($temporary, 0770);
             chmod($temporary, 0770);
         }
-        foreach ([$runtime->cache(...), (new SiteKernel($this->root, 'production'))->getCacheDir(...)] as $resolve) {
-            try {
-                $resolve();
-                self::fail('An unsafe temporary root must fail without adoption.');
-            } catch (RuntimeException) {
-                self::assertSame('protected', file_get_contents($this->root . '/target/keep.php'));
+        if (!CacheLocation::kernelAtLeast('1.1.17')) {
+            foreach ([$runtime->cache(...), (new SiteKernel($this->root, 'production'))->getCacheDir(...)] as $resolve) {
+                try {
+                    $resolve();
+                    self::fail('An unsafe temporary root must fail without adoption.');
+                } catch (RuntimeException) {
+                    self::assertSame('protected', file_get_contents($this->root . '/target/keep.php'));
+                }
             }
+            self::assertSame([], glob($temporary . '/production/kernel/meta{,_*}.json', GLOB_BRACE) ?: []);
+
+            return;
         }
+        // Kernel 1.1.17 moves to a private sibling instead of failing; runtime must pick the same one.
+        ini_set('error_log', $this->root . '/kernel-warnings.log');
+        $selected = $runtime->cache();
+        $this->temporaryRoots[] = dirname($selected, 2);
+        self::assertSame($selected, (new SiteKernel($this->root, 'production'))->getCacheDir());
+        self::assertStringStartsWith($temporary . '.', $selected);
+        self::assertSame(0700, fileperms(dirname($selected, 2)) & 0777);
+        self::assertSame('protected', file_get_contents($this->root . '/target/keep.php'));
         self::assertSame([], glob($temporary . '/production/kernel/meta{,_*}.json', GLOB_BRACE) ?: []);
     }
 
