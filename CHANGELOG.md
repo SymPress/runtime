@@ -4,6 +4,10 @@
 
 No changes yet.
 
+## 1.3.3 — 2026-11-16
+
+- Detect warm kernel caches written by `sympress/kernel` 1.1.16, which keeps one `meta_<bundle set>.json` per bundle set instead of `meta.json`. Runtime's read-only cache selection matches the installed kernel again.
+
 ## 1.3.2 — 2026-11-13
 
 - Refresh the locked Symfony, Composer Semver and PHPUnit dependencies.
