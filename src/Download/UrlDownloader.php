@@ -86,6 +86,20 @@ final class UrlDownloader
     }
 
     /**
+     * Whether the active download lock has no digest for a logical artifact yet.
+     *
+     * @internal
+     */
+    public function artifactUnpinned(string $artifact): bool
+    {
+        try {
+            return $this->lock !== null && $this->config['download-lock']->is(true) && $this->lock->artifactDigest($artifact) === null;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    /**
      * Verify previously downloaded executables offline; explicit updates can adopt a local artifact.
      *
      * @api

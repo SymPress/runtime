@@ -132,8 +132,12 @@ final class WpCliPinnedDownloadTest extends TemporaryProject
             $config = new Config(['install-wp-cli' => false, 'update-lock' => $update], new Validator($paths));
             $http = new MockHttpClient();
             $tool = new WpCliTool($config, new UrlDownloader($http, new Filesystem(), $config, $lock), $this->io());
-            self::assertTrue($tool->checkLocalPhar($paths->root('wp-cli.phar'), $this->io()));
+            $input = new ArrayInput([]);
+            $input->setInteractive(false);
+            $output = new BufferedOutput();
+            self::assertTrue($tool->checkLocalPhar($paths->root('wp-cli.phar'), new Io($input, $output)));
             self::assertSame($update ? hash('sha256', 'owned local phar') : null, $lock->artifactDigest('wp-cli.phar'));
+            self::assertSame(!$update, str_contains($output->fetch(), 'wp-cli.phar is not pinned'));
             self::assertSame(0, $http->getRequestsCount());
         }
     }

@@ -63,7 +63,8 @@ also succeed before the PHAR is trusted or published. See [WP-CLI](wp-cli.md).
 
 A downloaded WP-CLI PHAR is checked against its logical lock digest again before
 local reuse, without network access. Existing project-owned PHARs without a logical
-pin remain usable for compatibility. A selected `wpcli` invocation with
+pin remain usable for compatibility; Runtime warns about them unless they match the
+bundled default release digest. A selected `wpcli` invocation with
 `--update-lock` explicitly adopts their current bytes; verify the artifact before
 adoption. Explicit `wp-cli-sha256` assertions apply before adoption too. To fetch a
 new PHAR, move the existing local PHAR aside first: Runtime continues to prefer a
