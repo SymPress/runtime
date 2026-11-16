@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SymPress\Runtime\Kernel;
 
+use Composer\InstalledVersions;
+use Composer\Semver\Semver;
 use RuntimeException;
 use Symfony\Component\Filesystem\Path;
 
@@ -26,7 +28,7 @@ final class CacheLocation
 
             return $path;
         }
-        if (!$public && !$unsafe && (is_file($path . '/meta.json') || self::writableAncestor($path))) {
+        if (!$public && !$unsafe && (self::hasMetadata($path) || self::writableAncestor($path))) {
             return $path;
         }
         $root = self::fallbackRoot($project, $publicRoots);
@@ -36,6 +38,20 @@ final class CacheLocation
         self::assertDirectory($root);
 
         return $root . '/' . $environment . '/kernel';
+    }
+
+    // Mirror the installed kernel: 1.1.16 keeps meta_<bundle set>.json per bundle set and ignores meta.json.
+    private static function hasMetadata(string $path): bool
+    {
+        return self::bundleSetMetadata()
+            ? (glob($path . '/meta_*.json') ?: []) !== []
+            : is_file($path . '/meta.json');
+    }
+
+    public static function bundleSetMetadata(): bool
+    {
+        return InstalledVersions::isInstalled('sympress/kernel')
+            && Semver::satisfies((string) InstalledVersions::getVersion('sympress/kernel'), '>=1.1.16');
     }
 
     /** @param list<string> $publicRoots */
