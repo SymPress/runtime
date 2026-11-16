@@ -81,7 +81,7 @@ final class WpCliPinnedDownloadTest extends TemporaryProject
         self::assertSame(1, $http->getRequestsCount());
     }
 
-    public function testLogicalPinRejectsTamperedLocalPharAndDifferentLatestVersionUntilUpdated(): void
+    public function testLogicalPinRejectsTamperedLocalPharAndDifferentVersionUntilUpdated(): void
     {
         $paths = new Paths($this->root);
         $lock = new DownloadLock($paths, new ProjectBoundary($paths));
@@ -102,9 +102,8 @@ final class WpCliPinnedDownloadTest extends TemporaryProject
         chmod($target, 0600);
         file_put_contents($target, 'first phar');
         $nextUrl = 'https://github.com/wp-cli/wp-cli/releases/download/v2.13.0/wp-cli-2.13.0.phar';
-        $nextConfig = new Config([], new Validator($paths));
+        $nextConfig = new Config(['wp-cli-version' => '2.13.0'], new Validator($paths));
         $nextHttp = new MockHttpClient([
-            new MockResponse(json_encode(['assets' => [['browser_download_url' => $nextUrl]]], JSON_THROW_ON_ERROR)),
             new MockResponse('next phar'),
             new MockResponse(hash('sha512', 'next phar')),
         ]);

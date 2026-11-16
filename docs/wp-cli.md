@@ -15,8 +15,10 @@ the [bundle manifest](https://github.com/wp-cli/wp-cli-bundle/blob/main/composer
 declares the command dependencies. `install-wp-cli: false` continues to allow
 installed Composer packages and local PHARs while disabling downloads.
 
-For a reproducible PHAR installation, configure an exact release and optionally an
-independently verified SHA-256 digest:
+Without configuration, Runtime downloads its bundled default release (WP-CLI
+2.12.0) and requires the SHA-256 digest shipped with Runtime in addition to the
+release SHA-512 sidecar. To use another release, configure an exact version and
+optionally an independently verified SHA-256 digest:
 
 ```json
 {
@@ -26,10 +28,10 @@ independently verified SHA-256 digest:
 
 `wp-cli-sha256` accepts a 64-character hexadecimal digest and also checks an existing
 local PHAR. The release SHA-512 sidecar remains mandatory for a downloaded PHAR;
-`--update-lock` never overrides either explicit digest assertion. With no version
-configured, Runtime looks up the latest official release. Native projects fail if
-that lookup cannot identify a supported artifact; legacy profiles retain their
-minimum-version fallback. A configured version avoids discovery entirely.
+`--update-lock` never overrides either explicit digest assertion. The bundled digest
+applies only to the default release; an explicit `wp-cli-version` replaces it, and
+an explicit `wp-cli-sha256` takes precedence. Runtime does not query the GitHub
+release API.
 
 Native downloads also use the project [download lock](downloads.md). Its first
 successful, verified download records the PHAR SHA-256; later changes at the same
@@ -105,10 +107,8 @@ if parsing JSON output. Runtime does not suppress upstream diagnostics.
 
 Standalone and Composer execution share the same services and generated configuration. `wp-config-autoload` determines early Composer loading for WordPress requests and must agree with application/MU bootstrap ownership. See [migration](migration.md), [sections](wp-config.md) and [CLI](cli.md).
 
-Latest discovery uses an unauthenticated GitHub API request and can fail because of
-rate limits or network errors. Native mode reports that failure and stops selecting
-a PHAR; it does not silently use an older version or skip SHA-512 verification.
-Configure both `wp-cli-version` and an independently verified `wp-cli-sha256` for
-reproducible unattended installs. Explicit versions skip discovery entirely, and
-SHA-256 assertions also verify existing local PHARs. An explicit version alone
-still depends on authenticated transport and the upstream sidecar for first trust.
+The default release is reproducible and independently pinned by Runtime. When you
+configure another version, also configure an independently verified `wp-cli-sha256`
+for unattended installs; an explicit version alone still depends on authenticated
+transport and the upstream sidecar for first trust. SHA-256 assertions also verify
+existing local PHARs.

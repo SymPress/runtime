@@ -41,22 +41,29 @@ final class WpCliToolTest extends TemporaryProject
         return new WpCliTool($config, new UrlDownloader($http, new Filesystem(), $config), $this->io());
     }
 
-    public function testRateLimitedLatestLookupFailsOnceWithReproduciblePinGuidance(): void
+    #[Group('PAR-SVC-021')]
+    #[Group('PAR-WPC-002')]
+    public function testDefaultSelectsBundledReleaseWithoutReleaseDiscovery(): void
     {
-        $paths = new Paths($this->root);
-        $input = new ArrayInput([]);
-        $input->setInteractive(false);
-        $output = new BufferedOutput();
-        $io = new Io($input, $output);
-        $config = new Config([], new Validator($paths));
-        $http = new MockHttpClient(new MockResponse('{"message":"API rate limit exceeded"}', ['http_code' => 403]));
-        $tool = new WpCliTool($config, new UrlDownloader($http, new Filesystem(), $config), $io);
-        self::assertSame('', $tool->pharUrl());
-        self::assertSame('', $tool->pharUrl());
-        self::assertSame(1, $http->getRequestsCount());
-        $message = $output->fetch();
-        self::assertStringContainsString('API rate limit', $message);
-        self::assertStringContainsString('wp-cli-version and wp-cli-sha256', $message);
+        $release = 'https://github.com/wp-cli/wp-cli/releases/download/v2.12.0/wp-cli-2.12.0.phar';
+        foreach (['native', 'release-3.0.1'] as $profile) {
+            $http = new MockHttpClient();
+            self::assertSame($release, $this->tool($http, profile: $profile)->pharUrl());
+            self::assertSame(0, $http->getRequestsCount());
+        }
+    }
+
+    public function testDefaultReleaseRequiresBundledDigestUnlessExplicitlyOverridden(): void
+    {
+        $this->write('download.phar', 'synthetic artifact');
+        $sidecar = static fn (): MockResponse => new MockResponse(hash('sha512', 'synthetic artifact'));
+        $default = $this->tool(new MockHttpClient($sidecar));
+        self::assertFalse($default->checkPhar($this->root . '/download.phar', $this->io()));
+        $version = $this->tool(new MockHttpClient($sidecar), version: '2.12.0');
+        self::assertTrue($version->checkPhar($this->root . '/download.phar', $this->io()));
+        $config = new Config(['wp-cli-sha256' => hash('sha256', 'synthetic artifact')], new Validator(new Paths($this->root)));
+        $digest = new WpCliTool($config, new UrlDownloader(new MockHttpClient($sidecar), new Filesystem(), $config), $this->io());
+        self::assertTrue($digest->checkPhar($this->root . '/download.phar', $this->io()));
     }
 
     public function testExactReleaseAndDigestValidationRejectUnsafeOrUnreviewedValues(): void
@@ -87,28 +94,6 @@ final class WpCliToolTest extends TemporaryProject
         self::assertSame($paths->root('wp-cli.phar'), $tool->pharTarget($paths));
         self::assertSame('', $tool->pharUrl());
         self::assertSame(0, $http->getRequestsCount());
-    }
-
-    #[Group('PAR-SVC-021')]
-    #[Group('PAR-WPC-002')]
-    public function testLatestReleaseLookupIsCachedAndOnlyAcceptsOfficialMatchingAssets(): void
-    {
-        $release = 'https://github.com/wp-cli/wp-cli/releases/download/v2.12.0/wp-cli-2.12.0.phar';
-        $http = new MockHttpClient(new MockResponse(json_encode([
-        'assets' => [
-            ['browser_download_url' => 'https://example.test/wp-cli-2.99.0.phar'],
-            ['browser_download_url' => 'https://github.com/wp-cli/wp-cli/releases/download/v2.12.0/wp-cli-2.13.0.phar'],
-            ['browser_download_url' => $release],
-        ],
-        ], JSON_THROW_ON_ERROR)));
-        $tool = $this->tool($http);
-        self::assertSame($release, $tool->pharUrl());
-        self::assertSame($release, $tool->pharUrl());
-        self::assertSame(1, $http->getRequestsCount());
-        $fallback = $this->tool(new MockHttpClient(new MockResponse('invalid response')));
-        self::assertSame('', $fallback->pharUrl());
-        $legacy = $this->tool(new MockHttpClient(new MockResponse('invalid response')), profile: 'release-3.0.1');
-        self::assertSame('https://github.com/wp-cli/wp-cli/releases/download/v2.5.0/wp-cli-2.5.0.phar', $legacy->pharUrl());
     }
 
     #[Group('PAR-SVC-021')]

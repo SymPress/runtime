@@ -16,9 +16,10 @@ use UnexpectedValueException;
 /** @internal */
 final class WpCliTool implements PhpTool
 {
-    private const string API_URL = 'https://api.github.com/repos/wp-cli/wp-cli/releases/latest';
     private const string RELEASE_BASE = 'https://github.com/wp-cli/wp-cli/releases/download/';
-    private ?string $releaseUrl = null;
+    // Reviewed default release; bump both values together after verifying the official PHAR.
+    private const string DEFAULT_VERSION = '2.12.0';
+    private const string DEFAULT_SHA256 = 'ce34ddd838f7351d6759068d09793f26755463b4a4610a5a5c0a97b68220d85c';
 
     public function __construct(private readonly Config $config, private readonly UrlDownloader $downloads, private readonly Io $io)
     {
@@ -44,47 +45,16 @@ final class WpCliTool implements PhpTool
         if (!$this->config['install-wp-cli']->is(true)) {
             return '';
         }
-        if ($this->releaseUrl !== null) {
-            return $this->releaseUrl;
-        }
-        $configured = $this->config['wp-cli-version']->unwrap();
-        if (is_string($configured)) {
-            if (version_compare($configured, $this->minVersion(), '<')) {
-                $this->io->error('Configured WP-CLI release is below the minimum supported version.');
-
-                return '';
-            }
-            $this->releaseUrl = self::RELEASE_BASE . 'v' . $configured . '/wp-cli-' . $configured . '.phar';
-
-            return $this->releaseUrl;
-        }
-        // Release discovery is moving metadata; the selected artifact and sidecar are locked.
-        $data = json_decode($this->downloads->fetch(self::API_URL, false), true);
-        $assets = is_array($data) ? ($data['assets'] ?? null) : null;
-        if (is_array($assets)) {
-            foreach ($assets as $asset) {
-                $url = is_array($asset) ? ($asset['browser_download_url'] ?? null) : null;
-                if (!is_string($url) || !preg_match('~^' . preg_quote(self::RELEASE_BASE, '~') . 'v([0-9]+\.[0-9]+\.[0-9]+)/wp-cli-\1\.phar$~D', $url, $matches)) {
-                    continue;
-                }
-                if (version_compare($matches[1], $this->minVersion(), '<')) {
-                    continue;
-                }
-                $this->releaseUrl = $url;
-
-                return $url;
-            }
-        }
-        if ($this->config['compatibility-profile']->is('native')) {
-            $this->io->error('Latest WP-CLI release lookup failed (network, API rate limit or invalid metadata); configure wp-cli-version and wp-cli-sha256 for reproducible installation.');
-            $this->releaseUrl = '';
+        $version = $this->config['wp-cli-version']->unwrap();
+        if (!is_string($version)) {
+            $version = self::DEFAULT_VERSION;
+        } elseif (version_compare($version, $this->minVersion(), '<')) {
+            $this->io->error('Configured WP-CLI release is below the minimum supported version.');
 
             return '';
         }
-        $this->io->comment('Latest WP-CLI release lookup failed; using the pinned minimum version.');
-        $this->releaseUrl = self::RELEASE_BASE . 'v' . $this->minVersion() . '/wp-cli-' . $this->minVersion() . '.phar';
 
-        return $this->releaseUrl;
+        return self::RELEASE_BASE . 'v' . $version . '/wp-cli-' . $version . '.phar';
     }
 
     public function pharTarget(Paths $paths): string
@@ -122,7 +92,9 @@ final class WpCliTool implements PhpTool
         if ($url === '' || !is_file($pharPath) || !is_readable($pharPath)) {
             return false;
         }
-        if (!$this->checkConfiguredDigest($pharPath, $io)) {
+        // The bundled digest pins only the default release; an explicit version is the project's own choice.
+        $default = $this->config['wp-cli-version']->unwrap() === null ? self::DEFAULT_SHA256 : null;
+        if (!$this->checkConfiguredDigest($pharPath, $io, $default)) {
             return false;
         }
         $expected = trim($this->downloads->fetch($url . '.sha512'));
@@ -156,9 +128,9 @@ final class WpCliTool implements PhpTool
         return true;
     }
 
-    private function checkConfiguredDigest(string $pharPath, Io $io): bool
+    private function checkConfiguredDigest(string $pharPath, Io $io, ?string $default = null): bool
     {
-        $expected = $this->config['wp-cli-sha256']->unwrap();
+        $expected = $this->config['wp-cli-sha256']->unwrap() ?? $default;
         if (!is_string($expected)) {
             return true;
         }
