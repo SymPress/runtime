@@ -7244,16 +7244,16 @@
         },
         {
             "name": "sympress/kernel",
-            "version": "v1.1.13",
+            "version": "v1.1.16",
             "source": {
                 "type": "git",
                 "url": "https://github.com/SymPress/kernel.git",
-                "reference": "6e8bd686a2f26a5e10e4fb9b34f3a621453b17c6"
+                "reference": "a3d063ecf2a188c9d9042d85a801cc3496d08455"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/SymPress/kernel/zipball/6e8bd686a2f26a5e10e4fb9b34f3a621453b17c6",
-                "reference": "6e8bd686a2f26a5e10e4fb9b34f3a621453b17c6",
+                "url": "https://api.github.com/repos/SymPress/kernel/zipball/a3d063ecf2a188c9d9042d85a801cc3496d08455",
+                "reference": "a3d063ecf2a188c9d9042d85a801cc3496d08455",
                 "shasum": ""
             },
             "require": {
@@ -7264,17 +7264,17 @@
                 "psr/event-dispatcher": "^1.0",
                 "psr/log": "^3.0",
                 "symfony/clock": "^8.0",
-                "symfony/config": "^8.0",
+                "symfony/config": "^8.1.11",
                 "symfony/console": "^8.0",
                 "symfony/dependency-injection": "^8.1.8",
                 "symfony/event-dispatcher": "^8.0",
                 "symfony/expression-language": "^8.1.9",
-                "symfony/filesystem": "^8.0",
-                "symfony/http-foundation": "^8.1.9",
-                "symfony/http-kernel": "^8.1",
-                "symfony/routing": "^8.1",
+                "symfony/filesystem": "^8.1.11",
+                "symfony/http-foundation": "^8.1.11",
+                "symfony/http-kernel": "^8.1.11",
+                "symfony/routing": "^8.1.11",
                 "symfony/service-contracts": "^3.6",
-                "symfony/yaml": "^8.1.6"
+                "symfony/yaml": "^8.1.11"
             },
             "require-dev": {
                 "composer/semver": "^3.4",
@@ -7305,9 +7305,10 @@
             "description": "WordPress kernel and shared service container built on Symfony DependencyInjection.",
             "support": {
                 "issues": "https://github.com/SymPress/kernel/issues",
-                "source": "https://github.com/SymPress/kernel/tree/v1.1.13"
+                "source": "https://github.com/SymPress/kernel/tree/v1.1.16"
             },
-            "time": "2026-10-23T23:29:13+00:00"
+            "time": "2026-11-16T12:14:01+00:00",
+            "published-time": "2026-11-16T12:14:12+00:00"
         },
         {
             "name": "sympress/qa",
