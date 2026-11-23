@@ -82,8 +82,9 @@ final class CacheLocation
 
     /**
      * Mirrors kernel 1.1.17: a predictable temporary root that another user took is never
-     * adopted; the first private sibling is reused, or one is created atomically, so runtime
-     * and the kernel select the same directory.
+     * adopted; the first private sibling is reused, so runtime and the kernel select the same
+     * directory. Only the kernel creates a new, randomly named sibling: until it exists runtime
+     * reports a placeholder that is never created, so diagnostics stay unknown and nothing is cleared.
      */
     private static function temporaryRoot(string $root): string
     {
@@ -96,12 +97,8 @@ final class CacheLocation
                 return $candidate;
             }
         }
-        $candidate = $root . '.' . bin2hex(random_bytes(8));
-        if (!mkdir($candidate, 0700)) {
-            throw new RuntimeException('Unable to create a private kernel cache next to ' . $root . '; configure APP_CACHE_DIR for the PHP-FPM identity.');
-        }
 
-        return $candidate;
+        return $root . '.pending';
     }
 
     /**

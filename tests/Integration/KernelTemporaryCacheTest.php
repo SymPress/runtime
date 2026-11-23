@@ -177,11 +177,15 @@ PHP);
 
             return;
         }
-        // Kernel 1.1.17 moves to a private sibling instead of failing; runtime must pick the same one.
+        // Kernel 1.1.17 moves to a private sibling instead of failing; runtime must pick the same one
+        // once the kernel created it, and must never create one itself.
+        $pending = $runtime->cache();
+        self::assertStringStartsWith($temporary . '.', $pending);
+        self::assertSame([], glob($temporary . '.*') ?: []);
         ini_set('error_log', $this->root . '/kernel-warnings.log');
-        $selected = $runtime->cache();
+        $selected = (new SiteKernel($this->root, 'production'))->getCacheDir();
         $this->temporaryRoots[] = dirname($selected, 2);
-        self::assertSame($selected, (new SiteKernel($this->root, 'production'))->getCacheDir());
+        self::assertSame($selected, $runtime->cache());
         self::assertStringStartsWith($temporary . '.', $selected);
         self::assertSame(0700, fileperms(dirname($selected, 2)) & 0777);
         self::assertSame('protected', file_get_contents($this->root . '/target/keep.php'));
