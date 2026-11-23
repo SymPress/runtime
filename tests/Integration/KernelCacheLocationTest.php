@@ -234,14 +234,12 @@ final class KernelCacheLocationTest extends TemporaryProject
             'environment' => chmod($base . '/production', 0775),
             'base' => chmod($base, 0777),
             'symlink', 'explicit-symlink' => symlink($this->root . '/private-target', $kernel),
-            'foreign' => mkdir($kernel, 0700) && touch($kernel . '/meta_0123456789abcdef.json'),
+            'foreign' => mkdir($kernel, 0555),
             'explicit' => chmod($this->root . '/custom', 0777),
         };
-        if ($case === 'foreign') {
-            if (posix_geteuid() !== 0) {
-                self::markTestSkipped('A foreign cache owner requires a root test runner.');
-            }
-            self::assertTrue(chown($kernel . '/meta_0123456789abcdef.json', 65534) && chown($kernel, 65534) && chmod($kernel, 0555));
+        // Another owner needs root or passwordless sudo (CI runners); the empty directory stays removable by its parent's owner.
+        if ($case === 'foreign' && !(posix_geteuid() === 0 ? chown($kernel, 65534) : (new Process(['sudo', '-n', 'chown', '65534', $kernel]))->run() === 0)) {
+            self::markTestSkipped('A foreign cache owner requires root or passwordless sudo.');
         }
         $select = static function (callable $resolve): string {
             try {
