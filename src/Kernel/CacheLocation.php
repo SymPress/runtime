@@ -76,8 +76,13 @@ final class CacheLocation
 
     public static function kernelAtLeast(string $version): bool
     {
-        return InstalledVersions::isInstalled('sympress/kernel')
-            && Semver::satisfies((string) InstalledVersions::getVersion('sympress/kernel'), '>=' . $version);
+        return InstalledVersions::isInstalled('sympress/kernel') && self::versionAtLeast(InstalledVersions::getVersion('sympress/kernel'), $version);
+    }
+
+    /** Unaliased dev branches and replaced or provided kernels (no version) follow the newest, strictest rules. */
+    public static function versionAtLeast(?string $installed, string $minimum): bool
+    {
+        return $installed === null || str_starts_with($installed, 'dev-') || Semver::satisfies($installed, '>=' . $minimum);
     }
 
     /**
