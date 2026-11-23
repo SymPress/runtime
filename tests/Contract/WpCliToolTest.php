@@ -59,7 +59,9 @@ final class WpCliToolTest extends TemporaryProject
         $sidecar = static fn (): MockResponse => new MockResponse(hash('sha512', 'synthetic artifact'));
         $default = $this->tool(new MockHttpClient($sidecar));
         self::assertFalse($default->checkPhar($this->root . '/download.phar', $this->io()));
-        $version = $this->tool(new MockHttpClient($sidecar), version: '2.12.0');
+        $explicitDefault = $this->tool(new MockHttpClient($sidecar), version: '2.12.0');
+        self::assertFalse($explicitDefault->checkPhar($this->root . '/download.phar', $this->io()));
+        $version = $this->tool(new MockHttpClient($sidecar), version: '2.11.0');
         self::assertTrue($version->checkPhar($this->root . '/download.phar', $this->io()));
         $config = new Config(['wp-cli-sha256' => hash('sha256', 'synthetic artifact')], new Validator(new Paths($this->root)));
         $digest = new WpCliTool($config, new UrlDownloader(new MockHttpClient($sidecar), new Filesystem(), $config), $this->io());

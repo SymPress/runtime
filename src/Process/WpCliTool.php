@@ -92,8 +92,8 @@ final class WpCliTool implements PhpTool
         if ($url === '' || !is_file($pharPath) || !is_readable($pharPath)) {
             return false;
         }
-        // The bundled digest pins only the default release; an explicit version is the project's own choice.
-        $default = $this->config['wp-cli-version']->unwrap() === null ? self::DEFAULT_SHA256 : null;
+        // The bundled digest pins the default release, also when configured explicitly; another version is the project's own choice.
+        $default = in_array($this->config['wp-cli-version']->unwrap(), [null, self::DEFAULT_VERSION], true) ? self::DEFAULT_SHA256 : null;
         if (!$this->checkConfiguredDigest($pharPath, $io, $default)) {
             return false;
         }
