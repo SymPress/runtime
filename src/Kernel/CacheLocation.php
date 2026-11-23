@@ -26,7 +26,7 @@ final class CacheLocation
             : !is_link($path) && is_dir($path) && (fileperms($path) & 0022) !== 0;
         if ($configured !== null) {
             if ($public || $unsafe) {
-                throw new RuntimeException('APP_CACHE_DIR must be outside the webroot and not group/world writable. Create a private directory as the PHP-FPM user and warm it as that same user.');
+                throw new RuntimeException('APP_CACHE_DIR must be outside the webroot, owned by the PHP-FPM user, not a symlink and neither it nor its parents group/world writable. Create a private directory as the PHP-FPM user and warm it as that same user.');
             }
 
             return $path;
