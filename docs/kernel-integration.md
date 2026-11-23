@@ -17,7 +17,7 @@ Composer exposes `sympress-runtime:doctor`, `sympress-runtime:check`, `sympress-
 
 Doctor exits with 0 when applicable checks pass, 1 on a failure, or 2 when a check remains unknown. `--json` includes each check's ID, status and redacted detail. Database-disabled status is unknown; it is never reported as a successful connection. A missing optional kernel is not-applicable. No setup autoload file or custom step executes during diagnosis.
 
-`kernel-cache` preserves other environments and asset directories. It honors APP_CACHE_DIR and APP_BUILD_DIR and clears discovery metadata in the selected cache, including Kernel 1.1.5's private fallback. The selected discovery path is `discovery-packages.json`; read-only cache selection probes `meta.json` without reading or executing metadata. Safe stale default JSON and legacy PHP discovery files are also retired after an override. The unsafe old generation that triggered fallback stays untouched. Align explicit SiteKernel environment overrides before running maintenance.
+`kernel-cache` preserves other environments and asset directories. It honors APP_CACHE_DIR and APP_BUILD_DIR and clears discovery metadata in the selected cache, including the kernel's private fallback. The selected discovery path is `discovery-packages.json`; read-only cache selection only checks whether `meta.json` (Kernel before 1.1.16) or a `meta_<bundle set>.json` (Kernel 1.1.16 and newer) exists, without reading or executing metadata. Safe stale default JSON and legacy PHP discovery files are also retired after an override. The unsafe old generation that triggered fallback stays untouched. Align explicit SiteKernel environment overrides before running maintenance.
 
 Explicit cache/build roots outside the project must already exist, belong to the
 user running PHP and have mode 0700. Runtime rejects root or ancestor symlinks,
@@ -29,17 +29,33 @@ the system temporary directory. It removes only the selected environment's
 rules apply only to kernel maintenance; generated project artifacts retain their
 project boundary.
 
-Doctor computes the same cache location without booting Kernel, creating a
-fallback or changing permissions. A missing selected directory remains unknown;
-an unsafe explicit root fails. `kernel.cache-migration` warns when Kernel would
-select its private per-user fallback. Warmup must run as the PHP-FPM identity.
-If that project-local fallback is public or unwritable, Kernel 1.1.5 selects
+Doctor computes the same cache location as the installed kernel (1.1.5 to 1.1.18)
+without booting Kernel, creating a directory or changing permissions. A missing
+selected directory remains unknown; an unsafe explicit root fails.
+`kernel.cache-migration` warns when Kernel would select its private per-user
+fallback. Warmup must run as the PHP-FPM identity.
+
+From Kernel 1.1.15 a cache directory is trusted only when it belongs to the PHP
+process, is not group/world writable and no parent inside the project is
+group/world writable (sticky directories excepted). From Kernel 1.1.18 a symlinked
+`<base>/<environment>/kernel` is never trusted. An untrusted implicit cache moves to
+the private fallback; an untrusted APP_CACHE_DIR stops Kernel with an error, and
+Doctor fails it. A read-only cache warmed by another user, for example the owner
+of an immutable release, is therefore rejected by these kernels: Doctor reports the
+fallback (or fails an explicit APP_CACHE_DIR) instead of passing it. Warm such a
+cache as the PHP-FPM user.
+
+The first fallback is `var/cache-private-{user}` when it is outside the webroot,
+writable and trusted. Otherwise Kernel selects
 `sympress-kernel-{user}-{project-hash}` under the canonical system temporary
-directory. Runtime validates that selected root and its protected ancestors;
-shared writable temporary parents require the sticky bit. A missing root remains
-unknown in Doctor and is created only by Kernel warmup. Existing symlinked,
-foreign-owned or group/world writable roots fail. Cache maintenance stays inside
-the selected root and preserves the old default generation. Configure a durable
+directory; shared writable temporary parents require the sticky bit. If another
+user took that predictable root, Kernel 1.1.17 and newer use the first private
+`<root>.*` sibling owned by the PHP user and create a randomly named one during
+warmup. Runtime never creates the root or a sibling: until Kernel warmup created
+it, Doctor reports the cache as unknown and `kernel-cache` has nothing to clear.
+Older kernels fail on a symlinked, foreign-owned or group/world writable root.
+Cache maintenance stays inside the selected root and preserves the old default
+generation. Configure a durable
 APP_CACHE_DIR when deployment caches must survive temporary-directory cleanup.
 Without ext-posix, process ownership is verified with a transient `tmpfile()` /
 `fstat()` probe that is closed immediately; cache directories and configuration
