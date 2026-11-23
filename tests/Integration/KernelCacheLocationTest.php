@@ -13,6 +13,7 @@ use RecursiveIteratorIterator;
 use RuntimeException;
 use SymPress\Kernel\Bundle\BundleRegistry;
 use SymPress\Kernel\Discovery\KernelPackageManifestCache;
+use SymPress\Kernel\Kernel\CachePath;
 use SymPress\Kernel\Kernel\SiteKernel;
 use SymPress\Runtime\Config\Config;
 use SymPress\Runtime\Config\Validator;
@@ -45,6 +46,8 @@ final class KernelCacheLocationTest extends TemporaryProject
         if ($this->external !== null) {
             (new Filesystem())->remove($this->external);
         }
+        // Kernel's own resolution may create its temporary fallback for this project.
+        (new Filesystem())->remove(glob(sys_get_temp_dir() . '/sympress-kernel-' . posix_geteuid() . '-' . substr(hash('sha256', (string) realpath($this->root)), 0, 24) . '*') ?: []);
         parent::tearDown();
     }
 
@@ -200,6 +203,64 @@ final class KernelCacheLocationTest extends TemporaryProject
         ini_set('error_log', $this->root . '/kernel-warnings.log');
         self::assertSame((new SiteKernel($this->root, 'production'))->getCacheDir(), $selected);
         self::assertSame(CacheLocation::fallbackRoot($this->root) . '/production/kernel', $selected);
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function kernelTrustLayouts(): iterable
+    {
+        yield 'group-writable var without a cache' => ['var'];
+        yield 'group-writable var above a warm private cache' => ['warm'];
+        yield 'group-writable environment directory' => ['environment'];
+        yield 'world-writable cache base' => ['base'];
+        yield 'symlinked kernel directory' => ['symlink'];
+        yield 'read-only cache warmed by another user' => ['foreign'];
+        yield 'explicit cache below a world-writable parent' => ['explicit'];
+        yield 'explicit symlinked kernel directory' => ['explicit-symlink'];
+    }
+
+    #[DataProvider('kernelTrustLayouts')]
+    public function testCacheSelectionMatchesTheInstalledKernelTrustRules(string $case): void
+    {
+        $explicit = str_starts_with($case, 'explicit');
+        $this->fixture($explicit ? "APP_CACHE_DIR=custom/cache\n" : '');
+        $configured = $explicit ? 'custom/cache' : null;
+        $base = $this->root . '/' . ($configured ?? 'var/cache');
+        $kernel = $base . '/production/kernel';
+        mkdir($this->root . '/private-target', 0700);
+        mkdir($base . '/production', 0700, true);
+        match ($case) {
+            'var' => chmod($this->root . '/var', 0775),
+            'warm' => mkdir($kernel, 0700) && touch($kernel . '/meta_0123456789abcdef.json') && chmod($this->root . '/var', 0775),
+            'environment' => chmod($base . '/production', 0775),
+            'base' => chmod($base, 0777),
+            'symlink', 'explicit-symlink' => symlink($this->root . '/private-target', $kernel),
+            'foreign' => mkdir($kernel, 0700) && touch($kernel . '/meta_0123456789abcdef.json'),
+            'explicit' => chmod($this->root . '/custom', 0777),
+        };
+        if ($case === 'foreign') {
+            if (posix_geteuid() !== 0) {
+                self::markTestSkipped('A foreign cache owner requires a root test runner.');
+            }
+            self::assertTrue(chown($kernel . '/meta_0123456789abcdef.json', 65534) && chown($kernel, 65534) && chmod($kernel, 0555));
+        }
+        $select = static function (callable $resolve): string {
+            try {
+                return $resolve();
+            } catch (RuntimeException) {
+                return 'rejected';
+            }
+        };
+        // Runtime first: Kernel creates its fallback while resolving, Runtime must not.
+        $runtime = $select(fn (): string => CacheLocation::resolve($this->root, 'production', $configured));
+        $checks = array_column($this->diagnose()['checks'], 'status', 'id');
+        ini_set('error_log', $this->root . '/kernel-warnings.log');
+        self::assertSame($select(fn (): string => CachePath::resolve($this->root, 'production', $configured)), $runtime);
+        if ($runtime === $kernel) {
+            return;
+        }
+        // Doctor never passes a cache the kernel rejects or replaces with its fallback.
+        self::assertSame($runtime === 'rejected' ? 'fail' : 'unknown', $checks['kernel.cache']);
+        self::assertSame($runtime === 'rejected' ? null : 'warning', $checks['kernel.cache-migration'] ?? null);
     }
 
     /** @return iterable<string, array{string, bool}> */
