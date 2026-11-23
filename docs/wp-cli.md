@@ -29,8 +29,8 @@ optionally an independently verified SHA-256 digest:
 `wp-cli-sha256` accepts a 64-character hexadecimal digest and also checks an existing
 local PHAR. The release SHA-512 sidecar remains mandatory for a downloaded PHAR;
 `--update-lock` never overrides either explicit digest assertion. The bundled digest
-applies only to the default release; an explicit `wp-cli-version` replaces it, and
-an explicit `wp-cli-sha256` takes precedence. Runtime does not query the GitHub
+applies to the default release, also when `wp-cli-version` names it explicitly;
+another `wp-cli-version` replaces it, and an explicit `wp-cli-sha256` takes precedence. Runtime does not query the GitHub
 release API.
 
 Native downloads also use the project [download lock](downloads.md). Its first

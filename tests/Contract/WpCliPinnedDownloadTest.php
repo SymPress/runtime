@@ -67,6 +67,18 @@ final class WpCliPinnedDownloadTest extends TemporaryProject
         self::assertFileDoesNotExist($paths->root('wp-cli.phar'));
     }
 
+    public function testExplicitDefaultVersionKeepsTheBundledDigest(): void
+    {
+        $paths = new Paths($this->root);
+        $config = new Config(['wp-cli-version' => '2.12.0'], new Validator($paths));
+        $http = new MockHttpClient([new MockResponse('substituted phar'), new MockResponse(hash('sha512', 'substituted phar'))]);
+        $downloads = new UrlDownloader($http, new Filesystem(), $config, new DownloadLock($paths, new ProjectBoundary($paths)));
+        $tool = new WpCliTool($config, $downloads, $this->io());
+        self::assertSame('', (new PharInstaller($this->io(), $downloads))->install($tool, $paths->root('wp-cli.phar')));
+        self::assertFileDoesNotExist($paths->root('wp-cli.phar'));
+        self::assertFileDoesNotExist($paths->root('sympress-runtime.lock'));
+    }
+
     public function testExplicitSha256CannotBeOverriddenAndAlsoChecksLocalPhar(): void
     {
         $paths = new Paths($this->root);
@@ -85,8 +97,9 @@ final class WpCliPinnedDownloadTest extends TemporaryProject
     {
         $paths = new Paths($this->root);
         $lock = new DownloadLock($paths, new ProjectBoundary($paths));
-        $url = 'https://github.com/wp-cli/wp-cli/releases/download/v2.12.0/wp-cli-2.12.0.phar';
-        $config = new Config(['wp-cli-version' => '2.12.0'], new Validator($paths));
+        // A non-default release: the bundled digest pins only the default release.
+        $url = 'https://github.com/wp-cli/wp-cli/releases/download/v2.11.0/wp-cli-2.11.0.phar';
+        $config = new Config(['wp-cli-version' => '2.11.0'], new Validator($paths));
         $http = new MockHttpClient([new MockResponse('first phar'), new MockResponse(hash('sha512', 'first phar'))]);
         $downloads = new UrlDownloader($http, new Filesystem(), $config, $lock);
         $tool = new WpCliTool($config, $downloads, $this->io());
