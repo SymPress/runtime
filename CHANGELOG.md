@@ -4,6 +4,14 @@
 
 No changes yet.
 
+## 1.3.5 — 2026-11-23
+
+- Select the same kernel cache as `sympress/kernel` 1.1.15 to 1.1.18: a cache is trusted only when the PHP process owns it and neither it nor a parent inside the project is group/world writable, and from 1.1.18 a symlinked `<base>/<environment>/kernel` is untrusted. `kernel-cache` no longer clears a directory the kernel stopped using, and Doctor no longer passes a cache the kernel rejects, including a read-only cache warmed by another user.
+- Never create a temporary kernel cache directory while resolving the location, including from `doctor`; only the kernel creates its private `<root>.*` sibling.
+- Apply the newest kernel cache rules to unaliased `dev-*` kernels and to replaced or provided kernels without a version instead of treating them as old or failing.
+- Keep the bundled WP-CLI SHA-256 pin when `wp-cli-version` is set explicitly to the bundled default release.
+- Test against `sympress/kernel` 1.1.18 and update the kernel integration and security documentation.
+
 ## 1.3.4 — 2026-11-16
 
 - Download a reviewed default WP-CLI release (2.12.0) pinned by a SHA-256 digest shipped with Runtime when `wp-cli-version` is not configured. Runtime no longer queries the GitHub `releases/latest` API, so new upstream releases or API rate limits cannot break installs, and legacy profiles no longer fall back to WP-CLI 2.5.0. Explicit `wp-cli-version` and `wp-cli-sha256` settings work as before.
