@@ -11,7 +11,7 @@ use Symfony\Component\Filesystem\Path;
 
 // phpcs:disable SlevomatCodingStandard.Variables.DisallowSuperGlobalVariable -- Match Kernel's public directory boundary without executing or booting it.
 
-/** Read-only counterpart of Kernel 1.1.5's cache selection. @internal */
+/** Read-only counterpart of the installed kernel's CachePath selection (Kernel 1.1.5 to 1.1.18). @internal */
 final class CacheLocation
 {
     /** @param list<string> $publicRoots */
@@ -20,7 +20,10 @@ final class CacheLocation
         $base = $configured === null ? $project . '/var/cache' : Path::makeAbsolute($configured, $project);
         $path = rtrim($base, '/') . '/' . $environment . '/kernel';
         $public = self::isPublic($path, $publicRoots);
-        $unsafe = !is_link($path) && is_dir($path) && (fileperms($path) & 0022) !== 0;
+        // Kernel 1.1.15 trusts only owned, private caches below private parents; 1.1.18 also rejects a symlinked leaf.
+        $unsafe = self::kernelAtLeast('1.1.15')
+            ? (!is_link($path) || self::kernelAtLeast('1.1.18')) && !self::isTrusted($path, $project)
+            : !is_link($path) && is_dir($path) && (fileperms($path) & 0022) !== 0;
         if ($configured !== null) {
             if ($public || $unsafe) {
                 throw new RuntimeException('APP_CACHE_DIR must be outside the webroot and not group/world writable. Create a private directory as the PHP-FPM user and warm it as that same user.');
@@ -53,12 +56,11 @@ final class CacheLocation
     {
         $user = (string) self::currentOwner();
         $root = $project . '/var/cache-private-' . $user;
-        if (!self::isPublic($root, $publicRoots) && self::writableAncestor($root)) {
+        if (!self::isPublic($root, $publicRoots) && self::writableAncestor($root) && (!self::kernelAtLeast('1.1.15') || self::isTrusted($root, $project))) {
             return $root;
         }
         $temporary = self::canonical(sys_get_temp_dir());
-        $permissions = fileperms($temporary);
-        if ($permissions === false || (($permissions & 0022) !== 0 && ($permissions & 01000) === 0)) {
+        if (self::replaceableByOthers(fileperms($temporary))) {
             throw new RuntimeException('A private kernel cache requires a trusted temporary parent or APP_CACHE_DIR; shared temporary directories must have the sticky bit.');
         }
 
@@ -100,6 +102,35 @@ final class CacheLocation
         }
 
         return $candidate;
+    }
+
+    /**
+     * Mirrors kernel 1.1.15 CachePath::isTrusted(): an existing directory must be a real,
+     * owned, private directory, and no parent up to the project may be replaceable by others.
+     */
+    private static function isTrusted(string $directory, string $project): bool
+    {
+        if (
+            (file_exists($directory) || is_link($directory))
+            && (is_link($directory) || !is_dir($directory) || fileowner($directory) !== self::currentOwner() || (fileperms($directory) & 0022) !== 0)
+        ) {
+            return false;
+        }
+        $boundary = self::canonical($project);
+        $path = self::canonical($directory);
+        for ($parent = dirname($path); $parent !== $path && $parent !== $boundary; $parent = dirname($path)) {
+            $path = $parent;
+            if (file_exists($path) && self::replaceableByOthers(fileperms($path))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static function replaceableByOthers(int|false $permissions): bool
+    {
+        return $permissions === false || (($permissions & 0022) !== 0 && ($permissions & 01000) === 0);
     }
 
     private static function privateDirectory(string $path, int $owner): bool
